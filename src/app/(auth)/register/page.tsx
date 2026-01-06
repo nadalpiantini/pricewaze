@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/lib/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { MapPin, Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -18,27 +18,18 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { toast } = useToast();
   const supabase = createClient();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast({
-        variant: 'destructive',
-        title: 'Passwords do not match',
-        description: 'Please make sure your passwords match.',
-      });
+      toast.error('Passwords do not match', { description: 'Please make sure your passwords match.' });
       return;
     }
 
     if (password.length < 8) {
-      toast({
-        variant: 'destructive',
-        title: 'Password too short',
-        description: 'Password must be at least 8 characters long.',
-      });
+      toast.error('Password too short', { description: 'Password must be at least 8 characters long.' });
       return;
     }
 
@@ -57,26 +48,15 @@ export default function RegisterPage() {
       });
 
       if (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Registration failed',
-          description: error.message,
-        });
+        toast.error('Registration failed', { description: error.message });
         return;
       }
 
-      toast({
-        title: 'Check your email',
-        description: 'We sent you a confirmation link to complete your registration.',
-      });
+      toast.success('Check your email', { description: 'We sent you a confirmation link to complete your registration.' });
 
       router.push('/login');
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Something went wrong',
-        description: 'Please try again later.',
-      });
+    } catch {
+      toast.error('Something went wrong', { description: 'Please try again later.' });
     } finally {
       setLoading(false);
     }
@@ -91,11 +71,7 @@ export default function RegisterPage() {
     });
 
     if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign up failed',
-        description: error.message,
-      });
+      toast.error('Sign up failed', { description: error.message });
     }
   };
 
