@@ -1,0 +1,222 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/logger';
+import { z } from 'zod';
+
+// GET /api/properties/[id] - Get single property
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+      .from('pricewaze_properties')
+      .select(`
+        *,
+        zone:pricewaze_zones(id, name, city, avg_price_m2, total_listings),
+        owner:pricewaze_profiles(id, full_name, avatar_url, phone, verified)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'Property not found' },
+          { status: 404 }
+        );
+      }
+      logger.error('Failed to fetch property', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch property' },
+        { status: 500 }
+      );
+    }
+
+    // Increment view count (fire and forget)
+    supabase
+      .from('pricewaze_properties')
+      .update({ views_count: (data.views_count || 0) + 1 })
+      .eq('id', id)
+      .then(() => {});
+
+    // Track view if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      supabase
+        .from('pricewaze_property_views')
+        .insert({ property_id: id, viewer_id: user.id })
+        .then(() => {});
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    logger.error('Unexpected error in GET /api/properties/[id]', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH /api/properties/[id] - Update property
+const updatePropertySchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().optional(),
+  property_type: z.enum(['apartment', 'house', 'land', 'commercial', 'office']).optional(),
+  price: z.number().min(0).optional(),
+  area_m2: z.number().min(0).optional(),
+  bedrooms: z.number().int().min(0).optional(),
+  bathrooms: z.number().int().min(0).optional(),
+  parking_spaces: z.number().int().min(0).optional(),
+  year_built: z.number().int().min(1800).max(new Date().getFullYear()).optional(),
+  address: z.string().min(1).optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  images: z.array(z.string().url()).optional(),
+  features: z.array(z.string()).optional(),
+  status: z.enum(['active', 'pending', 'sold', 'inactive']).optional(),
+});
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify ownership
+    const { data: existingProperty } = await supabase
+      .from('pricewaze_properties')
+      .select('owner_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingProperty) {
+      return NextResponse.json(
+        { error: 'Property not found' },
+        { status: 404 }
+      );
+    }
+
+    if (existingProperty.owner_id !== user.id) {
+      return NextResponse.json(
+        { error: 'Not authorized to update this property' },
+        { status: 403 }
+      );
+    }
+
+    // Parse and validate body
+    const body = await request.json();
+    const result = updatePropertySchema.safeParse(body);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: 'Invalid property data', details: result.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = await supabase
+      .from('pricewaze_properties')
+      .update(result.data)
+      .eq('id', id)
+      .select(`
+        *,
+        zone:pricewaze_zones(id, name, city, avg_price_m2),
+        owner:pricewaze_profiles(id, full_name, avatar_url)
+      `)
+      .single();
+
+    if (error) {
+      logger.error('Failed to update property', error);
+      return NextResponse.json(
+        { error: 'Failed to update property' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    logger.error('Unexpected error in PATCH /api/properties/[id]', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/properties/[id] - Delete property
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify ownership
+    const { data: existingProperty } = await supabase
+      .from('pricewaze_properties')
+      .select('owner_id')
+      .eq('id', id)
+      .single();
+
+    if (!existingProperty) {
+      return NextResponse.json(
+        { error: 'Property not found' },
+        { status: 404 }
+      );
+    }
+
+    if (existingProperty.owner_id !== user.id) {
+      return NextResponse.json(
+        { error: 'Not authorized to delete this property' },
+        { status: 403 }
+      );
+    }
+
+    const { error } = await supabase
+      .from('pricewaze_properties')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      logger.error('Failed to delete property', error);
+      return NextResponse.json(
+        { error: 'Failed to delete property' },
+        { status: 500 }
+      );
+    }
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    logger.error('Unexpected error in DELETE /api/properties/[id]', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

@@ -1,0 +1,259 @@
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Bed,
+  Bath,
+  Maximize,
+  MapPin,
+  Calendar,
+  Car,
+  Heart,
+  Share2,
+  MessageSquare,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import type { Property } from '@/types/database';
+
+interface PropertyDetailProps {
+  property: Property;
+  onClose: () => void;
+}
+
+const propertyTypeLabels: Record<Property['property_type'], string> = {
+  apartment: 'Apartment',
+  house: 'House',
+  land: 'Land',
+  commercial: 'Commercial',
+  office: 'Office',
+};
+
+export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const images = property.images?.length ? property.images : ['/placeholder-property.jpg'];
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        {/* Image Gallery */}
+        <div className="relative aspect-video bg-muted">
+          <Image
+            src={images[currentImageIndex]}
+            alt={`${property.title} - Image ${currentImageIndex + 1}`}
+            fill
+            className="object-cover"
+          />
+
+          {images.length > 1 && (
+            <>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="absolute left-2 top-1/2 -translate-y-1/2"
+                onClick={prevImage}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                onClick={nextImage}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} / {images.length}
+              </div>
+            </>
+          )}
+
+          {/* Close Button */}
+          <Button
+            variant="secondary"
+            size="icon"
+            className="absolute top-2 right-2"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+
+          {/* Type Badge */}
+          <Badge className="absolute top-2 left-2">
+            {propertyTypeLabels[property.property_type]}
+          </Badge>
+        </div>
+
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-bold">{property.title}</h2>
+              <p className="text-muted-foreground flex items-center gap-1 mt-1">
+                <MapPin className="h-4 w-4" />
+                {property.address}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-bold text-primary">
+                {formatPrice(property.price)}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {formatPrice(property.price_per_m2)}/m²
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            {property.bedrooms !== null && (
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <Bed className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                <p className="font-semibold">{property.bedrooms}</p>
+                <p className="text-xs text-muted-foreground">Bedrooms</p>
+              </div>
+            )}
+            {property.bathrooms !== null && (
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <Bath className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                <p className="font-semibold">{property.bathrooms}</p>
+                <p className="text-xs text-muted-foreground">Bathrooms</p>
+              </div>
+            )}
+            <div className="text-center p-3 bg-muted rounded-lg">
+              <Maximize className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+              <p className="font-semibold">{property.area_m2}</p>
+              <p className="text-xs text-muted-foreground">m²</p>
+            </div>
+            {property.parking_spaces !== null && (
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <Car className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                <p className="font-semibold">{property.parking_spaces}</p>
+                <p className="text-xs text-muted-foreground">Parking</p>
+              </div>
+            )}
+            {property.year_built && (
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <Calendar className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                <p className="font-semibold">{property.year_built}</p>
+                <p className="text-xs text-muted-foreground">Year Built</p>
+              </div>
+            )}
+          </div>
+
+          <Separator className="my-4" />
+
+          {/* Tabs */}
+          <Tabs defaultValue="overview">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="features">Features</TabsTrigger>
+              <TabsTrigger value="pricing">Pricing Intel</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="mt-4">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2">Description</h3>
+                  <p className="text-muted-foreground">
+                    {property.description || 'No description available.'}
+                  </p>
+                </div>
+
+                {property.zone && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Zone</h3>
+                    <p className="text-muted-foreground">
+                      {property.zone.name}, {property.zone.city}
+                    </p>
+                    {property.zone.avg_price_m2 && (
+                      <p className="text-sm text-muted-foreground">
+                        Zone average: {formatPrice(property.zone.avg_price_m2)}/m²
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="features" className="mt-4">
+              {property.features?.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {property.features.map((feature, index) => (
+                    <Badge key={index} variant="secondary">
+                      {feature}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No features listed.</p>
+              )}
+            </TabsContent>
+
+            <TabsContent value="pricing" className="mt-4">
+              <div className="space-y-4">
+                <div className="p-4 bg-muted rounded-lg">
+                  <h3 className="font-semibold mb-2">Price Analysis</h3>
+                  <p className="text-sm text-muted-foreground">
+                    AI-powered pricing intelligence coming soon. Get insights on fair pricing,
+                    negotiation power, and comparable properties.
+                  </p>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <Separator className="my-4" />
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Button className="flex-1 gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Make an Offer
+            </Button>
+            <Button variant="outline" className="gap-2">
+              <Calendar className="h-4 w-4" />
+              Schedule Visit
+            </Button>
+            <Button variant="outline" size="icon">
+              <Heart className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <Share2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
