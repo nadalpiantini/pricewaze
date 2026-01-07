@@ -1,0 +1,267 @@
+# ⚔️ BMAD ORCHESTRATED FULL CYCLE 3.0
+# TOML + LangGraph Enhanced
+# Multi-Agent Prompt Workflow - Production Ready
+# Compatible with: Serena, Taskmaster, Superpowers, BMAD MCP, LangChain, LangGraph
+
+[mission]
+name = "Desarrollo Orquestado con Serena + Taskmaster + Superpowers (BMAD Full Cycle 3.0)"
+description = """
+Ejecución end-to-end basada en agentes y patrones BMAD.
+Cada fase es autocontenida, validada y registrada con LangGraph para flujo de control inteligente.
+Integrado con Plan de Implementación de Funcionalidades Open Source.
+"""
+environments = ["dev", "staging", "prod"]
+objective = "Sistema 10/10 funcional, validado, versionado y desplegable en producción."
+
+[frameworks]
+agents = ["Serena", "Superpowers", "BMAD MCP", "Taskmaster"]
+orchestrators = ["LangGraph", "LangChain"]
+engine = "Custom BMAD Engine"
+integration = "PriceWaze Implementation Plan"
+
+# ————————————————————————————————————————
+# 🧠 ORQUESTACIÓN LANGGRAPH
+[langgraph]
+enabled = true
+mode = "parallel-graph"
+description = """
+LangGraph controla dependencias entre fases, prioriza nodos activos y gestiona sincronización
+entre Serena (validación) y Taskmaster (orquestación). Cada nodo representa una fase autocontenida.
+"""
+node_order = ["dev", "validate", "review", "devops", "version", "log", "fallback", "deploy"]
+sync_strategy = "sequential validation, parallel debug"
+rollback_policy = "fallback_node_on_fail"
+
+# ————————————————————————————————————————
+# ⚙️ FASES PRINCIPALES
+
+[workflow.phase_1]
+name = "Desarrollo"
+orchestrator = "Taskmaster"
+tasks = [
+  "Frontend: componentes, UX coherente",
+  "Backend: endpoints, lógica, validaciones",
+  "Database: modelos, seeds, migraciones",
+  "Integración + Debug + Pruebas unitarias"
+]
+evaluation_criteria = ["completitud", "coherencia", "modularidad"]
+auto_score = true
+threshold = 8.5
+integration_plan = "PLAN_IMPLEMENTACION.md"
+
+[workflow.phase_2]
+name = "Validación"
+agents = ["Serena", "Superpowers"]
+description = "Validación técnica + visual. Si pasa, commit; si falla, fallback."
+checklist = [
+  "Accesibilidad UI",
+  "Jerarquía de overlays",
+  "Consistencia visual",
+  "Conectividad funcional",
+  "TypeScript type safety",
+  "ESLint compliance",
+  "Supabase RLS policies",
+  "API endpoint validation"
+]
+auto_score = true
+threshold = 9.0
+ci_integration = ".github/workflows/ci-cd.yml"
+
+[workflow.phase_3]
+name = "Ciclos de Revisión Profunda"
+iterations = 8
+mode = "cascada"
+rule = "Si aparece un error nuevo, reinicia los 8 ciclos"
+metrics = ["error_rate_reduction >= 15%", "convergencia = 0 errores"]
+testing_crew = "crewai/testing_crews/full_testing_crew.py"
+
+[workflow.phase_4]
+name = "DevOps + CI/CD"
+frequency = "cada 2 ciclos"
+actions = ["build_pipeline", "test_staging", "deploy_localhost"]
+env = ["dev", "staging", "prod"]
+logging = "full"
+includes = ["errores", "tiempos", "tests"]
+workflows = [
+  ".github/workflows/ci-cd.yml",
+  ".github/workflows/test-crewai.yml",
+  ".github/workflows/security-scan.yml"
+]
+
+[workflow.phase_5]
+name = "Control de Versiones"
+rule = "1 sprint exitoso = 1 commit"
+auto_push = true
+commit_threshold = 9.5
+branch_strategy = "feature branches → develop → main"
+changelog_format = "conventional commits"
+
+[workflow.phase_6]
+name = "Registro de Actividad"
+log_format = "JSON"
+fields = ["sprint", "tareas", "errores", "soluciones", "estado", "hash_commit", "pipeline", "feature"]
+retention = "persistent"
+log_directory = "bmad/logs"
+integration = "SPRINT_LOG.md"
+
+[workflow.phase_7]
+name = "Fallback Inteligente"
+pattern = "Error Loop Pattern"
+agents = ["Serena", "Taskmaster"]
+triggers = ["on_validation_fail", "on_commit_rejection", "on_ci_fail"]
+actions = ["diagnose", "reopen", "iterate", "confirm"]
+include_changelog = true
+max_iterations = 3
+
+[workflow.phase_8]
+name = "Finalización y Deploy"
+conditions = ["todos_validos", "8_ciclos_ok", "CI/CD_verde", "tests_passing"]
+actions = ["commit_final", "push_main", "sync_localhost", "log_final"]
+result = "BMAD Orchestrated Fullstack Deployment ✅"
+deployment_target = "Vercel Production"
+
+# ————————————————————————————————————————
+# 🔁 CONTEXTO COMPILADO
+
+[compilation_context]
+enabled = true
+refresh_agent = "Serena"
+elements = [
+  "instrucciones",
+  "dependencias",
+  "logs_previos",
+  "estado_anterior",
+  "PLAN_IMPLEMENTACION.md",
+  "ANALISIS_REPOS_OPEN_SOURCE.md",
+  "CLAUDE.md"
+]
+description = "Taskmaster recompila contexto y estado antes de cada iteración."
+
+# ————————————————————————————————————————
+# 📋 INTEGRACIÓN CON PLAN DE IMPLEMENTACIÓN
+
+[implementation_plan]
+enabled = true
+plan_file = "PLAN_IMPLEMENTACION.md"
+current_phase = "Fase 1: MVP Plus"
+current_feature = null  # Se establece dinámicamente
+features = [
+  "comparison",
+  "alerts",
+  "gallery",
+  "reviews",
+  "chat",
+  "valuation",
+  "heatmap",
+  "crm",
+  "insights",
+  "api"
+]
+tracking = "bmad/tracking/implementation.json"
+
+# ————————————————————————————————————————
+# 🤖 AUTOEVALUACIÓN
+
+[auto_evaluation]
+enabled = true
+pattern = "Evaluator Pattern"
+criteria = [
+  "Integridad",
+  "Coherencia",
+  "Robustez CI/CD",
+  "Eficiencia Sprint",
+  "Usabilidad",
+  "Type Safety",
+  "Test Coverage",
+  "Performance"
+]
+scale = "1-10"
+threshold = 9.0
+on_fail = "reanálisis con Serena + Taskmaster"
+output_format = "tabla"
+actions = ["generate_self_report", "attach_to_log"]
+report_location = "bmad/reports/"
+
+# ————————————————————————————————————————
+# 🔍 OBSERVABILIDAD
+
+[observability]
+level = "full"
+telemetry = [
+  "performance",
+  "cycle_times",
+  "error_heatmap",
+  "validation_scores",
+  "ci_cd_status",
+  "test_results",
+  "deployment_status"
+]
+dashboards = [
+  "DevOps Pipeline",
+  "Sprint Performance",
+  "Error Trends",
+  "CI/CD Health",
+  "Implementation Progress"
+]
+integrations = [
+  "Grafana",
+  "Kibana",
+  "Serena Superconsole",
+  "GitHub Actions",
+  "Vercel Analytics"
+]
+log_aggregation = "bmad/logs/aggregated/"
+
+# ————————————————————————————————————————
+# 🧩 AUTOAPRENDIZAJE INCREMENTAL (OPCIONAL)
+
+[learning_loop]
+enabled = true
+pattern = "Adaptive Prompt Refinement"
+description = """
+Serena y Taskmaster analizan logs previos y ajustan prompts para reducir tokens,
+acelerar validaciones y optimizar rendimiento de sprints futuros.
+"""
+feedback_sources = [
+  "validation_logs",
+  "commit_history",
+  "fallback_reports",
+  "ci_cd_metrics",
+  "test_results"
+]
+update_policy = "posterior cycle merge"
+learning_db = "bmad/learning/"
+
+# ————————————————————————————————————————
+# 🎯 OBJETIVO FINAL
+
+[final_objective]
+description = "Sistema modular, sin errores, versionado, con trazabilidad completa."
+readiness = [
+  "CI/CD_OK",
+  "Logs_Completos",
+  "Puntuación >= 9.5",
+  "Tests_Passing",
+  "Type_Safe",
+  "Deployed_Production"
+]
+result = "Producción lista y validada 10/10"
+
+# ————————————————————————————————————————
+# 🔧 CONFIGURACIÓN TÉCNICA
+
+[tech_stack]
+frontend = "Next.js 16.1 + React 19 + TypeScript"
+backend = "Next.js API Routes + Supabase"
+ai = "DeepSeek API + CrewAI"
+testing = "pytest + Playwright + CrewAI Agents"
+ci_cd = "GitHub Actions + Vercel"
+database = "Supabase (PostgreSQL + PostGIS)"
+
+[paths]
+logs = "bmad/logs"
+reports = "bmad/reports"
+tracking = "bmad/tracking"
+learning = "bmad/learning"
+scripts = "bmad/scripts"
+
