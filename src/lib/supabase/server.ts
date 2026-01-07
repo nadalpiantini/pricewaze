@@ -27,14 +27,35 @@ export const supabaseAdmin = supabaseServiceRoleKey
 /**
  * Create a Supabase server client with cookie handling
  * Uses anon key and respects RLS policies
+ * Also supports Authorization header for API testing
  */
-export async function createClient() {
+export async function createClient(request?: { headers: Headers }) {
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       'Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
     );
   }
 
+  // Check for Authorization header (for API testing)
+  const authHeader = request?.headers.get('authorization');
+  const token = authHeader?.replace('Bearer ', '');
+
+  // If token is provided via Authorization header, use it directly
+  if (token) {
+    return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+  }
+
+  // Otherwise, use cookie-based auth (normal flow)
   const cookieStore = await cookies();
   const isProduction = process.env.NODE_ENV === 'production';
 

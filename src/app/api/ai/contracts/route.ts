@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { generateContractDraft } from '@/lib/ai/contracts';
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
+  const supabase = await createClient(request);
 
   const {
     data: { user },

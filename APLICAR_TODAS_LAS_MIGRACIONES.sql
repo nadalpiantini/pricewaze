@@ -92,10 +92,13 @@ CREATE POLICY "Trigger can insert price history" ON pricewaze_property_price_his
 -- MIGRACIÓN 5: Fix Favorites RLS (20260106000009)
 -- ============================================================================
 
+-- Drop all existing policies first
 DROP POLICY IF EXISTS "Users can view own favorites" ON pricewaze_favorites;
 DROP POLICY IF EXISTS "Users can create own favorites" ON pricewaze_favorites;
 DROP POLICY IF EXISTS "Users can delete own favorites" ON pricewaze_favorites;
+DROP POLICY IF EXISTS "Users can update own favorites" ON pricewaze_favorites;
 
+-- Recreate with explicit permissions
 CREATE POLICY "Users can view own favorites" ON pricewaze_favorites
   FOR SELECT 
   USING (auth.uid() = user_id);

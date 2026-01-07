@@ -1,9 +1,9 @@
 # Product Requirements Document (PRD)
 ## PriceWaze
 
-**Versión**: 1.0  
-**Fecha**: Enero 2026  
-**Estado**: MVP Completado - Expansión en Progreso
+**Versión**: 1.1  
+**Fecha**: Enero 8, 2026  
+**Estado**: MVP Completado - Funcionalidades Avanzadas Implementadas
 
 ---
 
@@ -30,6 +30,10 @@ PriceWaze es una plataforma de inteligencia inmobiliaria que proporciona:
 - **Recomendaciones de ofertas** - Sugerencias de oferta en 3 niveles (conservador, moderado, agresivo)
 - **Asistencia en negociación** - Estrategias personalizadas para cada transacción
 - **Generación de contratos** - Contratos AI-generados con validación legal por mercado
+- **Alertas de mercado en tiempo real** - Sistema tipo Waze para cambios de precio, inventario y tendencias
+- **Gamificación y confianza** - Sistema de badges, achievements, puntos y trust score
+- **Comparación de propiedades** - Herramientas para comparar múltiples propiedades lado a lado
+- **Reviews y ratings** - Sistema de valoraciones y comentarios de propiedades
 
 La plataforma está diseñada para ser **market-agnostic** y escalable a cualquier región geográfica.
 
@@ -239,7 +243,127 @@ La plataforma está diseñada para ser **market-agnostic** y escalable a cualqui
 
 ---
 
-### Módulo 7: Sistema Multi-Agente (CREW)
+### Módulo 7: Gamificación y Confianza (GAMIFICATION)
+
+**Estado**: ✅ Completado
+
+| Funcionalidad | Descripción | Prioridad |
+|---------------|-------------|-----------|
+| Sistema de badges | 8 badges desbloqueables por acciones | 🔥 Alta |
+| Achievements con progreso | 7 achievements con tracking de progreso | 🔥 Alta |
+| Sistema de puntos | Puntos otorgados por acciones, niveles automáticos | 🔥 Alta |
+| Trust score | Score 0-100 basado en actividad y verificación | 🔥 Alta |
+| Historial de puntos | Tracking completo de ganancia de puntos | ⚡ Media |
+
+**Criterios de Aceptación**:
+- ✅ Badges otorgados automáticamente en acciones clave
+- ✅ Achievements con progreso incremental
+- ✅ Trust score recalculado automáticamente
+- ✅ Integración en visitas, ofertas y onboarding
+- ✅ API completa con 10 endpoints
+
+**Badges Implementados**:
+- `welcome` - Completar onboarding (10 pts)
+- `first_visit` - Primera visita verificada (20 pts)
+- `first_offer` - Primera oferta (25 pts)
+- `power_negotiator` - 5 negociaciones exitosas (50 pts)
+- `market_analyst` - Analizar 10 propiedades (40 pts)
+- `verified_explorer` - 10 visitas verificadas (60 pts)
+- `deal_maker` - Firmar primer acuerdo (75 pts)
+- `trusted_member` - Trust score 80+ (100 pts)
+
+**Achievements Implementados**:
+- `verified_explorer` - 10 visitas verificadas (100 pts, badge reward)
+- `deal_maker` - 3 acuerdos firmados (200 pts, badge reward)
+- `market_analyst` - Analizar 20 propiedades (150 pts, badge reward)
+- `power_negotiator` - 10 negociaciones exitosas (250 pts, badge reward)
+- `early_adopter` - Unirse en el primer mes (50 pts)
+- `trust_builder` - Trust score 50 (75 pts)
+- `trust_master` - Trust score 90 (200 pts, badge reward)
+
+**Trust Score Calculation**:
+- Edad de cuenta (max 20 pts): 1 punto por cada 30 días
+- Visitas verificadas (max 30 pts): 3 puntos por visita
+- Ofertas completadas (max 25 pts): 5 puntos por oferta aceptada
+- Acuerdos firmados (max 15 pts): 15 puntos por acuerdo
+- Badges (max 10 pts): 2 puntos por badge
+- **Total máximo**: 100 puntos
+
+---
+
+### Módulo 8: Alertas de Mercado (MARKET_ALERTS)
+
+**Estado**: ✅ Completado
+
+| Funcionalidad | Descripción | Prioridad |
+|---------------|-------------|-----------|
+| Señales de mercado | Detección automática de cambios (precio, inventario, tendencias) | 🔥 Alta |
+| Reglas personalizables | JSON Logic para crear alertas personalizadas | 🔥 Alta |
+| Alertas en tiempo real | Supabase Realtime para notificaciones instantáneas | 🔥 Alta |
+| Feed tipo Waze | UI visual con badges de severidad, colores dinámicos | 🔥 Alta |
+| Constructor de reglas | UI para crear reglas sin escribir JSON manualmente | ⚡ Media |
+| Preferencias de notificación | Configuración multi-canal (in-app, email, push) | ⚡ Media |
+
+**Criterios de Aceptación**:
+- ✅ Señales generadas automáticamente vía triggers SQL
+- ✅ Procesamiento de alertas cada 15 minutos (cron)
+- ✅ Evaluación de reglas con JSON Logic
+- ✅ Feed en tiempo real con Supabase Realtime
+- ✅ Templates predefinidos de reglas comunes
+
+**Tipos de Señales**:
+- **Price Drop**: Caída de precio en propiedad o zona
+- **Inventory Change**: Cambios en inventario disponible
+- **Trend Change**: Cambios en tendencia de mercado
+- **Zone Price Change**: Cambios de precio a nivel de zona
+
+**Integración**:
+- Triggers SQL en `pricewaze_properties` para generar señales automáticas
+- Cron job configurado en `vercel.json` (cada 15 minutos)
+- API endpoints: `/api/market-signals`, `/api/alert-rules`, `/api/alerts/process`
+- Hook `useMarketAlerts` con suscripción Realtime
+
+---
+
+### Módulo 9: Comparación de Propiedades (COMPARISONS)
+
+**Estado**: ✅ Completado
+
+| Funcionalidad | Descripción | Prioridad |
+|---------------|-------------|-----------|
+| Comparar propiedades | Seleccionar múltiples propiedades para comparar | 🔥 Alta |
+| Vista lado a lado | Comparación visual de características, precios, ubicación | 🔥 Alta |
+| Guardar comparaciones | Persistir comparaciones para revisión posterior | ⚡ Media |
+
+**Criterios de Aceptación**:
+- ✅ Selección de 2-5 propiedades para comparar
+- ✅ Vista comparativa con características clave
+- ✅ Comparación de precios, ubicación, características
+- ✅ Persistencia en base de datos
+
+---
+
+### Módulo 10: Reviews y Ratings (REVIEWS)
+
+**Estado**: ✅ Completado
+
+| Funcionalidad | Descripción | Prioridad |
+|---------------|-------------|-----------|
+| Calificar propiedades | Sistema de ratings (1-5 estrellas) | 🔥 Alta |
+| Comentarios | Reviews escritos por usuarios | 🔥 Alta |
+| Helpful votes | Sistema de votación útil/no útil | ⚡ Media |
+| Filtros y ordenamiento | Filtrar por rating, fecha, helpful | ⚡ Media |
+
+**Criterios de Aceptación**:
+- ✅ Ratings de 1-5 estrellas
+- ✅ Comentarios opcionales con reviews
+- ✅ Sistema de votación "útil" para reviews
+- ✅ Agregación de ratings por propiedad
+- ✅ RLS policies para seguridad
+
+---
+
+### Módulo 11: Sistema Multi-Agente (CREW)
 
 **Estado**: ✅ Completado
 
@@ -257,6 +381,12 @@ La plataforma está diseñada para ser **market-agnostic** y escalable a cualqui
 - **LegalAdvisor**: Revisión legal, compliance
 - **Coordinator**: Orquestación de workflows
 
+**API Endpoints**:
+- `/api/crewai/pricing` - Análisis de precios completo
+- `/api/crewai/negotiation` - Estrategias de negociación
+- `/api/crewai/contracts` - Generación de contratos
+- `/api/crewai/analysis` - Análisis completo end-to-end
+
 ---
 
 ## 🗺️ Roadmap
@@ -267,12 +397,13 @@ La plataforma está diseñada para ser **market-agnostic** y escalable a cualqui
 
 | Funcionalidad | Esfuerzo | Prioridad | Estado |
 |---------------|----------|-----------|--------|
-| Comparación de Propiedades | 2-3 semanas | 🔥 Alta | 📋 Planificado |
-| Alertas Inteligentes | 3-4 semanas | 🔥 Alta | 📋 Planificado |
+| Comparación de Propiedades | 2-3 semanas | 🔥 Alta | ✅ Completado |
+| Alertas Inteligentes | 3-4 semanas | 🔥 Alta | ✅ Completado |
 | Galería Mejorada + Tours Virtuales | 2-3 semanas | 🔥 Alta | 📋 Planificado |
-| Reviews y Ratings | 2-3 semanas | 🔥 Alta | 📋 Planificado |
+| Reviews y Ratings | 2-3 semanas | 🔥 Alta | ✅ Completado |
+| Sistema de Gamificación | 3-4 semanas | 🔥 Alta | ✅ Completado |
 
-**Total**: 9-13 semanas
+**Total**: 9-13 semanas (10-14 semanas con gamificación)
 
 ---
 
@@ -307,12 +438,16 @@ La plataforma está diseñada para ser **market-agnostic** y escalable a cualqui
 ### Post-MVP (Nice to Have)
 
 - [ ] OAuth providers (Google, Apple)
-- [ ] Push notifications
+- [ ] Push notifications (infraestructura lista, falta implementación)
 - [ ] Multi-idioma (i18n) - ES/EN
 - [ ] Mobile app (React Native)
 - [ ] Integration MLS feeds
-- [ ] Comparador de propiedades avanzado
-- [ ] Alertas de precio personalizadas
+- [ ] Comparador de propiedades avanzado (básico ✅ completado)
+- [ ] Alertas de precio personalizadas (✅ completado - Market Alerts)
+- [ ] Galería mejorada + Tours virtuales
+- [ ] Página de perfil con badges y achievements
+- [ ] Leaderboard de usuarios
+- [ ] Notificaciones in-app para badges/achievements
 
 ---
 
@@ -391,6 +526,10 @@ La plataforma está diseñada para ser **market-agnostic** y escalable a cualqui
 - **AI Recommendations Adoption**: 60%+ usan sugerencias de oferta
 - **Ofertas por propiedad**: > 2 ofertas promedio
 - **Visitas agendadas**: 40%+ de ofertas resultan en visita
+- **Gamificación Engagement**: 50%+ de usuarios activos ganan al menos 1 badge
+- **Market Alerts Adoption**: 30%+ de usuarios crean al menos 1 regla de alerta
+- **Comparaciones**: 25%+ de usuarios comparan propiedades antes de ofertar
+- **Reviews**: 20%+ de propiedades visitadas reciben review
 
 #### Calidad
 - **Precisión de Pricing**: 85%+ de scores dentro de ±10% del precio final
@@ -470,7 +609,25 @@ Ver `docs/tech-stack.md` para detalles completos:
 
 ---
 
-**Última actualización**: Enero 2026  
-**Versión del PRD**: 1.0  
+**Última actualización**: Enero 8, 2026  
+**Versión del PRD**: 1.1  
 **Próxima revisión**: Febrero 2026
+
+---
+
+## 📝 Changelog
+
+### Versión 1.1 (Enero 8, 2026)
+- ✅ Agregado Módulo 7: Gamificación y Confianza (completado)
+- ✅ Agregado Módulo 8: Alertas de Mercado (completado)
+- ✅ Agregado Módulo 9: Comparación de Propiedades (completado)
+- ✅ Agregado Módulo 10: Reviews y Ratings (completado)
+- ✅ Actualizado Módulo 11: Sistema Multi-Agente (renumerado, completado)
+- ✅ Actualizado Roadmap Fase 1 con estados completados
+- ✅ Actualizado métricas de éxito con nuevas funcionalidades
+- ✅ Actualizada propuesta de valor con nuevas características
+
+### Versión 1.0 (Enero 2026)
+- Versión inicial del PRD
+- Definición de módulos core (AUTH, PROP, PRICE, OFFER, VISIT, CONTRACT, CREW)
 
