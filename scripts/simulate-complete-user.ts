@@ -963,7 +963,7 @@ async function testVisits(buyerId: string, sellerId: string, propertyIds: string
       .single();
 
     if (visit && visit.pricewaze_properties) {
-      const prop = visit.pricewaze_properties as any;
+      const prop = visit.pricewaze_properties as { latitude: number; longitude: number };
       const { error } = await supabaseAnon
         .from('pricewaze_visits')
         .update({
