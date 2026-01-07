@@ -150,3 +150,283 @@
 .animate-collapsible-up {
   animation: collapsible-up 0.2s ease-out;
 }
+
+/* ============================================
+   LANDING PAGE - PRICEWAZE DESIGN SYSTEM
+   "Collective Intelligence Network" Theme
+   ============================================ */
+
+/* Landing Page Color System - Aligned with Logo */
+:root {
+  /* Primary Brand Gradient (from logo) */
+  --signal-cyan: #00D4FF;
+  --signal-teal: #00B4D7;
+  --signal-lime: #AADC00;
+
+  /* Background System */
+  --landing-bg-deep: #050A12;
+  --landing-bg-primary: #0A1628;
+  --landing-bg-elevated: #0F2137;
+  --landing-bg-card: #132742;
+
+  /* Signal States */
+  --signal-strong: #22C55E;
+  --signal-neutral: #F59E0B;
+  --signal-weak: #EF4444;
+
+  /* Text Hierarchy */
+  --landing-text-primary: #F8FAFC;
+  --landing-text-secondary: #94A3B8;
+  --landing-text-muted: #64748B;
+
+  /* Typography */
+  --font-display: 'Syne Variable', sans-serif;
+  --font-body: 'Plus Jakarta Sans Variable', sans-serif;
+}
+
+/* Landing Page Animations */
+@keyframes signal-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes signal-pulse-subtle {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.6);
+  }
+}
+
+@keyframes network-node-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+@keyframes data-flow {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes counter-tick {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Animation Utilities */
+.animate-signal-pulse {
+  animation: signal-pulse 2s ease-out infinite;
+}
+
+.animate-signal-pulse-subtle {
+  animation: signal-pulse-subtle 3s ease-in-out infinite;
+}
+
+.animate-gradient-shift {
+  animation: gradient-shift 8s ease-in-out infinite;
+  background-size: 200% 200%;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-network-node {
+  animation: network-node-pulse 2s ease-in-out infinite;
+}
+
+/* Staggered Animation Delays */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-600 { animation-delay: 600ms; }
+.delay-700 { animation-delay: 700ms; }
+.delay-800 { animation-delay: 800ms; }
+.delay-1000 { animation-delay: 1000ms; }
+
+/* Glass Morphism */
+.glass-card {
+  background: rgba(19, 39, 66, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 212, 255, 0.1);
+}
+
+.glass-card-hover:hover {
+  background: rgba(19, 39, 66, 0.8);
+  border-color: rgba(0, 212, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Gradient Text */
+.gradient-text-cyan-lime {
+  background: linear-gradient(135deg, var(--signal-cyan) 0%, var(--signal-lime) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-animated {
+  background: linear-gradient(135deg, var(--signal-cyan) 0%, var(--signal-teal) 50%, var(--signal-lime) 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s ease-in-out infinite;
+}
+
+/* Gradient Backgrounds */
+.bg-gradient-radial-glow {
+  background: radial-gradient(ellipse at center, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+}
+
+.bg-gradient-landing {
+  background: linear-gradient(180deg, var(--landing-bg-deep) 0%, var(--landing-bg-primary) 100%);
+}
+
+/* Glow Effects */
+.glow-cyan {
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+}
+
+.glow-lime {
+  box-shadow: 0 0 30px rgba(170, 220, 0, 0.4);
+}
+
+.text-glow-cyan {
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+}
+
+/* Grid Background Pattern */
+.bg-grid-pattern {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(0, 212, 255, 0.15) 1px, transparent 0);
+  background-size: 40px 40px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-signal-pulse,
+  .animate-signal-pulse-subtle,
+  .animate-gradient-shift,
+  .animate-fade-up,
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-float,
+  .animate-glow-pulse,
+  .animate-network-node,
+  .gradient-text-animated {
+    animation: none;
+  }
+}
