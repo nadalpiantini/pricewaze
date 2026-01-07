@@ -1,0 +1,127 @@
+name: Mobile Design Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/mobile/**'
+      - 'playwright.mobile.config.ts'
+      - 'package.json'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/mobile/**'
+      - 'playwright.mobile.config.ts'
+      - 'package.json'
+  workflow_dispatch:
+
+jobs:
+  mobile-tests:
+    name: Mobile Design Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Setup environment variables
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> .env.local
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> .env.local
+          echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
+
+      - name: Build Next.js app
+        run: pnpm build
+        env:
+          SKIP_ENV_VALIDATION: true
+
+      - name: Start Next.js server
+        run: |
+          pnpm start &
+          sleep 10
+          curl --retry 10 --retry-delay 3 --retry-connrefused http://localhost:3000 || exit 1
+        env:
+          PORT: 3000
+
+      - name: Run mobile tests
+        run: pnpm test:mobile
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-mobile
+          path: playwright-report-mobile/
+          retention-days: 30
+
+      - name: Upload test screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-screenshots
+          path: test-results/
+          retention-days: 7
+
+      - name: Comment PR with test results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            try {
+              const resultsPath = path.join('playwright-report-mobile', 'results.json');
+              if (fs.existsSync(resultsPath)) {
+                const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+                const passed = results.stats.expected;
+                const failed = results.stats.unexpected;
+                const total = passed + failed;
+                const percentage = total > 0 ? Math.round((passed / total) * 100) : 0;
+                
+                const emoji = percentage >= 95 ? '✅' : percentage >= 80 ? '⚠️' : '❌';
+                
+                const comment = `## ${emoji} Mobile Design Tests Results
+                
+                **Status**: ${failed === 0 ? 'All tests passed!' : `${failed} test(s) failed`}
+                
+                - ✅ Passed: ${passed}
+                - ❌ Failed: ${failed}
+                - 📊 Success Rate: ${percentage}%
+                
+                View detailed report in [artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+                `;
+                
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment
+                });
+              }
+            } catch (error) {
+              console.log('Could not create comment:', error.message);
+            }
+

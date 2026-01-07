@@ -1,0 +1,69 @@
+name: Mobile Tests Quick Check
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/mobile/**'
+  workflow_dispatch:
+
+jobs:
+  mobile-tests-quick:
+    name: Quick Mobile Validation (iPhone SE only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Setup environment variables
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> .env.local
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> .env.local
+          echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
+
+      - name: Build Next.js app
+        run: pnpm build
+        env:
+          SKIP_ENV_VALIDATION: true
+
+      - name: Start Next.js server
+        run: |
+          pnpm start &
+          sleep 10
+          curl --retry 10 --retry-delay 3 --retry-connrefused http://localhost:3000 || exit 1
+        env:
+          PORT: 3000
+
+      - name: Run quick mobile tests (iPhone SE only)
+        run: npx playwright test --config=playwright.mobile.config.ts --project=mobile-iphone-se
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-mobile-quick
+          path: playwright-report-mobile/
+          retention-days: 7
+

@@ -34,11 +34,12 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 This project uses GitHub Actions for automated CI/CD:
 
 - **Automatic builds** on push/PR
-- **Automated tests** (Frontend + Backend)
+- **Automated tests** (Frontend + Backend + Mobile Design)
+- **Mobile responsive validation** (5 devices, 130 validations)
 - **Security scans** (weekly)
 - **Auto-deployment** to Vercel (main branch)
 
-See [docs/devops.md](./docs/devops.md) for detailed CI/CD documentation.
+See [docs/devops.md](./docs/devops.md) and [docs/mobile-testing-ci-cd.md](./docs/mobile-testing-ci-cd.md) for detailed CI/CD documentation.
 
 ## 📚 Documentation
 
@@ -46,6 +47,30 @@ See [docs/devops.md](./docs/devops.md) for detailed CI/CD documentation.
 - [Tech Stack](./docs/tech-stack.md)
 - [DevOps & CI/CD](./docs/devops.md)
 - [Design Decisions](./docs/adr/)
+
+## 🧪 Testing
+
+### Mobile Design Tests
+
+Automated responsive design validation using Playwright:
+
+```bash
+# Run all mobile tests (5 devices, 130 validations)
+pnpm test:mobile
+
+# Run with UI (interactive)
+pnpm test:mobile:ui
+
+# Run in debug mode
+pnpm test:mobile:debug
+```
+
+**Coverage**:
+- ✅ 26 tests across 5 devices (iPhone SE, iPhone 12, iPhone 14 Pro Max, iPad Mini, iPad Pro)
+- ✅ Validates responsive design, touch targets, overflow, and mobile UX
+- ✅ Automatically runs in CI/CD on every push/PR
+
+See [Mobile Testing Documentation](./tests/mobile/README.md) and [CI/CD Integration](./docs/mobile-testing-ci-cd.md) for details.
 
 ## 🧪 Testing
 
