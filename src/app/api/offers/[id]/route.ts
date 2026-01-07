@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createNotification } from '@/lib/notifications';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -192,8 +193,30 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           console.error('Gamification error:', gamificationError);
         }
 
-        // TODO: Create agreement record
-        // TODO: Send notifications to both parties
+        // Send notifications to both parties
+        await createNotification(supabase, {
+          user_id: offer.buyer_id,
+          title: 'Offer Accepted',
+          message: `Your offer of $${offer.amount.toLocaleString()} for ${offer.property?.title || 'property'} has been accepted!`,
+          type: 'offer_accepted',
+          data: {
+            offer_id: id,
+            property_id: offer.property_id,
+          },
+        });
+
+        await createNotification(supabase, {
+          user_id: offer.seller_id,
+          title: 'Offer Accepted',
+          message: `You accepted the offer of $${offer.amount.toLocaleString()} for ${offer.property?.title || 'property'}`,
+          type: 'offer_accepted',
+          data: {
+            offer_id: id,
+            property_id: offer.property_id,
+          },
+        });
+
+        // TODO: Create agreement record (can be done via AI contract generation)
 
         return NextResponse.json({
           message: 'Offer accepted!',

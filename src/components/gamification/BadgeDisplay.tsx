@@ -27,7 +27,10 @@ const colorClasses = {
 };
 
 export function BadgeDisplay({ badge, size = 'md', showTooltip = true, earned = true }: BadgeDisplayProps) {
-  const actualBadge = 'badge' in badge ? badge.badge || badge : badge;
+  // Extract the actual Badge object from UserBadge if needed
+  const actualBadge: Badge = 'badge' in badge && badge.badge 
+    ? badge.badge 
+    : badge as Badge;
   const IconComponent = (LucideIcons as any)[actualBadge.icon] || LucideIcons.Award;
 
   const badgeElement = (

@@ -56,7 +56,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} ${plusJakarta.variable} antialiased`}>
+      <body 
+        className={`${inter.className} ${plusJakarta.variable} antialiased`}
+        suppressHydrationWarning
+        // Suppress hydration warnings caused by browser extensions
+        // Extensions like password managers, automation tools, etc. can modify the DOM
+      >
         <Providers>{children}</Providers>
         <Toaster />
       </body>

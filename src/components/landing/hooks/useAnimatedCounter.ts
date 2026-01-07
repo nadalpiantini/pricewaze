@@ -96,15 +96,24 @@ export function useLiveCounter(
   incrementRate: number = 1 // increments per second
 ) {
   const [value, setValue] = useState(baseValue);
+  const [mounted, setMounted] = useState(false);
+
+  // Only start counter after mount to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
+    if (!mounted) return;
+    
     const interval = setInterval(() => {
       // Random small increment for "live" feel
+      // Only runs on client after mount, so no hydration issues
       setValue((prev) => prev + Math.floor(Math.random() * 3) + 1);
     }, 1000 / incrementRate);
 
     return () => clearInterval(interval);
-  }, [incrementRate]);
+  }, [incrementRate, mounted]);
 
   return value;
 }

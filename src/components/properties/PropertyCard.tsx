@@ -9,6 +9,7 @@ import type { Property } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { useComparison } from '@/hooks/useComparison';
 import { useChat } from '@/hooks/useChat';
+import { usePropertyStore } from '@/stores/property-store';
 
 interface PropertyCardProps {
   property: Property;
@@ -27,6 +28,7 @@ const propertyTypeLabels: Record<Property['property_type'], string> = {
 export function PropertyCard({ property, onClick, compact = false }: PropertyCardProps) {
   const { isSelected, toggleProperty, canAddMore } = useComparison();
   const { startConversation, isCreating } = useChat();
+  const { isFavorite, toggleFavorite } = usePropertyStore();
 
   const formatPrice = (price: number) => {
     if (price >= 1000000) {
@@ -145,13 +147,22 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
           <Button
             variant="secondary"
             size="icon"
-            className="h-9 w-9 bg-white/95 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-emerald-500 shadow-md border border-gray-200 hover:border-transparent"
+            className={cn(
+              "h-9 w-9 bg-white/95 shadow-md border border-gray-200 hover:border-transparent",
+              isFavorite(property.id)
+                ? "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white"
+                : "hover:bg-gradient-to-r hover:from-cyan-500 hover:to-emerald-500"
+            )}
             onClick={(e) => {
               e.stopPropagation();
-              // TODO: Toggle favorite
+              toggleFavorite(property.id);
             }}
+            title={isFavorite(property.id) ? "Remover de favoritos" : "Agregar a favoritos"}
           >
-            <Heart className="h-4 w-4 text-gray-700 group-hover:text-white transition-colors" />
+            <Heart className={cn(
+              "h-4 w-4 transition-colors",
+              isFavorite(property.id) ? "text-white fill-white" : "text-gray-700 group-hover:text-white"
+            )} />
           </Button>
         </div>
       </div>

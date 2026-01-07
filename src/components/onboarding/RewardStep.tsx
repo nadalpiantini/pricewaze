@@ -29,19 +29,26 @@ async function fetchPricingInsight(propertyId: string): Promise<PricingInsight> 
   const data = await res.json();
 
   // Transform API response to our format
+  // Use deterministic fallback values to avoid hydration mismatches
+  const fallbackScore = 65; // Fixed fallback instead of random
+  const fallbackCount = 8; // Fixed fallback instead of random
+  
   return {
-    fairnessScore: data.fairness_score || Math.floor(Math.random() * 30) + 60,
+    fairnessScore: data.fairness_score || fallbackScore,
     suggestedPrice: data.suggested_price || 0,
     currentPrice: data.current_price || 0,
     savingsPotential: data.savings_potential || 0,
     negotiationTip: data.negotiation_tip || 'Consider negotiating based on comparable sales.',
-    comparablesCount: data.comparables_count || Math.floor(Math.random() * 10) + 5,
+    comparablesCount: data.comparables_count || fallbackCount,
   };
 }
 
 function generateMockInsight(): PricingInsight {
-  const fairnessScore = Math.floor(Math.random() * 40) + 55;
-  const currentPrice = Math.floor(Math.random() * 300000) + 200000;
+  // Use deterministic values based on a seed to avoid hydration mismatches
+  // In a real scenario, this would come from the API
+  const seed = 42; // Fixed seed for deterministic results
+  const fairnessScore = 55 + (seed % 40);
+  const currentPrice = 200000 + (seed % 300000);
   const variance = (100 - fairnessScore) / 100;
   const suggestedPrice = Math.floor(currentPrice * (1 - variance * 0.15));
   const savingsPotential = currentPrice - suggestedPrice;
@@ -59,8 +66,8 @@ function generateMockInsight(): PricingInsight {
     suggestedPrice,
     currentPrice,
     savingsPotential,
-    negotiationTip: tips[Math.floor(Math.random() * tips.length)],
-    comparablesCount: Math.floor(Math.random() * 15) + 5,
+    negotiationTip: tips[seed % tips.length], // Deterministic selection
+    comparablesCount: 5 + (seed % 15),
   };
 }
 

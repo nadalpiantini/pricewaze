@@ -32,6 +32,8 @@ export async function GET(request: NextRequest) {
       property_type,
       address,
       zone_id,
+      latitude,
+      longitude,
       created_at
     `)
     .eq('id', propertyId)
@@ -71,6 +73,36 @@ export async function GET(request: NextRequest) {
 
     if (comparables) {
       zoneProperties = comparables;
+    }
+  } else {
+    // If no zone, try to find properties with similar coordinates (within ~5km)
+    // This provides some context even without zones
+    const { data: nearby } = await supabase
+      .from('pricewaze_properties')
+      .select('price, area_m2, property_type, status, created_at, latitude, longitude')
+      .eq('status', 'active')
+      .neq('id', propertyId)
+      .limit(10);
+
+    if (nearby && nearby.length > 0) {
+      // Filter by distance (rough calculation - within ~0.05 degrees ≈ 5km)
+      const nearbyFiltered = nearby.filter((p: any) => {
+        if (!p.latitude || !p.longitude) return false;
+        const latDiff = Math.abs((p.latitude as number) - property.latitude);
+        const lngDiff = Math.abs((p.longitude as number) - property.longitude);
+        return latDiff < 0.05 && lngDiff < 0.05;
+      });
+
+      if (nearbyFiltered.length > 0) {
+        zoneName = 'Nearby Area';
+        zoneProperties = nearbyFiltered.map((p: any) => ({
+          price: p.price,
+          area_m2: p.area_m2,
+          property_type: p.property_type,
+          status: p.status,
+          created_at: p.created_at,
+        }));
+      }
     }
   }
 

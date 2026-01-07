@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createNotification } from '@/lib/notifications';
 
 // GET /api/visits - List user's visits (as visitor or owner)
 export async function GET(request: NextRequest) {
@@ -131,7 +132,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to schedule visit' }, { status: 500 });
     }
 
-    // TODO: Send notification to property owner
+    // Send notification to property owner
+    if (property.owner_id) {
+      await createNotification(supabase, {
+        user_id: property.owner_id,
+        title: 'New Visit Request',
+        message: `${visit.visitor?.full_name || 'A visitor'} requested to visit ${property.title}`,
+        type: 'visit_requested',
+        data: {
+          visit_id: visit.id,
+          property_id: property_id,
+          scheduled_at: scheduled_at,
+        },
+      });
+    }
 
     return NextResponse.json(visit, { status: 201 });
   } catch (error) {

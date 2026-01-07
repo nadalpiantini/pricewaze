@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createNotification } from '@/lib/notifications';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -184,7 +185,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
       console.error('Gamification error:', gamificationError);
     }
 
-    // TODO: Send notification to property owner that visit was completed
+    // Send notification to property owner that visit was completed
+    if (visit.owner_id) {
+      await createNotification(supabase, {
+        user_id: visit.owner_id,
+        title: 'Visit Completed',
+        message: `${updatedVisit.visitor?.full_name || 'A visitor'} has completed their visit to ${property.title}`,
+        type: 'visit_completed',
+        data: {
+          visit_id: id,
+          property_id: property.id,
+          verified_at: updatedVisit.verified_at,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

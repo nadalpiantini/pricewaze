@@ -82,6 +82,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- MIGRACIÓN 4: Fix Price History RLS (20260106000008)
 -- ============================================================================
 
+DROP POLICY IF EXISTS "Trigger can insert price history" ON pricewaze_property_price_history;
+
 CREATE POLICY "Trigger can insert price history" ON pricewaze_property_price_history 
   FOR INSERT 
   WITH CHECK (true);

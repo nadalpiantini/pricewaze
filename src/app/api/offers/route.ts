@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createNotification } from '@/lib/notifications';
 
 // GET /api/offers - List user's offers (as buyer or seller)
 export async function GET(request: NextRequest) {
@@ -181,8 +182,20 @@ export async function POST(request: NextRequest) {
       console.error('Gamification error:', gamificationError);
     }
 
-    // TODO: Send notification to property owner
-    // TODO: Send email notification
+    // Send notification to property owner
+    if (property.owner_id) {
+      await createNotification(supabase, {
+        user_id: property.owner_id,
+        title: 'New Offer Received',
+        message: `You received a new offer of $${amount.toLocaleString()} for ${property.title}`,
+        type: 'offer_received',
+        data: {
+          offer_id: offer.id,
+          property_id: property_id,
+          amount,
+        },
+      });
+    }
 
     return NextResponse.json(offer, { status: 201 });
   } catch (error) {

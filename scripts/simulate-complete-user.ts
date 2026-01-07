@@ -632,8 +632,9 @@ async function testPricing(buyerId: string, propertyIds: string[]): Promise<void
     } else {
       logResult('PRICE', 'FR-PRICE-003', '❌', 'Property not found');
     }
-  } catch (err: any) {
-    logResult('PRICE', 'FR-PRICE-003', '❌', err.message);
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    logResult('PRICE', 'FR-PRICE-003', '❌', error.message || String(err));
   }
 
   // FR-PRICE-004: Zone Analysis
@@ -649,8 +650,9 @@ async function testPricing(buyerId: string, propertyIds: string[]): Promise<void
     } else {
       logResult('PRICE', 'FR-PRICE-004', '⚠️', 'No zones available');
     }
-  } catch (err: any) {
-    logResult('PRICE', 'FR-PRICE-004', '❌', err.message);
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    logResult('PRICE', 'FR-PRICE-004', '❌', error.message || String(err));
   }
 }
 
@@ -727,8 +729,9 @@ async function testOffers(buyerId: string, sellerId: string, propertyIds: string
       offerIds.push(newOffer.id);
       logResult('OFFER', 'FR-OFFER-001', '✅', `Offer created: RD$${newOffer.amount.toLocaleString()}`);
     }
-  } catch (err: any) {
-    logResult('OFFER', 'FR-OFFER-001', '❌', err.message);
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    logResult('OFFER', 'FR-OFFER-001', '❌', error.message || String(err));
   }
 
   // FR-OFFER-002: View Offers (Seller)
@@ -750,8 +753,9 @@ async function testOffers(buyerId: string, sellerId: string, propertyIds: string
     } else {
       logResult('OFFER', 'FR-OFFER-002', '✅', `Seller can view ${offers?.length || 0} offers`);
     }
-  } catch (err: any) {
-    logResult('OFFER', 'FR-OFFER-002', '❌', err.message);
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    logResult('OFFER', 'FR-OFFER-002', '❌', error.message || String(err));
   }
 
   // FR-OFFER-003: Accept/Reject Offer
@@ -772,8 +776,9 @@ async function testOffers(buyerId: string, sellerId: string, propertyIds: string
     } else {
       logResult('OFFER', 'FR-OFFER-003', '⚠️', 'No offer to accept');
     }
-  } catch (err: any) {
-    logResult('OFFER', 'FR-OFFER-003', '❌', err.message);
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    logResult('OFFER', 'FR-OFFER-003', '❌', error.message || String(err));
   }
 
   // FR-OFFER-004: Counter-Offer
@@ -804,8 +809,9 @@ async function testOffers(buyerId: string, sellerId: string, propertyIds: string
     } else {
       logResult('OFFER', 'FR-OFFER-004', '⚠️', 'No offer to counter');
     }
-  } catch (err: any) {
-    logResult('OFFER', 'FR-OFFER-004', '❌', err.message);
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    logResult('OFFER', 'FR-OFFER-004', '❌', error.message || String(err));
   }
 
   // FR-OFFER-005: AI Negotiation Advice
@@ -822,8 +828,9 @@ async function testOffers(buyerId: string, sellerId: string, propertyIds: string
     } else {
       logResult('OFFER', 'FR-OFFER-005', '⚠️', 'No offer for AI advice');
     }
-  } catch (err: any) {
-    logResult('OFFER', 'FR-OFFER-005', '⚠️', `API not available: ${err.message}`);
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    logResult('OFFER', 'FR-OFFER-005', '⚠️', `API not available: ${error.message || String(err)}`);
   }
 
   return offerIds;
@@ -898,8 +905,9 @@ async function testVisits(buyerId: string, sellerId: string, propertyIds: string
     } else {
       logResult('VISIT', 'FR-VISIT-001', '✅', `Visit scheduled for ${scheduledAt.toLocaleDateString()}`);
     }
-  } catch (err: any) {
-    logResult('VISIT', 'FR-VISIT-001', '❌', err.message);
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    logResult('VISIT', 'FR-VISIT-001', '❌', error.message || String(err));
   }
 
   // FR-VISIT-002: Confirm/Reject Visit
@@ -932,8 +940,9 @@ async function testVisits(buyerId: string, sellerId: string, propertyIds: string
     } else {
       logResult('VISIT', 'FR-VISIT-002', '⚠️', 'No scheduled visits to confirm');
     }
-  } catch (err: any) {
-    logResult('VISIT', 'FR-VISIT-002', '❌', err.message);
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    logResult('VISIT', 'FR-VISIT-002', '❌', error.message || String(err));
   }
 
   // FR-VISIT-003: GPS Verification

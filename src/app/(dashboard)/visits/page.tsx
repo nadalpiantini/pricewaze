@@ -44,8 +44,16 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function VisitsPage() {
   const { user } = useAuthStore();
   const { visits, loading, fetchVisits, cancelVisit, verifyVisit } = useVisits({ role: 'all' });
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [mounted, setMounted] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [currentMonth, setCurrentMonth] = useState<Date | null>(null);
+
+  // Initialize dates only on client to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+    setSelectedDate(new Date());
+    setCurrentMonth(new Date());
+  }, []);
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [verificationCode, setVerificationCode] = useState('');
@@ -79,7 +87,10 @@ export default function VisitsPage() {
     return days;
   };
 
-  const calendarDays = useMemo(() => getDaysInMonth(currentMonth), [currentMonth]);
+  const calendarDays = useMemo(() => {
+    if (!currentMonth) return [];
+    return getDaysInMonth(currentMonth);
+  }, [currentMonth]);
 
   const getVisitsForDate = useCallback((date: Date) => {
     return visits.filter((visit) => {
@@ -93,7 +104,7 @@ export default function VisitsPage() {
   }, [visits]);
 
   const selectedDateVisits = useMemo(
-    () => getVisitsForDate(selectedDate),
+    () => selectedDate ? getVisitsForDate(selectedDate) : [],
     [selectedDate, getVisitsForDate]
   );
 
@@ -111,10 +122,12 @@ export default function VisitsPage() {
   }, [visits]);
 
   const prevMonth = () => {
+    if (!currentMonth) return;
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
 
   const nextMonth = () => {
+    if (!currentMonth) return;
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
@@ -143,7 +156,8 @@ export default function VisitsPage() {
     );
   };
 
-  const isSameDay = (date1: Date, date2: Date) => {
+  const isSameDay = (date1: Date, date2: Date | null) => {
+    if (!date2) return false;
     return (
       date1.getDate() === date2.getDate() &&
       date1.getMonth() === date2.getMonth() &&
@@ -228,10 +242,10 @@ export default function VisitsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>
-                {currentMonth.toLocaleDateString('en-US', {
+                {currentMonth?.toLocaleDateString('en-US', {
                   month: 'long',
                   year: 'numeric',
-                })}
+                }) || 'Loading...'}
               </CardTitle>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="icon" onClick={prevMonth}>
@@ -295,6 +309,7 @@ export default function VisitsPage() {
               </div>
 
               {/* Selected date visits */}
+              {selectedDate && (
               <div className="mt-6 pt-6 border-t">
                 <h3 className="font-semibold mb-3">
                   {selectedDate.toLocaleDateString('en-US', {
@@ -344,6 +359,7 @@ export default function VisitsPage() {
                   </div>
                 )}
               </div>
+              )}
             </CardContent>
           </Card>
         </div>

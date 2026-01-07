@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { PropertyGallery } from '@/components/properties/PropertyGallery';
 import { PropertyReviews } from '@/components/reviews/PropertyReviews';
+import { PricingInsights } from '@/components/pricing/PricingInsights';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChat } from '@/hooks/useChat';
 import type { Property } from '@/types/database';
@@ -232,19 +233,7 @@ export default function PropertyPage() {
 
             <TabsContent value="pricing" className="mt-4">
               <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg">
-                  <h3 className="font-semibold mb-2">Price Analysis</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Get AI-powered pricing intelligence including fairness score, negotiation power, and offer suggestions.
-                  </p>
-                  <Button
-                    onClick={() => {
-                      window.location.href = `/api/ai/pricing?property_id=${property.id}`;
-                    }}
-                  >
-                    Analyze Price
-                  </Button>
-                </div>
+                <PricingInsights propertyId={property.id} />
               </div>
             </TabsContent>
 
