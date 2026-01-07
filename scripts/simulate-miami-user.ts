@@ -61,7 +61,37 @@ async function createMiamiUser(): Promise<string | null> {
   console.log('\n👤 Creating Miami test user...\n');
 
   try {
-    // Try to create user using admin API (requires service role)
+    // First, try to find existing user
+    const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUser = usersData?.users?.find((u: any) => u.email === MIAMI_USER.email);
+    
+    if (existingUser) {
+      logResult('User Auth', '✅', `Found existing user: ${MIAMI_USER.email}`);
+      
+      // Update profile
+      const { error: profileError } = await supabaseAdmin
+        .from('pricewaze_profiles')
+        .upsert({
+          id: existingUser.id,
+          email: MIAMI_USER.email,
+          full_name: MIAMI_USER.fullName,
+          phone: MIAMI_USER.phone,
+          role: MIAMI_USER.role,
+          verified: true,
+        }, {
+          onConflict: 'id',
+        });
+
+      if (profileError) {
+        logResult('User Profile', '⚠️', `Profile update warning: ${profileError.message}`);
+      } else {
+        logResult('User Profile', '✅', 'Profile updated');
+      }
+
+      return existingUser.id;
+    }
+
+    // Try to create user using admin API
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: MIAMI_USER.email,
       password: MIAMI_USER.password,
@@ -71,51 +101,33 @@ async function createMiamiUser(): Promise<string | null> {
       },
     });
 
-    let userId: string | null = null;
-
     if (authError) {
-      // If user already exists, try to get existing user
-      if (authError.message.includes('already') || authError.message.includes('exists')) {
-        logResult('User Auth', '⚠️', `User already exists: ${authError.message}`);
-        
-        // Try to list and find existing user
-        const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
-        const existingUser = usersData?.users?.find((u: any) => u.email === MIAMI_USER.email);
-        
-        if (existingUser) {
-          userId = existingUser.id;
-          logResult('User Auth', '✅', `Found existing user: ${MIAMI_USER.email}`);
-        } else {
-          // Try to sign in
-          const { data: signInData } = await supabaseAnon.auth.signInWithPassword({
-            email: MIAMI_USER.email,
-            password: MIAMI_USER.password,
-          });
-          
-          if (signInData?.user) {
-            userId = signInData.user.id;
-            logResult('User Auth', '✅', `Signed in to existing user: ${MIAMI_USER.email}`);
-          } else {
-            logResult('User Auth', '❌', 'User exists but cannot authenticate');
-            return null;
-          }
-        }
-      } else {
-        logResult('User Auth', '❌', `Failed to create user: ${authError.message}`);
-        return null;
+      logResult('User Auth', '⚠️', `Cannot create user: ${authError.message}`);
+      logResult('User Auth', '⚠️', 'Will use existing test user or create property without user');
+      
+      // Try to use an existing test user (maria@test.com from seed)
+      const { data: testUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const testUser = testUsers?.users?.find((u: any) => 
+        u.email === 'maria@test.com' || u.email?.includes('test.com')
+      );
+      
+      if (testUser) {
+        logResult('User Auth', '✅', `Using existing test user: ${testUser.email}`);
+        return testUser.id;
       }
-    } else if (authData?.user) {
-      userId = authData.user.id;
-      logResult('User Auth', '✅', `User created: ${MIAMI_USER.email}`);
-    } else {
+      
+      // If no test user, we'll create property with a dummy owner
+      logResult('User Auth', '⚠️', 'No test user available. Property will be created with dummy owner.');
+      return null;
+    }
+
+    if (!authData?.user) {
       logResult('User Auth', '❌', 'No user data returned');
       return null;
     }
 
-    if (!userId) {
-      logResult('User Auth', '❌', 'No user ID obtained');
-      return null;
-    }
+    const userId = authData.user.id;
+    logResult('User Auth', '✅', `User created: ${MIAMI_USER.email}`);
 
     // Wait for trigger to create profile
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -135,15 +147,15 @@ async function createMiamiUser(): Promise<string | null> {
       });
 
     if (profileError) {
-      logResult('User Profile', '❌', `Profile creation failed: ${profileError.message}`);
-      return null;
+      logResult('User Profile', '⚠️', `Profile warning: ${profileError.message}`);
+    } else {
+      logResult('User Profile', '✅', 'Profile created/updated');
     }
 
-    logResult('User Profile', '✅', 'Profile created/updated');
-    logResult('User Auth', '✅', `User ready: ${MIAMI_USER.email} (ID: ${userId})`);
     return userId;
   } catch (err: any) {
-    logResult('User Auth', '❌', `Exception: ${err.message}`);
+    logResult('User Auth', '⚠️', `Exception: ${err.message}`);
+    logResult('User Auth', '⚠️', 'Will continue with property creation using dummy owner');
     return null;
   }
 }
@@ -152,22 +164,37 @@ async function createMiamiProperty(ownerId: string): Promise<string | null> {
   console.log('\n🏠 Creating Miami property...\n');
 
   try {
-    // Create a seller/owner for the property
-    const sellerId = randomUUID();
-    const { error: sellerError } = await supabaseAdmin
-      .from('pricewaze_profiles')
-      .upsert({
-        id: sellerId,
-        email: 'miami.seller@test.com',
-        full_name: 'Miami Property Owner',
-        role: 'seller',
-        verified: true,
-      }, {
-        onConflict: 'id',
-      });
+    // Find an existing user to use as owner (from seed data)
+    let sellerId = ownerId;
+    
+    if (ownerId === '00000000-0000-0000-0000-000000000000') {
+      // Try to find existing seller from seed
+      const { data: existingProfiles, error: profileQueryError } = await supabaseAdmin
+        .from('pricewaze_profiles')
+        .select('id, email, role')
+        .eq('role', 'seller')
+        .limit(1);
 
-    if (sellerError) {
-      logResult('Property Owner', '⚠️', `Owner creation warning: ${sellerError.message}`);
+      if (existingProfiles && existingProfiles.length > 0) {
+        sellerId = existingProfiles[0].id;
+        logResult('Property Owner', '✅', `Using existing seller: ${existingProfiles[0].email}`);
+      } else {
+        // Try to get any existing user
+        const { data: anyProfiles } = await supabaseAdmin
+          .from('pricewaze_profiles')
+          .select('id, email')
+          .limit(1);
+
+        if (anyProfiles && anyProfiles.length > 0) {
+          sellerId = anyProfiles[0].id;
+          logResult('Property Owner', '✅', `Using existing user: ${anyProfiles[0].email}`);
+        } else {
+          logResult('Property Owner', '❌', 'No existing users found.');
+          logResult('Property Owner', '💡', 'Please run: pnpm seed (to create test users)');
+          logResult('Property Owner', '💡', 'Or create a user via the registration page first');
+          return null;
+        }
+      }
     }
 
     // Create property in Miami
@@ -334,22 +361,24 @@ async function main() {
   console.log('\n');
 
   try {
-    // 1. Create user
+    // 1. Create user (or use existing)
     const userId = await createMiamiUser();
-    if (!userId) {
-      console.error('\n❌ Failed to create user. Cannot continue.');
-      process.exit(1);
-    }
+    const effectiveUserId = userId || '00000000-0000-0000-0000-000000000000'; // Dummy ID if no user
 
     // 2. Create property
-    const propertyId = await createMiamiProperty(userId);
+    const propertyId = await createMiamiProperty(effectiveUserId);
     if (!propertyId) {
       console.error('\n❌ Failed to create property. Cannot continue.');
       process.exit(1);
     }
 
-    // 3. Test pricing analysis
-    await testPricingAnalysis(userId, propertyId);
+    // 3. Test pricing analysis (only if we have a real user)
+    if (userId) {
+      await testPricingAnalysis(userId, propertyId);
+    } else {
+      logResult('Pricing Analysis', '⚠️', 'Skipped - no authenticated user available');
+      logResult('Pricing Analysis', '⚠️', 'Property created. You can test pricing via UI or API with authenticated user.');
+    }
 
     // Summary
     console.log('\n' + '='.repeat(60));
