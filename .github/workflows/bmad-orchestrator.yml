@@ -1,0 +1,112 @@
+name: BMAD Orchestrator
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature:
+        description: 'Feature to implement'
+        required: true
+        type: string
+      phase:
+        description: 'Specific phase to run (optional)'
+        required: false
+        type: choice
+        options:
+          - dev
+          - validate
+          - review
+          - devops
+          - version
+          - log
+          - fallback
+          - deploy
+          - full
+      auto_commit:
+        description: 'Auto-commit on success'
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    # Run daily at 3 AM UTC to check status
+    - cron: '0 3 * * *'
+
+jobs:
+  orchestrate:
+    name: BMAD Orchestration (${{ github.event.inputs.feature || 'status_check' }})
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install tomli
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      
+      - name: Install project dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Run BMAD Orchestrator
+        id: orchestrator
+        run: |
+          if [ "${{ github.event.inputs.phase }}" == "full" ] || [ -z "${{ github.event.inputs.phase }}" ]; then
+            python bmad/scripts/orchestrator.py --feature "${{ github.event.inputs.feature || 'status_check' }}"
+          else
+            python bmad/scripts/orchestrator.py --feature "${{ github.event.inputs.feature || 'status_check' }}" --phase "${{ github.event.inputs.phase }}"
+          fi
+        continue-on-error: true
+      
+      - name: Generate Feature Report
+        if: always()
+        run: |
+          python bmad/scripts/feature_tracker.py --report > bmad_report.txt
+          cat bmad_report.txt
+      
+      - name: Upload BMAD Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bmad-logs-${{ github.event.inputs.feature || 'status_check' }}-${{ github.run_number }}
+          path: |
+            bmad/logs/
+            bmad/reports/
+            bmad/tracking/
+          retention-days: 30
+      
+      - name: Upload Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bmad-report-${{ github.event.inputs.feature || 'status_check' }}
+          path: bmad_report.txt
+          retention-days: 7
+      
+      - name: Auto Commit (if enabled)
+        if: |
+          steps.orchestrator.outcome == 'success' && 
+          github.event.inputs.auto_commit == 'true' &&
+          github.event_name == 'workflow_dispatch'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add bmad/
+          git commit -m "chore: BMAD orchestration completed for ${{ github.event.inputs.feature }}" || exit 0
+          git push || exit 0
+
