@@ -118,6 +118,7 @@ function SortableStopItem({
         <div className="flex items-center gap-1 flex-shrink-0">
           {showNavigation && (
             <Button
+              data-testid="open-waze"
               variant="ghost"
               size="icon-sm"
               onClick={handleOpenWaze}
@@ -236,6 +237,7 @@ export function DraggableRouteStopsList({
       {showNavigation && sortedItems.length > 0 && (
         <div className="pt-4 border-t">
           <Button
+            data-testid="open-google-maps"
             onClick={handleOpenGoogleMaps}
             className="w-full"
             variant="default"

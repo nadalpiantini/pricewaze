@@ -98,6 +98,7 @@ export default function RegisterPage() {
               <Label htmlFor="fullName">Full Name</Label>
               <Input
                 id="fullName"
+                data-testid="full-name-input"
                 type="text"
                 placeholder="John Doe"
                 value={fullName}
@@ -111,6 +112,7 @@ export default function RegisterPage() {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                data-testid="email-input"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
@@ -124,6 +126,7 @@ export default function RegisterPage() {
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
+                data-testid="password-input"
                 type="password"
                 placeholder="••••••••"
                 value={password}
@@ -141,6 +144,7 @@ export default function RegisterPage() {
               <Label htmlFor="confirmPassword">Confirm Password</Label>
               <Input
                 id="confirmPassword"
+                data-testid="confirm-password-input"
                 type="password"
                 placeholder="••••••••"
                 value={confirmPassword}
@@ -150,7 +154,7 @@ export default function RegisterPage() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" data-testid="register-button" className="w-full" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

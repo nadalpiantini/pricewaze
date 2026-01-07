@@ -25,6 +25,7 @@ import { PropertyGallery } from '@/components/properties/PropertyGallery';
 import { PropertyReviews } from '@/components/reviews/PropertyReviews';
 import { PricingInsights } from '@/components/pricing/PricingInsights';
 import { PropertySignals } from '@/components/signals';
+import { OfferNegotiationView } from '@/components/offers/OfferNegotiationView';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChat } from '@/hooks/useChat';
 import { createClient } from '@/lib/supabase/client';
@@ -258,10 +259,11 @@ export default function PropertyPage() {
 
           {/* Tabs */}
           <Tabs defaultValue="overview">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="features">Features</TabsTrigger>
               <TabsTrigger value="pricing">Pricing Intel</TabsTrigger>
+              <TabsTrigger value="negotiation">Negotiation</TabsTrigger>
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
             </TabsList>
 
@@ -308,6 +310,19 @@ export default function PropertyPage() {
               <div className="space-y-4">
                 <PricingInsights propertyId={property.id} />
               </div>
+            </TabsContent>
+
+            <TabsContent value="negotiation" className="mt-4">
+              {user?.id ? (
+                <OfferNegotiationView
+                  propertyId={property.id}
+                  userId={user.id}
+                />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Inicia sesión para ver la negociación y el copiloto de IA
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="reviews" className="mt-4">

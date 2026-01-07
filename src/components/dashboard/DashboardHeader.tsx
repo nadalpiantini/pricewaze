@@ -85,7 +85,7 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full hover:ring-2 hover:ring-cyan-500/50 transition-all">
+            <Button data-testid="user-menu" variant="ghost" size="icon" className="rounded-full hover:ring-2 hover:ring-cyan-500/50 transition-all">
               <Avatar className="h-8 w-8 ring-2 ring-cyan-500/20">
                 <AvatarImage src={profile?.avatar_url || undefined} />
                 <AvatarFallback className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-white">{getInitials(profile?.full_name)}</AvatarFallback>

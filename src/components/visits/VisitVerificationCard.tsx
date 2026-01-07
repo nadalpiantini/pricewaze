@@ -240,6 +240,7 @@ export function VisitVerificationCard({ visit, onVerified }: VisitVerificationCa
       {isScheduled && (
         <CardFooter>
           <Button
+            data-testid="verify-visit-button"
             className="w-full"
             onClick={handleVerify}
             disabled={loading || !gpsPosition || code.length !== 6}

@@ -39,6 +39,11 @@ export async function GET(request: NextRequest) {
 
     const filters = result.data;
 
+    // Pagination parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100); // Max 100 per page
+    const offset = (page - 1) * limit;
+
     // Build query
     let query = supabase
       .from('pricewaze_properties')
@@ -46,8 +51,9 @@ export async function GET(request: NextRequest) {
         *,
         zone:pricewaze_zones(id, name, city, avg_price_m2),
         owner:pricewaze_profiles(id, full_name, avatar_url)
-      `)
-      .order('created_at', { ascending: false });
+      `, { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     // Apply filters
     if (filters.status) {
@@ -78,7 +84,7 @@ export async function GET(request: NextRequest) {
       query = query.gte('bathrooms', filters.bathrooms);
     }
 
-    const { data, error } = await query;
+    const { data, error, count } = await query;
 
     if (error) {
       logger.error('Failed to fetch properties', error);
@@ -88,7 +94,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(data || []);
+    // Return paginated response
+    return NextResponse.json({
+      data: data || [],
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit),
+        hasMore: (count || 0) > offset + limit,
+      },
+    });
   } catch (error) {
     logger.error('Unexpected error in GET /api/properties', error);
     return NextResponse.json(

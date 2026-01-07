@@ -19,12 +19,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
+    // Pagination parameters
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
+    const offset = (page - 1) * limit;
+
     // Get saved searches
-    const { data: savedSearches, error: searchesError } = await supabase
+    const { data: savedSearches, error: searchesError, count: searchesCount } = await supabase
       .from('pricewaze_saved_searches')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (searchesError) {
       logger.error('Failed to fetch saved searches', searchesError);
@@ -34,15 +41,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get price alerts
-    const { data: priceAlerts, error: priceAlertsError } = await supabase
+    // Get price alerts (same pagination)
+    const { data: priceAlerts, error: priceAlertsError, count: alertsCount } = await supabase
       .from('pricewaze_price_alerts')
       .select(`
         *,
         property:pricewaze_properties(id, title, price, images)
-      `)
+      `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (priceAlertsError) {
       logger.error('Failed to fetch price alerts', priceAlertsError);
@@ -51,6 +59,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       saved_searches: savedSearches || [],
       price_alerts: priceAlerts || [],
+      pagination: {
+        page,
+        limit,
+        total: (searchesCount || 0) + (alertsCount || 0),
+        totalPages: Math.ceil(((searchesCount || 0) + (alertsCount || 0)) / limit),
+        hasMore: ((searchesCount || 0) + (alertsCount || 0)) > offset + limit,
+      },
     });
   } catch (error) {
     logger.error('Error in GET /api/alerts', error);

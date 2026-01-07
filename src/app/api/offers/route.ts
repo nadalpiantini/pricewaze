@@ -131,6 +131,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // H.1: Set expires_at to 72 hours from now
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 72);
+
     // Create the offer
     const { data: offer, error: createError } = await supabase
       .from('pricewaze_offers')
@@ -141,6 +145,7 @@ export async function POST(request: NextRequest) {
         amount,
         message,
         status: 'pending',
+        expires_at: expiresAt.toISOString(),
       })
       .select(`
         *,

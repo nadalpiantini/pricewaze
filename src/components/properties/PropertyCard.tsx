@@ -43,6 +43,7 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
   if (compact) {
     return (
       <Card
+        data-testid="property-card"
         className="cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden border-gray-200 bg-white"
         onClick={onClick}
       >

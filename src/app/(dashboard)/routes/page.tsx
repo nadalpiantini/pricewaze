@@ -502,6 +502,7 @@ export default function RoutesPage() {
               Cancel
             </Button>
             <Button
+              data-testid="create-route-button"
               onClick={handleCreateRoute}
               disabled={!routeName.trim() || createMutation.isPending}
             >
