@@ -138,6 +138,15 @@ export interface Favorite {
   created_at: string;
 }
 
+export interface Comparison {
+  id: string;
+  user_id: string;
+  property_ids: string[];
+  name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // API Response Types
 export interface PropertyFilters {
   zone_id?: string;
