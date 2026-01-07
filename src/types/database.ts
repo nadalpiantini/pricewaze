@@ -298,6 +298,47 @@ export interface ReviewHelpful {
   created_at: string;
 }
 
+// Property Signals (Waze-style)
+export type PropertySignalType = 
+  | 'high_activity'      // System: many views
+  | 'many_visits'        // System: verified visits
+  | 'competing_offers'   // System: active offers
+  | 'noise'              // User: zona ruidosa
+  | 'humidity'           // User: posible humedad
+  | 'misleading_photos'  // User: fotos engañosas
+  | 'price_issue';        // User: precio discutido
+
+export type SignalSource = 'system' | 'user';
+
+export interface PropertySignal {
+  id: string;
+  property_id: string;
+  signal_type: PropertySignalType;
+  source: SignalSource;
+  weight: number;
+  created_at: string;
+  property?: Property;
+}
+
+export interface SignalReport {
+  id: string;
+  property_id: string;
+  user_id: string;
+  signal_type: 'noise' | 'humidity' | 'misleading_photos' | 'price_issue';
+  visit_id: string;
+  created_at: string;
+  property?: Property;
+  user?: Profile;
+  visit?: Visit;
+}
+
+export interface PropertySignalState {
+  property_id: string;
+  signals: Record<PropertySignalType, number>; // { "noise": 3, "humidity": 1, "many_visits": 6 }
+  updated_at: string;
+  property?: Property;
+}
+
 // Chat System
 export interface Conversation {
   id: string;
@@ -337,4 +378,26 @@ export interface PropertyMedia {
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
+}
+
+// Visit Routes (Smart Visit Planner)
+export interface VisitRoute {
+  id: string;
+  user_id: string;
+  name: string;
+  start_location: { coordinates: [number, number] } | null;
+  created_at: string;
+  updated_at: string;
+  stops?: VisitStop[];
+}
+
+export interface VisitStop {
+  id: string;
+  route_id: string;
+  property_id: string | null;
+  address: string;
+  location: { lat: number; lng: number } | { coordinates: [number, number] };
+  order_index: number;
+  created_at: string;
+  property?: Property;
 }

@@ -16,6 +16,7 @@ import {
   X,
   GitCompare,
   AlertTriangle,
+  Route,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,11 @@ const navItems = [
     label: 'Visits',
     href: '/visits',
     icon: Calendar,
+  },
+  {
+    label: 'Routes',
+    href: '/routes',
+    icon: Route,
   },
   {
     label: 'Favorites',

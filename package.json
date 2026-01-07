@@ -11,6 +11,8 @@
     "seed:clear": "tsx -e \"import('./scripts/seed').then(m => m.clearExistingData())\"",
     "simulate:user": "tsx scripts/simulate-complete-user.ts",
     "simulate:10users": "tsx scripts/simulate-10-users.ts",
+    "simulate:complete": "tsx scripts/simulate-complete-user-flow.ts",
+    "simulate:complete:v2": "tsx scripts/simulate-complete-user-flow-v2.ts",
     "fix:trigger": "tsx scripts/fix-trigger.ts",
     "bmad:setup": "bash bmad/scripts/setup.sh",
     "bmad:start": "bash bmad/scripts/quick_start.sh",
