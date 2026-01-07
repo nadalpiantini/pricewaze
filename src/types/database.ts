@@ -172,3 +172,113 @@ export interface PricingAnalysis {
     max: number;
   };
 }
+
+// Alerts System
+export interface SavedSearch {
+  id: string;
+  user_id: string;
+  name: string | null;
+  filters: Record<string, unknown>;
+  is_active: boolean;
+  notification_frequency: 'instant' | 'daily' | 'weekly';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PropertyAlert {
+  id: string;
+  saved_search_id: string;
+  property_id: string;
+  alert_type: 'new_property' | 'price_change' | 'status_change';
+  notified_at: string | null;
+  created_at: string;
+  property?: Property;
+}
+
+export interface PriceAlert {
+  id: string;
+  user_id: string;
+  property_id: string;
+  threshold_type: 'any' | 'percentage' | 'amount';
+  threshold_value: number | null;
+  notified_at: string | null;
+  created_at: string;
+  property?: Property;
+}
+
+// Reviews and Ratings
+export interface Review {
+  id: string;
+  property_id: string;
+  user_id: string;
+  rating: number; // 1-5
+  title: string | null;
+  comment: string | null;
+  verified_visit: boolean;
+  visit_id: string | null;
+  helpful_count: number;
+  created_at: string;
+  updated_at: string;
+  user?: Profile;
+  property?: Property;
+}
+
+export interface AgentRating {
+  id: string;
+  agent_id: string;
+  user_id: string;
+  rating: number; // 1-5
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+  agent?: Profile;
+  user?: Profile;
+}
+
+export interface ReviewHelpful {
+  id: string;
+  review_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+// Chat System
+export interface Conversation {
+  id: string;
+  property_id: string;
+  buyer_id: string;
+  seller_id: string;
+  last_message_at: string | null;
+  created_at: string;
+  updated_at: string;
+  property?: Property;
+  buyer?: Profile;
+  seller?: Profile;
+  unread_count?: number;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  message_type: 'text' | 'image' | 'file' | 'offer_link' | 'visit_link';
+  metadata: Record<string, unknown> | null;
+  read_at: string | null;
+  created_at: string;
+  sender?: Profile;
+}
+
+// Property Media
+export interface PropertyMedia {
+  id: string;
+  property_id: string;
+  media_type: 'image' | 'video_360' | 'virtual_tour' | 'video';
+  category: 'exterior' | 'interior' | 'floor_plan' | 'amenities' | 'other' | null;
+  url: string;
+  thumbnail_url: string | null;
+  order_index: number;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}

@@ -25,42 +25,42 @@ import { useUIStore } from '@/stores/ui-store';
 const navItems = [
   {
     label: 'Dashboard',
-    href: '/dashboard',
+    href: '/',
     icon: LayoutDashboard,
   },
   {
     label: 'My Properties',
-    href: '/dashboard/properties',
+    href: '/properties',
     icon: Building2,
   },
   {
     label: 'Offers',
-    href: '/dashboard/offers',
+    href: '/offers',
     icon: MessageSquare,
   },
   {
     label: 'Visits',
-    href: '/dashboard/visits',
+    href: '/visits',
     icon: Calendar,
   },
   {
     label: 'Favorites',
-    href: '/dashboard/favorites',
+    href: '/favorites',
     icon: Heart,
   },
   {
     label: 'Comparison',
-    href: '/dashboard/comparison',
+    href: '/comparison',
     icon: GitCompare,
   },
   {
     label: 'Notifications',
-    href: '/dashboard/notifications',
+    href: '/notifications',
     icon: Bell,
   },
   {
     label: 'Settings',
-    href: '/dashboard/settings',
+    href: '/settings',
     icon: Settings,
   },
 ];
@@ -111,7 +111,7 @@ export function Sidebar() {
         {/* Header */}
         <div className="flex h-16 items-center justify-between px-4 border-b">
           {(!sidebarCollapsed || isMobile) && (
-            <Link href="/dashboard" className="flex items-center gap-2 group">
+            <Link href="/" className="flex items-center gap-2 group">
               <div className="relative h-8 w-auto">
                 <Image
                   src="/logo.png"
