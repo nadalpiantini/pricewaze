@@ -8,6 +8,7 @@ from tools import (
     CalculatePriceStatsTool,
     ComparePropertyPricesTool,
 )
+from config import get_market_config
 
 
 class PricingAnalystAgent:
@@ -31,6 +32,8 @@ class PricingAnalystAgent:
         Returns:
             Configured Pricing Analyst agent
         """
+        market = get_market_config()
+
         tools = [
             FetchPropertyTool(),
             FetchZonePropertiesTool(),
@@ -44,14 +47,14 @@ class PricingAnalystAgent:
                 "Accurately assess property values by analyzing comparable sales, "
                 "market conditions, and property characteristics. Identify whether "
                 "properties are fairly priced, overpriced, or represent good value "
-                "for buyers in the Dominican Republic market."
+                f"for buyers in the {market.ai.market_context}."
             ),
             backstory=(
-                "You are a certified real estate appraiser with extensive experience "
-                "in the Dominican Republic market. You've appraised thousands of "
-                "properties across residential, commercial, and vacation segments. "
-                "You understand the nuances of USD vs. DOP pricing, the impact of "
-                "proximity to beaches and amenities, and how to adjust for property "
+                f"You are a certified real estate appraiser with extensive experience "
+                f"in the {market.name} market. You've appraised thousands of "
+                "properties across residential, commercial, and investment segments. "
+                f"You understand the nuances of {market.ai.price_unit} pricing, the impact of "
+                "location and amenities, and how to adjust for property "
                 "condition and features. Your valuations are respected by banks, "
                 "investors, and individual buyers alike. You always explain your "
                 "methodology and confidence level in your assessments."

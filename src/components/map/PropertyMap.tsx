@@ -4,8 +4,14 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import type { Property } from '@/types/database';
+import { getMarketConfig } from '@/config/market';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
+
+// Get market-specific map configuration
+const marketConfig = getMarketConfig();
+const DEFAULT_CENTER: [number, number] = marketConfig.map.center;
+const DEFAULT_ZOOM = marketConfig.map.zoom;
 
 interface PropertyMapProps {
   properties: Property[];
@@ -16,15 +22,11 @@ interface PropertyMapProps {
   className?: string;
 }
 
-// Dominican Republic center coordinates
-const DR_CENTER: [number, number] = [-69.9312, 18.7357];
-const DEFAULT_ZOOM = 8;
-
 export function PropertyMap({
   properties,
   onPropertyClick,
   onMapClick,
-  center = DR_CENTER,
+  center = DEFAULT_CENTER,
   zoom = DEFAULT_ZOOM,
   className = '',
 }: PropertyMapProps) {

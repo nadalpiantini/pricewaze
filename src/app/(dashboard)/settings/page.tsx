@@ -85,7 +85,7 @@ export default function SettingsPage() {
       } else {
         toast.success('Profile updated successfully');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to update profile');
     } finally {
       setSavingProfile(false);
@@ -98,7 +98,7 @@ export default function SettingsPage() {
       // In a real app, this would call an API
       await new Promise((resolve) => setTimeout(resolve, 500));
       toast.success('Notification preferences saved');
-    } catch (error) {
+    } catch {
       toast.error('Failed to save notification preferences');
     } finally {
       setSavingNotifications(false);

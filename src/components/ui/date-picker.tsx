@@ -52,7 +52,8 @@ function DatePicker({
   id,
   ...props
 }: DatePickerProps) {
-  const inputId = id ?? React.useId()
+  const generatedId = React.useId()
+  const inputId = id ?? generatedId
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange?.(e)

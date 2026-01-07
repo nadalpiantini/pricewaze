@@ -8,6 +8,7 @@ from tools import (
     CalculateNegotiationPowerTool,
     ComparePropertyPricesTool,
 )
+from config import get_market_config
 
 
 class NegotiationAdvisorAgent:
@@ -31,6 +32,8 @@ class NegotiationAdvisorAgent:
         Returns:
             Configured Negotiation Advisor agent
         """
+        market = get_market_config()
+
         tools = [
             FetchPropertyTool(),
             FetchOfferHistoryTool(),
@@ -42,16 +45,16 @@ class NegotiationAdvisorAgent:
             role="Real Estate Negotiation Advisor",
             goal=(
                 "Develop optimal negotiation strategies for buyers and sellers in "
-                "Dominican Republic real estate transactions. Provide specific offer "
+                f"{market.name} real estate transactions. Provide specific offer "
                 "amount recommendations with tiered strategies (aggressive, balanced, "
                 "conservative) and guide clients through the negotiation process."
             ),
             backstory=(
-                "You are a master negotiator with 20+ years in Dominican Republic "
+                f"You are a master negotiator with 20+ years in {market.name} "
                 "real estate. You've successfully closed deals ranging from modest "
-                "apartments to multi-million dollar beachfront estates. You understand "
-                "the cultural nuances of negotiating with Dominican sellers, expat "
-                "buyers, and international investors. You know when to push, when to "
+                "apartments to multi-million dollar premium properties. You understand "
+                "the cultural nuances of negotiating with local sellers and "
+                "international investors. You know when to push, when to "
                 "wait, and when to walk away. You've seen every negotiation tactic and "
                 "know how to counter them. Your clients trust you to get them the best "
                 "possible deal while maintaining professional relationships."

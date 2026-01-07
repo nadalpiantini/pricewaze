@@ -509,7 +509,30 @@ async function createUsers(): Promise<Map<string, string>> {
       });
 
       if (authError) {
-        log('❌', `Failed to create auth user ${user.email}: ${authError.message}`);
+        // Try to get more details about the error
+        const errorDetails = authError.message || JSON.stringify(authError);
+        log('❌', `Failed to create auth user ${user.email}: ${errorDetails}`);
+        
+        // If user already exists, try to get the existing user
+        if (errorDetails.includes('already') || errorDetails.includes('exists')) {
+          const { data: existingUsers } = await supabase.auth.admin.listUsers();
+          const existingUser = existingUsers?.users?.find((u: any) => u.email === user.email);
+          if (existingUser) {
+            userIdMap.set(user.email, existingUser.id);
+            log('⚠️', `User ${user.email} already exists, using existing user`);
+            // Update profile
+            await supabase
+              .from('pricewaze_profiles')
+              .update({
+                full_name: user.fullName,
+                phone: user.phone,
+                role: user.role,
+                verified: user.role === 'admin',
+              })
+              .eq('id', existingUser.id);
+            continue;
+          }
+        }
         continue;
       }
 

@@ -2,6 +2,8 @@
 
 from crewai import Agent
 
+from config import get_market_config
+
 
 class CoordinatorAgent:
     """Creates a Coordinator agent that orchestrates other agents."""
@@ -24,17 +26,19 @@ class CoordinatorAgent:
         Returns:
             Configured Coordinator agent
         """
+        market = get_market_config()
+
         return Agent(
             role="Real Estate Transaction Coordinator",
             goal=(
                 "Orchestrate comprehensive property analysis by coordinating market, "
                 "pricing, negotiation, and legal specialists. Synthesize their findings "
                 "into actionable recommendations that help clients make informed "
-                "decisions about Dominican Republic real estate investments."
+                f"decisions about {market.name} real estate investments."
             ),
             backstory=(
-                "You are a senior real estate consultant who has managed thousands of "
-                "transactions in the Dominican Republic. You know how to extract the "
+                f"You are a senior real estate consultant who has managed thousands of "
+                f"transactions in {market.name}. You know how to extract the "
                 "best insights from specialists and present them in a clear, actionable "
                 "format. You understand that clients need confidence in their decisions, "
                 "so you ensure all analyses are thorough, consistent, and well-reasoned. "

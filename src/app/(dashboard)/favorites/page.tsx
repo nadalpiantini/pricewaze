@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -31,31 +31,37 @@ export default function FavoritesPage() {
   const [favoriteProperties, setFavoriteProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const loadFavoriteProperties = useCallback(async (favoriteIds: string[]) => {
+    if (favoriteIds.length > 0) {
+      try {
+        const response = await fetch(`/api/properties?ids=${favoriteIds.join(',')}`);
+        if (response.ok) {
+          const data = await response.json();
+          setFavoriteProperties(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch favorite properties:', error);
+      }
+    } else {
+      setFavoriteProperties([]);
+    }
+  }, []);
+
   useEffect(() => {
     const loadFavorites = async () => {
       setLoading(true);
       await fetchFavorites();
-
-      // Fetch full property details for favorites
-      if (favorites.length > 0) {
-        try {
-          const response = await fetch(`/api/properties?ids=${favorites.join(',')}`);
-          if (response.ok) {
-            const data = await response.json();
-            setFavoriteProperties(data);
-          }
-        } catch (error) {
-          console.error('Failed to fetch favorite properties:', error);
-        }
-      } else {
-        setFavoriteProperties([]);
-      }
-
       setLoading(false);
     };
 
     loadFavorites();
-  }, [favorites.length, fetchFavorites]);
+  }, [fetchFavorites]);
+
+  useEffect(() => {
+    if (!loading) {
+      loadFavoriteProperties(favorites);
+    }
+  }, [favorites, loading, loadFavoriteProperties]);
 
   const formatPrice = (price: number) => {
     if (price >= 1000000) {

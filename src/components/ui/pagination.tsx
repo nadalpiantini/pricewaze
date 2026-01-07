@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 
 const paginationVariants = cva(
   "flex items-center gap-1",
@@ -28,7 +28,6 @@ interface PaginationProps extends VariantProps<typeof paginationVariants> {
   totalPages: number
   onPageChange: (page: number) => void
   className?: string
-  showFirstLast?: boolean
   siblingCount?: number
 }
 
@@ -77,7 +76,6 @@ function Pagination({
   onPageChange,
   className,
   size,
-  showFirstLast = false,
   siblingCount = 1,
 }: PaginationProps) {
   const pages = generatePageNumbers(currentPage, totalPages, siblingCount)

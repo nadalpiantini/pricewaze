@@ -116,15 +116,23 @@ Required in `.env.local`:
 - `DEEPSEEK_API_KEY` / `DEEPSEEK_BASE_URL` / `DEEPSEEK_MODEL`
 - `NEXT_PUBLIC_MAPBOX_TOKEN`
 
-## Technical Debt: Market Localization
+## Multi-Market Configuration
 
-The following files contain hardcoded market references that should be parameterized for multi-market support:
+The platform supports multiple markets via the `NEXT_PUBLIC_MARKET_CODE` environment variable:
 
-- `src/lib/ai/pricing.ts` - AI prompts reference specific market
-- `src/lib/ai/contracts.ts` - Legal disclaimers and contract templates
-- `src/app/layout.tsx` - SEO metadata
-- `crewai/agents/*.py` - All agent backstories and goals
-- `scripts/seed.ts` - Test data with local currency/locations
-- `src/components/map/PropertyMap.tsx` - Default map center coordinates
+**Supported Markets**: `DO` (Dominican Republic), `US`, `MX` (Mexico), `ES` (Spain), `CO` (Colombia), `global` (default)
 
-Future: Consider adding a `MARKET_CONFIG` or locale system to make these configurable per deployment.
+**Configuration Files**:
+- `src/config/market.ts` - TypeScript market configuration (currency, map, legal, AI context, SEO)
+- `crewai/config/market.py` - Python market configuration for CrewAI agents
+
+**Usage**:
+```typescript
+import { getMarketConfig, formatPrice } from '@/config/market';
+
+const market = getMarketConfig();
+console.log(market.name); // "Dominican Republic" or "United States" etc.
+console.log(formatPrice(100000, market)); // "$100,000" or "RD$100,000" etc.
+```
+
+Set `NEXT_PUBLIC_MARKET_CODE=DO` in `.env.local` to target Dominican Republic, or leave unset for global market.

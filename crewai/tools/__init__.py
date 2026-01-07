@@ -16,6 +16,28 @@ from .contract_tools import (
     GenerateContractTemplateTool,
     ValidateContractTermsTool,
 )
+from .playwright_tools import (
+    # Individual tools
+    NavigateTool,
+    ClickElementTool,
+    FillFormTool,
+    TakeScreenshotTool,
+    GetPageContentTool,
+    CheckElementTool,
+    CheckAccessibilityTool,
+    MeasurePerformanceTool,
+    CheckResponsiveTool,
+    VerifyDatabaseActionTool,
+    CheckDatabaseConnectionTool,
+    WaitForElementTool,
+    CloseBrowserTool,
+    # Tool collections
+    get_all_playwright_tools,
+    get_navigation_tools,
+    get_inspection_tools,
+    get_quality_tools,
+    get_database_tools as get_db_verification_tools,
+)
 
 __all__ = [
     # Database tools
@@ -31,4 +53,24 @@ __all__ = [
     # Contract tools
     "GenerateContractTemplateTool",
     "ValidateContractTermsTool",
+    # Playwright tools
+    "NavigateTool",
+    "ClickElementTool",
+    "FillFormTool",
+    "TakeScreenshotTool",
+    "GetPageContentTool",
+    "CheckElementTool",
+    "CheckAccessibilityTool",
+    "MeasurePerformanceTool",
+    "CheckResponsiveTool",
+    "VerifyDatabaseActionTool",
+    "CheckDatabaseConnectionTool",
+    "WaitForElementTool",
+    "CloseBrowserTool",
+    # Playwright tool collections
+    "get_all_playwright_tools",
+    "get_navigation_tools",
+    "get_inspection_tools",
+    "get_quality_tools",
+    "get_db_verification_tools",
 ]

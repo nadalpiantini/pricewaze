@@ -35,12 +35,12 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
   if (compact) {
     return (
       <Card
-        className="cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+        className="cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden border-gray-200 bg-white"
         onClick={onClick}
       >
         <CardContent className="p-3">
           <div className="flex gap-3">
-            <div className="relative w-20 h-20 rounded-md overflow-hidden flex-shrink-0 bg-muted">
+            <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
               {property.images?.[0] ? (
                 <Image
                   src={primaryImage}
@@ -49,32 +49,32 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
                   <MapPin className="h-6 w-6" />
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-primary text-lg">
+              <p className="font-bold text-gray-900 text-lg mb-1">
                 {formatPrice(property.price)}
               </p>
-              <p className="text-sm font-medium truncate">{property.title}</p>
-              <p className="text-xs text-muted-foreground truncate">{property.address}</p>
-              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+              <p className="text-sm font-semibold text-gray-900 truncate mb-1">{property.title}</p>
+              <p className="text-xs text-gray-600 truncate mb-2">{property.address}</p>
+              <div className="flex items-center gap-3 text-xs text-gray-600">
                 {property.bedrooms && (
-                  <span className="flex items-center gap-0.5">
-                    <Bed className="h-3 w-3" />
+                  <span className="flex items-center gap-1">
+                    <Bed className="h-3 w-3 text-gray-500" />
                     {property.bedrooms}
                   </span>
                 )}
                 {property.bathrooms && (
-                  <span className="flex items-center gap-0.5">
-                    <Bath className="h-3 w-3" />
+                  <span className="flex items-center gap-1">
+                    <Bath className="h-3 w-3 text-gray-500" />
                     {property.bathrooms}
                   </span>
                 )}
-                <span className="flex items-center gap-0.5">
-                  <Maximize className="h-3 w-3" />
+                <span className="flex items-center gap-1">
+                  <Maximize className="h-3 w-3 text-gray-500" />
                   {property.area_m2}m²
                 </span>
               </div>
@@ -87,11 +87,11 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
 
   return (
     <Card
-      className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden group"
+      className="cursor-pointer hover:shadow-xl transition-all duration-200 overflow-hidden group border-gray-200 bg-white"
       onClick={onClick}
     >
       {/* Image */}
-      <div className="relative aspect-[4/3] bg-muted">
+      <div className="relative aspect-[4/3] bg-gray-100">
         {property.images?.[0] ? (
           <Image
             src={primaryImage}
@@ -100,63 +100,66 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+          <div className="w-full h-full flex items-center justify-center text-gray-400">
             <MapPin className="h-12 w-12" />
           </div>
         )}
 
-        {/* Type Badge */}
-        <Badge className="absolute top-2 left-2">
+        {/* Type Badge with Brand Colors */}
+        <Badge className="absolute top-3 left-3 bg-gradient-to-r from-cyan-600 to-emerald-600 text-white hover:from-cyan-700 hover:to-emerald-700 border-0 shadow-md font-semibold">
           {propertyTypeLabels[property.property_type]}
         </Badge>
 
-        {/* Favorite Button */}
+        {/* Favorite Button with Brand Colors */}
         <Button
           variant="secondary"
           size="icon"
-          className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-3 right-3 h-9 w-9 bg-white/95 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-emerald-500 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md border border-gray-200 hover:border-transparent"
           onClick={(e) => {
             e.stopPropagation();
             // TODO: Toggle favorite
           }}
         >
-          <Heart className="h-4 w-4" />
+          <Heart className="h-4 w-4 text-gray-700 group-hover:text-white transition-colors" />
         </Button>
+      </div>
 
-        {/* Price Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-          <p className="text-white font-bold text-xl">{formatPrice(property.price)}</p>
-          <p className="text-white/80 text-sm">
+      <CardContent className="p-5">
+        {/* Price - Prominent with Brand Colors */}
+        <div className="mb-2">
+          <p className="text-2xl font-bold bg-gradient-to-r from-cyan-700 to-emerald-600 bg-clip-text text-transparent">{formatPrice(property.price)}</p>
+          <p className="text-sm text-gray-600">
             ${property.price_per_m2.toLocaleString()}/m²
           </p>
         </div>
-      </div>
 
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-lg mb-1 line-clamp-1">{property.title}</h3>
-
-        <p className="text-sm text-muted-foreground flex items-center gap-1 mb-3">
-          <MapPin className="h-3 w-3" />
+        {/* Address */}
+        <h3 className="font-semibold text-base text-gray-900 mb-1 line-clamp-1">{property.title}</h3>
+        <p className="text-sm text-gray-600 flex items-center gap-1 mb-4">
+          <MapPin className="h-3.5 w-3.5" />
           <span className="truncate">{property.address}</span>
         </p>
 
-        {/* Property Features */}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        {/* Property Features - Clean Layout */}
+        <div className="flex items-center gap-4 text-sm text-gray-700 border-t border-gray-100 pt-3">
           {property.bedrooms !== null && (
-            <span className="flex items-center gap-1">
-              <Bed className="h-4 w-4" />
-              {property.bedrooms} beds
+            <span className="flex items-center gap-1.5">
+              <Bed className="h-4 w-4 text-gray-500" />
+              <span className="font-medium">{property.bedrooms}</span>
+              <span className="text-gray-500">bed</span>
             </span>
           )}
           {property.bathrooms !== null && (
-            <span className="flex items-center gap-1">
-              <Bath className="h-4 w-4" />
-              {property.bathrooms} baths
+            <span className="flex items-center gap-1.5">
+              <Bath className="h-4 w-4 text-gray-500" />
+              <span className="font-medium">{property.bathrooms}</span>
+              <span className="text-gray-500">bath</span>
             </span>
           )}
-          <span className="flex items-center gap-1">
-            <Maximize className="h-4 w-4" />
-            {property.area_m2} m²
+          <span className="flex items-center gap-1.5">
+            <Maximize className="h-4 w-4 text-gray-500" />
+            <span className="font-medium">{property.area_m2}</span>
+            <span className="text-gray-500">m²</span>
           </span>
         </div>
       </CardContent>

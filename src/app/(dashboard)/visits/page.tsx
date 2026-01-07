@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
   Calendar,
   Clock,
   MapPin,
-  Check,
   X,
   ChevronLeft,
   ChevronRight,
@@ -82,7 +81,7 @@ export default function VisitsPage() {
 
   const calendarDays = useMemo(() => getDaysInMonth(currentMonth), [currentMonth]);
 
-  const getVisitsForDate = (date: Date) => {
+  const getVisitsForDate = useCallback((date: Date) => {
     return visits.filter((visit) => {
       const visitDate = new Date(visit.scheduled_at);
       return (
@@ -91,11 +90,11 @@ export default function VisitsPage() {
         visitDate.getFullYear() === date.getFullYear()
       );
     });
-  };
+  }, [visits]);
 
   const selectedDateVisits = useMemo(
     () => getVisitsForDate(selectedDate),
-    [selectedDate, visits]
+    [selectedDate, getVisitsForDate]
   );
 
   const upcomingVisits = useMemo(() => {

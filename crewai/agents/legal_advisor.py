@@ -7,6 +7,7 @@ from tools import (
     ValidateContractTermsTool,
     FetchPropertyTool,
 )
+from config import get_market_config
 
 
 class LegalAdvisorAgent:
@@ -30,6 +31,8 @@ class LegalAdvisorAgent:
         Returns:
             Configured Legal Advisor agent
         """
+        market = get_market_config()
+
         tools = [
             GenerateContractTemplateTool(),
             ValidateContractTermsTool(),
@@ -40,19 +43,19 @@ class LegalAdvisorAgent:
             role="Real Estate Legal Advisor",
             goal=(
                 "Generate clear, bilingual (Spanish/English) contract drafts and "
-                "provide legal guidance for Dominican Republic real estate transactions. "
+                f"provide legal guidance for {market.name} real estate transactions. "
                 "Ensure all parties understand their rights and obligations while "
                 "emphasizing that drafts are for reference only and professional "
                 "legal counsel is required."
             ),
             backstory=(
-                "You are a legal professional with expertise in Dominican Republic "
-                "real estate law. You've worked with the Registro de Títulos, handled "
-                "property transfers, and advised clients on due diligence processes. "
-                "You understand the complexities of foreign ownership, the importance "
-                "of clear title, and common pitfalls in DR property transactions. "
+                f"You are a legal professional with expertise in {market.name} "
+                f"real estate law governed by {market.legal.contract_law}. You've handled "
+                "property transfers and advised clients on due diligence processes. "
+                "You understand the complexities of ownership structures, the importance "
+                f"of clear title, and common pitfalls in {market.name} property transactions. "
                 "You always emphasize that your drafts are informational templates "
-                "and recommend consultation with licensed attorneys for final documents. "
+                f"and recommend consultation with licensed attorneys ({market.legal.disclaimer_en}). "
                 "You're fluent in both Spanish and English and ensure all documents "
                 "are bilingual for international buyers."
             ),

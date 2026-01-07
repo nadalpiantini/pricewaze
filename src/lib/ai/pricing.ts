@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import type { PricingAnalysis, NegotiationFactor, OfferAdvice, ZoneAnalysis } from '@/types/pricing';
+import { getMarketConfig, formatPrice } from '@/config/market';
 
 // Lazy-load client to avoid build-time errors
 let deepseek: OpenAI | null = null;
@@ -66,23 +67,25 @@ export async function analyzePricing(
     (Date.now() - new Date(property.created_at).getTime()) / (1000 * 60 * 60 * 24)
   );
 
-  const prompt = `You are a real estate pricing analyst for the Dominican Republic market. Analyze this property and provide pricing intelligence.
+  const market = getMarketConfig();
+
+  const prompt = `You are a real estate pricing analyst for the ${market.ai.marketContext}. Analyze this property and provide pricing intelligence.
 
 PROPERTY DATA:
 - Title: ${property.title}
 - Address: ${property.address}
-- Asking Price: $${property.price.toLocaleString()} USD
+- Asking Price: ${formatPrice(property.price, market)}
 - Area: ${property.area_m2 ? `${property.area_m2} m²` : 'Not specified'}
-- Price per m²: ${pricePerM2 ? `$${pricePerM2.toFixed(2)} USD/m²` : 'N/A'}
+- Price per m²: ${pricePerM2 ? `${market.currency.symbol}${pricePerM2.toFixed(2)}/m²` : 'N/A'}
 - Type: ${property.property_type}
 - Days on Market: ${daysOnMarket}
 - Description: ${property.description || 'Not provided'}
 
 ZONE CONTEXT (${zoneContext.name}):
 - Active Listings: ${zoneStats.propertyCount}
-- Average Price/m²: $${zoneStats.avgPricePerM2.toFixed(2)} USD
-- Median Price/m²: $${zoneStats.medianPricePerM2.toFixed(2)} USD
-- Range: $${zoneStats.minPricePerM2.toFixed(2)} - $${zoneStats.maxPricePerM2.toFixed(2)} USD/m²
+- Average Price/m²: ${market.currency.symbol}${zoneStats.avgPricePerM2.toFixed(2)}
+- Median Price/m²: ${market.currency.symbol}${zoneStats.medianPricePerM2.toFixed(2)}
+- Range: ${market.currency.symbol}${zoneStats.minPricePerM2.toFixed(2)} - ${market.currency.symbol}${zoneStats.maxPricePerM2.toFixed(2)}/m²
 
 Provide a JSON response with:
 1. fairnessScore (0-100, where 50 is perfectly fair priced)
@@ -198,15 +201,17 @@ export async function getOfferAdvice(
     (Date.now() - new Date(property.created_at).getTime()) / (1000 * 60 * 60 * 24)
   );
 
-  const prompt = `You are a real estate negotiation advisor for the Dominican Republic. Analyze this offer and provide advice.
+  const market = getMarketConfig();
+
+  const prompt = `You are a real estate negotiation advisor for the ${market.ai.marketContext}. Analyze this offer and provide advice.
 
 CURRENT OFFER:
-- Amount: $${offer.amount.toLocaleString()} USD
+- Amount: ${formatPrice(offer.amount, market)}
 - Message: ${offer.message || 'No message'}
 - Status: ${offer.status}
 
 PROPERTY:
-- Asking Price: $${property.price.toLocaleString()} USD
+- Asking Price: ${formatPrice(property.price, market)}
 - Type: ${property.property_type}
 - Days on Market: ${daysOnMarket}
 
@@ -308,14 +313,16 @@ export async function analyzeZone(
     ? prices.sort((a, b) => a - b)[Math.floor(prices.length / 2)]
     : 0;
 
-  const prompt = `Analyze this real estate zone in the Dominican Republic and provide market insights.
+  const market = getMarketConfig();
+
+  const prompt = `Analyze this real estate zone in the ${market.ai.marketContext} and provide market insights.
 
 ZONE: ${zoneName}
 - Active Listings: ${activeProperties.length}
 - Recent Sales (90 days): ${recentSales.length}
-- Average Price: $${avgPrice.toLocaleString()} USD
-- Average Price/m²: $${avgPricePerM2.toFixed(2)} USD
-- Price Range: $${prices.length > 0 ? Math.min(...prices).toLocaleString() : 0} - $${prices.length > 0 ? Math.max(...prices).toLocaleString() : 0} USD
+- Average Price: ${formatPrice(avgPrice, market)}
+- Average Price/m²: ${market.currency.symbol}${avgPricePerM2.toFixed(2)}
+- Price Range: ${formatPrice(prices.length > 0 ? Math.min(...prices) : 0, market)} - ${formatPrice(prices.length > 0 ? Math.max(...prices) : 0, market)}
 
 Property Types:
 ${Object.entries(

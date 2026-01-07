@@ -23,7 +23,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ title }: DashboardHeaderProps) {
   const { profile, logout } = useAuthStore();
-  const { setSidebarOpen, unreadCount, isMobile, sidebarCollapsed } = useUIStore();
+  const { setSidebarOpen, unreadCount, isMobile } = useUIStore();
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';

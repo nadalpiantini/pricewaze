@@ -31,8 +31,8 @@ export default function LandingPage() {
             <Image
               src="/logo.png"
               alt="PriceWaze"
-              width={200}
-              height={200}
+              width={800}
+              height={800}
               className="mx-auto"
               priority
             />
@@ -379,9 +379,9 @@ export default function LandingPage() {
               <Image
                 src="/logo.png"
                 alt="PriceWaze"
-                width={40}
-                height={40}
-                className="h-10 w-auto"
+                width={160}
+                height={160}
+                className="h-40 w-auto"
               />
               <span className="text-lg font-semibold">PriceWaze</span>
             </div>
