@@ -6,9 +6,9 @@ export interface Offer {
   buyer_id: string;
   seller_id: string;
   amount: number;
-  message?: string;
+  message: string | null;
   status: OfferStatus;
-  parent_offer_id?: string;
+  parent_offer_id: string | null;
   expires_at: string;
   created_at: string;
   updated_at: string;

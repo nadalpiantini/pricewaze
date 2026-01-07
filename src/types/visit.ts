@@ -6,12 +6,12 @@ export interface Visit {
   visitor_id: string;
   owner_id: string;
   scheduled_at: string;
-  verification_code?: string;
-  verified_at?: string;
-  verification_latitude?: number;
-  verification_longitude?: number;
+  verification_code: string;
+  verified_at: string | null;
+  verification_latitude: number | null;
+  verification_longitude: number | null;
   status: VisitStatus;
-  notes?: string;
+  notes: string | null;
   created_at: string;
   updated_at: string;
   property?: {
@@ -48,8 +48,8 @@ export interface CreateVisitRequest {
 
 export interface VerifyVisitRequest {
   verification_code: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface VerifyVisitResponse {

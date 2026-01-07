@@ -12,6 +12,7 @@ import {
   DollarSign,
   ArrowRight,
   Sparkles,
+  MapPin,
 } from 'lucide-react';
 
 const intents = [
@@ -69,27 +70,45 @@ export function TriggerStep() {
 
   return (
     <div className="space-y-8">
-      {/* Emotional hook headline */}
-      <div className="text-center space-y-4">
+      {/* Emotional hook headline with strong branding */}
+      <div className="text-center space-y-6">
+        {/* Brand hero */}
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
+          initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium"
+          className="flex flex-col items-center gap-3"
         >
-          <Sparkles className="h-4 w-4" />
-          AI-powered pricing intelligence
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
+            <MapPin className="h-10 w-10 text-primary" />
+          </div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
+            <Sparkles className="h-4 w-4" />
+            PriceWaze AI Intelligence
+          </div>
         </motion.div>
 
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+        <motion.h1
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-3xl md:text-4xl font-bold tracking-tight"
+        >
           Are you paying{' '}
-          <span className="text-primary">the right price?</span>
-        </h1>
+          <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            the right price?
+          </span>
+        </motion.h1>
 
-        <p className="text-lg text-muted-foreground max-w-md mx-auto">
-          Every year, buyers overpay by <strong className="text-foreground">$23,000</strong> on average.
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-lg text-muted-foreground max-w-md mx-auto"
+        >
+          Every year, buyers overpay by <strong className="text-primary">$23,000</strong> on average.
           <br />
-          Sellers leave <strong className="text-foreground">$15,000+</strong> on the table.
-        </p>
+          Sellers leave <strong className="text-primary">$15,000+</strong> on the table.
+        </motion.p>
       </div>
 
       {/* Intent selection cards */}

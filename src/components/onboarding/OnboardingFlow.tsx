@@ -31,12 +31,19 @@ export function OnboardingFlow() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b">
+      {/* Header with prominent branding */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-primary/5 via-background to-primary/5 backdrop-blur-sm border-b border-primary/20">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">PriceWaze</span>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <MapPin className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                PriceWaze
+              </span>
+              <p className="text-xs text-muted-foreground">Smart property pricing</p>
+            </div>
           </div>
 
           {/* Progress indicator */}
