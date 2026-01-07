@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,7 @@ import {
   Loader2,
   ArrowRightLeft,
   Ban,
+  AlertCircle,
 } from 'lucide-react';
 import type { Offer } from '@/types/offer';
 
@@ -39,6 +40,59 @@ export function OfferCard({ offer, currentUserId, onUpdated }: OfferCardProps) {
   const [counterAmount, setCounterAmount] = useState('');
   const [counterMessage, setCounterMessage] = useState('');
   const { acceptOffer, rejectOffer, counterOffer, withdrawOffer, loading } = useOffers();
+  const [fairnessData, setFairnessData] = useState<{
+    fairness_score: number;
+    fairness_label: string;
+    badge: 'justa' | 'agresiva' | 'riesgosa' | 'generosa';
+  } | null>(null);
+  const [timeUntilExpiry, setTimeUntilExpiry] = useState<string | null>(null);
+
+  // H.1: Calculate time until expiry
+  useEffect(() => {
+    if (offer.status === 'pending' && offer.expires_at) {
+      const updateTime = () => {
+        const now = new Date().getTime();
+        const expiry = new Date(offer.expires_at).getTime();
+        const diff = expiry - now;
+
+        if (diff <= 0) {
+          setTimeUntilExpiry('Expired');
+        } else {
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          if (hours > 48) {
+            setTimeUntilExpiry(`${Math.floor(hours / 24)}d`);
+          } else if (hours > 0) {
+            setTimeUntilExpiry(`${hours}h`);
+          } else {
+            setTimeUntilExpiry(`${minutes}m`);
+          }
+        }
+      };
+
+      updateTime();
+      const interval = setInterval(updateTime, 60000); // Update every minute
+      return () => clearInterval(interval);
+    }
+  }, [offer.expires_at, offer.status]);
+
+  // H.3: Fetch fairness score
+  useEffect(() => {
+    if (offer.status === 'pending' && offer.id) {
+      fetch(`/api/offers/${offer.id}/fairness`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.fairness_score) {
+            setFairnessData({
+              fairness_score: data.fairness_score,
+              fairness_label: data.fairness_label,
+              badge: data.badge,
+            });
+          }
+        })
+        .catch((err) => console.error('Error fetching fairness:', err));
+    }
+  }, [offer.id, offer.status]);
 
   const isBuyer = offer.buyer_id === currentUserId;
   const isSeller = offer.seller_id === currentUserId;
@@ -183,10 +237,46 @@ export function OfferCard({ offer, currentUserId, onUpdated }: OfferCardProps) {
             </div>
           )}
 
-          {isPending && (
-            <p className="text-xs text-muted-foreground">
-              Expires: {formatDate(offer.expires_at)}
-            </p>
+          {/* H.1: Expiration badge */}
+          {isPending && timeUntilExpiry && (
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={timeUntilExpiry === 'Expired' ? 'destructive' : 'secondary'}
+                className="gap-1"
+              >
+                <Clock className="w-3 h-3" />
+                {timeUntilExpiry === 'Expired' ? 'Expired' : `Expires in ${timeUntilExpiry}`}
+              </Badge>
+            </div>
+          )}
+
+          {/* H.3: Fairness score badge */}
+          {isPending && fairnessData && (
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={
+                  fairnessData.badge === 'justa'
+                    ? 'default'
+                    : fairnessData.badge === 'agresiva'
+                    ? 'secondary'
+                    : 'destructive'
+                }
+                className={`gap-1 ${
+                  fairnessData.badge === 'justa'
+                    ? 'bg-green-500'
+                    : fairnessData.badge === 'agresiva'
+                    ? 'bg-yellow-500'
+                    : 'bg-red-500'
+                }`}
+              >
+                {fairnessData.badge === 'justa' ? '🟢' : fairnessData.badge === 'agresiva' ? '🟡' : '🔴'}
+                {fairnessData.fairness_label === 'justa'
+                  ? 'Fair offer'
+                  : fairnessData.fairness_label === 'agresiva'
+                  ? 'Aggressive'
+                  : 'Risky'}
+              </Badge>
+            </div>
           )}
         </CardContent>
 
