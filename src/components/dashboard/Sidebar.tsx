@@ -50,7 +50,7 @@ const navItems = [
   },
   {
     label: 'Comparison',
-    href: '/comparison',
+    href: '/dashboard/comparison',
     icon: GitCompare,
   },
   {

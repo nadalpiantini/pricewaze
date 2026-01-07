@@ -10,6 +10,7 @@
     "seed": "tsx scripts/seed-runner.ts",
     "seed:clear": "tsx -e \"import('./scripts/seed').then(m => m.clearExistingData())\"",
     "simulate:user": "tsx scripts/simulate-complete-user.ts",
+    "fix:trigger": "tsx scripts/fix-trigger.ts",
     "bmad:setup": "bash bmad/scripts/setup.sh",
     "bmad:start": "bash bmad/scripts/quick_start.sh",
     "bmad:status": "python3 bmad/scripts/feature_tracker.py --report",
@@ -18,6 +19,7 @@
   "dependencies": {
     "@fontsource-variable/plus-jakarta-sans": "^5.2.8",
     "@fontsource-variable/syne": "^5.2.7",
+    "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",

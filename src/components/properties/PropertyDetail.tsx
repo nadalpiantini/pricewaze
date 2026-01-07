@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import {
   Dialog,
   DialogContent,
@@ -23,9 +22,10 @@ import {
   Share2,
   MessageSquare,
   X,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
+import { PropertyGallery } from './PropertyGallery';
+import { PropertyReviews } from '@/components/reviews/PropertyReviews';
+import { useAuthStore } from '@/stores/auth-store';
 import type { Property } from '@/types/database';
 
 interface PropertyDetailProps {
@@ -42,7 +42,7 @@ const propertyTypeLabels: Record<Property['property_type'], string> = {
 };
 
 export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { user } = useAuthStore();
   const images = property.images?.length ? property.images : ['/placeholder-property.jpg'];
 
   const formatPrice = (price: number) => {
@@ -54,62 +54,25 @@ export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
     }).format(price);
   };
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
         {/* Image Gallery */}
-        <div className="relative aspect-video bg-muted">
-          <Image
-            src={images[currentImageIndex]}
-            alt={`${property.title} - Image ${currentImageIndex + 1}`}
-            fill
-            className="object-cover"
-          />
-
-          {images.length > 1 && (
-            <>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="absolute left-2 top-1/2 -translate-y-1/2"
-                onClick={prevImage}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2"
-                onClick={nextImage}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
-                {currentImageIndex + 1} / {images.length}
-              </div>
-            </>
-          )}
-
+        <div className="relative p-4 bg-muted">
+          <PropertyGallery images={images} propertyTitle={property.title} />
+          
           {/* Close Button */}
           <Button
             variant="secondary"
             size="icon"
-            className="absolute top-2 right-2"
+            className="absolute top-6 right-6 z-10"
             onClick={onClose}
           >
             <X className="h-4 w-4" />
           </Button>
 
           {/* Type Badge */}
-          <Badge className="absolute top-2 left-2">
+          <Badge className="absolute top-6 left-6 z-10">
             {propertyTypeLabels[property.property_type]}
           </Badge>
         </div>
@@ -175,10 +138,11 @@ export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
 
           {/* Tabs */}
           <Tabs defaultValue="overview">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="features">Features</TabsTrigger>
               <TabsTrigger value="pricing">Pricing Intel</TabsTrigger>
+              <TabsTrigger value="reviews">Reviews</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="mt-4">
@@ -230,6 +194,10 @@ export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
                   </p>
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="reviews" className="mt-4">
+              <PropertyReviews propertyId={property.id} userId={user?.id} />
             </TabsContent>
           </Tabs>
 

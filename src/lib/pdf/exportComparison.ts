@@ -1,5 +1,4 @@
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import type { Property } from '@/types/database';
 import { formatPrice } from '@/lib/utils';
 

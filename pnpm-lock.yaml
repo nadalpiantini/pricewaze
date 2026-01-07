@@ -11,6 +11,9 @@ dependencies:
   '@fontsource-variable/syne':
     specifier: ^5.2.7
     version: 5.2.7
+  '@hookform/resolvers':
+    specifier: ^5.2.2
+    version: 5.2.2(react-hook-form@7.70.0)
   '@radix-ui/react-avatar':
     specifier: ^1.1.11
     version: 1.1.11(@types/react-dom@19.2.3)(@types/react@19.2.7)(react-dom@19.2.3)(react@19.2.3)
@@ -684,6 +687,15 @@ packages:
 
   /@fontsource-variable/syne@5.2.7:
     resolution: {integrity: sha512-B2z7P0mGdNSAgz6SmtK7HXReZL22WJ8Z8sk5Z1ZuKiCSRM7DwWLjWXLwhbQ+CvmtNS/+p95jGvVEfQT9bm+UKw==}
+    dev: false
+
+  /@hookform/resolvers@5.2.2(react-hook-form@7.70.0):
+    resolution: {integrity: sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA==}
+    peerDependencies:
+      react-hook-form: ^7.55.0
+    dependencies:
+      '@standard-schema/utils': 0.3.0
+      react-hook-form: 7.70.0(react@19.2.3)
     dev: false
 
   /@humanfs/core@0.19.1:
