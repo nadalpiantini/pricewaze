@@ -128,7 +128,9 @@ export default function NewPropertyPage() {
       } else {
         const el = document.createElement('div');
         el.className = 'w-6 h-6 bg-primary rounded-full border-2 border-white shadow-lg';
-        marker.current = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map.current);
+        if (map.current) {
+          marker.current = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map.current);
+        }
       }
     });
 

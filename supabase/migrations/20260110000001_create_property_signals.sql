@@ -234,15 +234,15 @@ BEGIN
   END LOOP;
 
   -- Remove signal states that no longer have any raw signals
-  -- Delete states for signal types that no longer exist in raw table
-  -- Use explicit table references to avoid alias resolution issues
+  -- Get list of signal types that still exist, then delete others
+  -- This avoids complex subquery issues
   DELETE FROM pricewaze_property_signal_state
-  WHERE pricewaze_property_signal_state.property_id = p_property_id
-  AND NOT EXISTS (
-    SELECT 1 
+  WHERE property_id = p_property_id
+  AND signal_type NOT IN (
+    SELECT DISTINCT signal_type
     FROM pricewaze_property_signals_raw
-    WHERE pricewaze_property_signals_raw.property_id = pricewaze_property_signal_state.property_id
-    AND pricewaze_property_signals_raw.signal_type = pricewaze_property_signal_state.signal_type
+    WHERE property_id = p_property_id
+    AND signal_type IS NOT NULL
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

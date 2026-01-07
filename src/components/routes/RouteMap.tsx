@@ -78,6 +78,7 @@ export function RouteMap({ geometry, stops = [], className = '' }: RouteMapProps
       data: {
         type: 'Feature',
         geometry,
+        properties: {},
       },
     });
 

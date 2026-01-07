@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Sidebar, DashboardHeader } from '@/components/dashboard';
 import { useAuthStore } from '@/stores/auth-store';
 import { useUIStore } from '@/stores/ui-store';
+import { useSignalAlerts } from '@/hooks/useSignalAlerts';
 import { cn } from '@/lib/utils';
 
 // Use useLayoutEffect on client, useEffect on server
@@ -19,6 +20,9 @@ export default function DashboardLayout({
   const { user, isLoading, isInitialized, initialize } = useAuthStore();
   const { sidebarCollapsed, isMobile, setIsMobile } = useUIStore();
   const [mounted, setMounted] = useState(false);
+  
+  // Enable signal alerts (Waze-style notifications)
+  useSignalAlerts();
 
   // Initialize auth on mount
   useEffect(() => {

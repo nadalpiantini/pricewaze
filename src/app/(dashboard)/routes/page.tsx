@@ -17,7 +17,7 @@ import {
 import { RouteMap } from '@/components/routes/RouteMap';
 import { RouteStopsList } from '@/components/routes/RouteStopsList';
 import { DraggableRouteStopsList } from '@/components/routes/DraggableRouteStopsList';
-import { Plus, Route, Sparkles, Trash2, MapPin, Search } from 'lucide-react';
+import { Clock, MapPin, Navigation, Plus, Route, Search, Sparkles, Trash2 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { copyRouteLink, downloadRouteAsText, shareRoute } from '@/lib/routeExport';
 import type { Property } from '@/types/database';
