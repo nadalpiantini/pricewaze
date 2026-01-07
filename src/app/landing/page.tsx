@@ -31,25 +31,26 @@ export default function LandingPage() {
             <Image
               src="/logo.png"
               alt="PriceWaze"
-              width={800}
-              height={800}
-              className="mx-auto"
+              width={496}
+              height={438}
+              className="mx-auto h-64 w-auto brightness-100 contrast-100"
               priority
+              style={{ mixBlendMode: 'normal' }}
             />
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-neutral-400 bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-cyan-400 via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
             Real Estate Intelligence
             <br />& Negotiation Platform
           </h1>
-          <p className="text-xl md:text-2xl text-neutral-400 mb-8 max-w-3xl mx-auto">
-            <span className="text-emerald-400 font-semibold">Waze for Real Estate Pricing</span> — live signals, real leverage.
+          <p className="text-xl md:text-2xl text-neutral-300 mb-8 max-w-3xl mx-auto">
+            <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent font-semibold">Waze for Real Estate Pricing</span> — live signals, real leverage.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-6 text-lg">
+            <Button size="lg" className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-200">
               Get Started Free
               <ChevronRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" className="border-neutral-600 text-white hover:bg-neutral-800 px-8 py-6 text-lg">
+            <Button size="lg" variant="outline" className="border-cyan-500/50 text-white hover:bg-cyan-500/10 hover:border-cyan-500 px-8 py-6 text-lg">
               Watch Demo
             </Button>
           </div>
@@ -379,11 +380,12 @@ export default function LandingPage() {
               <Image
                 src="/logo.png"
                 alt="PriceWaze"
-                width={160}
-                height={160}
-                className="h-40 w-auto"
+                width={496}
+                height={438}
+                className="h-12 w-auto brightness-100 contrast-100"
+                style={{ mixBlendMode: 'normal' }}
               />
-              <span className="text-lg font-semibold">PriceWaze</span>
+              <span className="text-lg font-semibold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">PriceWaze</span>
             </div>
             <div className="flex gap-8 text-sm text-neutral-400">
               <Link href="/login" className="hover:text-white transition-colors">Sign In</Link>

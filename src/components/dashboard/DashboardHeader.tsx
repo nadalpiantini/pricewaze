@@ -42,12 +42,16 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+      {/* Branding Gradient Bar */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-500 via-emerald-500 to-cyan-500"></div>
+      
       {/* Mobile menu button */}
       {isMobile && (
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setSidebarOpen(true)}
+          className="hover:bg-cyan-50 hover:text-cyan-600"
         >
           <Menu className="h-5 w-5" />
         </Button>
@@ -55,16 +59,17 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
 
       {/* Title */}
       {title && (
-        <h1 className="text-lg font-semibold md:text-xl">{title}</h1>
+        <h1 className="text-lg font-semibold md:text-xl bg-gradient-to-r from-cyan-700 to-emerald-600 bg-clip-text text-transparent">{title}</h1>
       )}
 
-      {/* Search - hidden on mobile */}
+      {/* Search - hidden on mobile with Brand Colors */}
       <div className="hidden md:flex flex-1 max-w-md">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative w-full group">
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-600 z-10" />
           <Input
             placeholder="Search properties, offers..."
-            className="pl-9 w-full"
+            className="pl-9 w-full relative z-10 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
           />
         </div>
       </div>
@@ -75,13 +80,12 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
       {/* Actions */}
       <div className="flex items-center gap-2">
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative" asChild>
+        <Button variant="ghost" size="icon" className="relative hover:bg-cyan-50 hover:text-cyan-600" asChild>
           <Link href="/dashboard/notifications">
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
               <Badge
-                variant="destructive"
-                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]"
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-gradient-to-r from-cyan-600 to-emerald-600 text-white border-0"
               >
                 {unreadCount > 9 ? '9+' : unreadCount}
               </Badge>
@@ -92,10 +96,10 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Avatar className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="rounded-full hover:ring-2 hover:ring-cyan-500/50 transition-all">
+              <Avatar className="h-8 w-8 ring-2 ring-cyan-500/20">
                 <AvatarImage src={profile?.avatar_url || undefined} />
-                <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
+                <AvatarFallback className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-white">{getInitials(profile?.full_name)}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>

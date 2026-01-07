@@ -67,35 +67,27 @@ export default function Home() {
           
           <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-4xl mx-auto">
-              {/* Logo - Full Color, Compressed, No Empty Space, Maximized */}
-              <div className="flex justify-center mb-8 -my-6">
+              {/* Logo - Full Color, Trimmed Empty Space Only */}
+              <div className="flex justify-center mb-8">
                 <div 
                   className="relative inline-block"
                   style={{ 
                     lineHeight: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'visible'
+                    display: 'block'
                   }}
                 >
                   <Image
                     src="/logo.png"
                     alt="PriceWaze"
-                    width={1000}
-                    height={300}
-                    className="brightness-100 contrast-100"
+                    width={496}
+                    height={438}
+                    className="h-80 w-auto brightness-100 contrast-100 block"
                     priority
                     style={{ 
                       mixBlendMode: 'normal',
                       objectFit: 'contain',
                       objectPosition: 'center',
                       imageRendering: 'auto',
-                      height: '180px',
-                      width: 'auto',
-                      margin: '-30px -25px',
-                      transform: 'scale(2)',
-                      transformOrigin: 'center',
                       display: 'block'
                     }}
                   />

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -104,11 +105,19 @@ export function Sidebar() {
         {/* Header */}
         <div className="flex h-16 items-center justify-between px-4 border-b">
           {(!sidebarCollapsed || isMobile) && (
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">PW</span>
+            <Link href="/dashboard" className="flex items-center gap-2 group">
+              <div className="relative h-8 w-auto">
+                <Image
+                  src="/logo.png"
+                  alt="PriceWaze"
+                  width={496}
+                  height={438}
+                  className="h-8 w-auto brightness-100 contrast-100"
+                  style={{ mixBlendMode: 'normal' }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300 -z-10"></div>
               </div>
-              <span className="font-semibold text-lg">PriceWaze</span>
+              <span className="font-semibold text-lg bg-gradient-to-r from-cyan-600 to-emerald-600 bg-clip-text text-transparent">PriceWaze</span>
             </Link>
           )}
 
