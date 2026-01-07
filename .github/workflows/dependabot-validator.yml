@@ -77,3 +77,4 @@ jobs:
               body: '⚠️ **Build failed with these dependency updates**\n\nThis PR may contain breaking changes. Please review:\n- Check if major version updates are intentional\n- Verify compatibility with current codebase\n- Test locally before merging'
             })
 
+

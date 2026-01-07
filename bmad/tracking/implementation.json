@@ -1,7 +1,22 @@
 {
-  "features": {},
-  "current": null,
+  "features": {
+    "comparison": {
+      "started_at": "2026-01-07T11:35:36.023113",
+      "status": "in_progress",
+      "iterations": [],
+      "tasks_completed": [],
+      "tasks_pending": [],
+      "scores": [
+        {
+          "score": 9.0,
+          "timestamp": "2026-01-07T11:48:09.235317"
+        }
+      ],
+      "errors": [],
+      "updated_at": "2026-01-07T11:48:09.235297"
+    }
+  },
+  "current": "comparison",
   "phase": "Fase 1: MVP Plus",
   "started_at": null
 }
-

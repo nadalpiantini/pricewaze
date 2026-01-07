@@ -129,3 +129,4 @@ Si el problema persiste:
 2. Ejecutar `./scripts/debug.sh` y compartir output
 3. Verificar que todos los secrets estén configurados
 
+

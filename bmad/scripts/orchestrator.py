@@ -16,7 +16,7 @@ try:
     import tomllib as tomli
 except ImportError:
     try:
-        import tomli
+        import tomllib as tomli
     except ImportError:
         print("❌ Error: tomli no está instalado. Ejecuta: pip install tomli")
         sys.exit(1)
