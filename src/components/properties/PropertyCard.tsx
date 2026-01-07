@@ -3,10 +3,11 @@
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bed, Bath, Maximize, MapPin, Heart } from 'lucide-react';
+import { Bed, Bath, Maximize, MapPin, Heart, GitCompare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Property } from '@/types/database';
 import { cn } from '@/lib/utils';
+import { useComparison } from '@/hooks/useComparison';
 
 interface PropertyCardProps {
   property: Property;
@@ -23,6 +24,8 @@ const propertyTypeLabels: Record<Property['property_type'], string> = {
 };
 
 export function PropertyCard({ property, onClick, compact = false }: PropertyCardProps) {
+  const { isSelected, toggleProperty, canAddMore } = useComparison();
+
   const formatPrice = (price: number) => {
     if (price >= 1000000) {
       return `$${(price / 1000000).toFixed(2)}M`;
@@ -31,6 +34,7 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
   };
 
   const primaryImage = property.images?.[0] || '/placeholder-property.jpg';
+  const isInComparison = isSelected(property.id);
 
   if (compact) {
     return (
@@ -110,18 +114,44 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
           {propertyTypeLabels[property.property_type]}
         </Badge>
 
-        {/* Favorite Button with Brand Colors */}
-        <Button
-          variant="secondary"
-          size="icon"
-          className="absolute top-3 right-3 h-9 w-9 bg-white/95 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-emerald-500 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md border border-gray-200 hover:border-transparent"
-          onClick={(e) => {
-            e.stopPropagation();
-            // TODO: Toggle favorite
-          }}
-        >
-          <Heart className="h-4 w-4 text-gray-700 group-hover:text-white transition-colors" />
-        </Button>
+        {/* Action Buttons */}
+        <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
+          {/* Compare Button */}
+          <Button
+            variant="secondary"
+            size="icon"
+            className={cn(
+              "h-9 w-9 bg-white/95 shadow-md border border-gray-200 hover:border-transparent",
+              isInComparison
+                ? "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white"
+                : "hover:bg-gradient-to-r hover:from-cyan-500 hover:to-emerald-500"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleProperty(property);
+            }}
+            disabled={!isInComparison && !canAddMore}
+            title={isInComparison ? "Remover de comparación" : "Agregar a comparación"}
+          >
+            <GitCompare className={cn(
+              "h-4 w-4 transition-colors",
+              isInComparison ? "text-white" : "text-gray-700 group-hover:text-white"
+            )} />
+          </Button>
+          
+          {/* Favorite Button */}
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-9 w-9 bg-white/95 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-emerald-500 shadow-md border border-gray-200 hover:border-transparent"
+            onClick={(e) => {
+              e.stopPropagation();
+              // TODO: Toggle favorite
+            }}
+          >
+            <Heart className="h-4 w-4 text-gray-700 group-hover:text-white transition-colors" />
+          </Button>
+        </div>
       </div>
 
       <CardContent className="p-5">
@@ -139,6 +169,16 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
           <MapPin className="h-3.5 w-3.5" />
           <span className="truncate">{property.address}</span>
         </p>
+
+        {/* Comparison Badge */}
+        {isInComparison && (
+          <div className="mb-3">
+            <Badge className="bg-gradient-to-r from-cyan-600 to-emerald-600 text-white text-xs">
+              <GitCompare className="h-3 w-3 mr-1" />
+              En comparación
+            </Badge>
+          </div>
+        )}
 
         {/* Property Features - Clean Layout */}
         <div className="flex items-center gap-4 text-sm text-gray-700 border-t border-gray-100 pt-3">

@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   LogOut,
   X,
+  GitCompare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,11 @@ const navItems = [
     label: 'Favorites',
     href: '/dashboard/favorites',
     icon: Heart,
+  },
+  {
+    label: 'Comparison',
+    href: '/dashboard/comparison',
+    icon: GitCompare,
   },
   {
     label: 'Notifications',
