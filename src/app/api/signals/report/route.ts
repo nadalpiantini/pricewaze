@@ -75,44 +75,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already reported this signal type for this visit
-    const { data: existingReport } = await supabase
-      .from('pricewaze_signal_reports')
+    // The UNIQUE constraint on (user_id, visit_id, signal_type) prevents duplicates
+    const { data: existingSignal } = await supabase
+      .from('pricewaze_property_signals_raw')
       .select('id')
       .eq('user_id', user.id)
       .eq('visit_id', visit_id)
       .eq('signal_type', signal_type)
       .single();
 
-    if (existingReport) {
+    if (existingSignal) {
       return NextResponse.json(
         { error: 'You have already reported this signal for this visit' },
         { status: 409 }
       );
     }
 
-    // Insert signal report (this will trigger RLS policy check)
-    const { data: report, error: reportError } = await supabase
-      .from('pricewaze_signal_reports')
-      .insert({
-        property_id,
-        user_id: user.id,
-        visit_id,
-        signal_type,
-      })
-      .select()
-      .single();
-
-    if (reportError) {
-      logger.error('Failed to create signal report', reportError);
-      return NextResponse.json(
-        { error: 'Failed to create signal report', details: reportError.message },
-        { status: 500 }
-      );
-    }
-
-    // Insert corresponding raw signal (user-generated)
+    // Insert raw signal (user-generated)
     // The trigger will automatically recalculate the aggregated state with temporal decay
-    const { error: signalError } = await supabase
+    const { data: signal, error: signalError } = await supabase
       .from('pricewaze_property_signals_raw')
       .insert({
         property_id,
@@ -120,17 +101,21 @@ export async function POST(request: NextRequest) {
         source: 'user',
         user_id: user.id,
         visit_id,
-      });
+      })
+      .select()
+      .single();
 
     if (signalError) {
       logger.error('Failed to create property signal', signalError);
-      // Don't fail the request, but log the error
-      // The report was created successfully
+      return NextResponse.json(
+        { error: 'Failed to create signal report', details: signalError.message },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      report,
+      signal,
       message: 'Signal reported successfully',
     }, { status: 201 });
   } catch (error) {

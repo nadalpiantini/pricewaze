@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import {
   getSignalIcon,
   getSignalLabel,
-  USER_REPORTABLE_SIGNALS,
+  USER_REPORTABLE_SIGNALS_NEGATIVE,
+  USER_REPORTABLE_SIGNALS_POSITIVE,
 } from '@/lib/signals';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -76,36 +77,81 @@ export function ReportSignalButtons({
       <p className="text-sm text-muted-foreground mb-3">
         ¿Qué observaste en tu visita?
       </p>
-      <div className="flex flex-wrap gap-2">
-        {USER_REPORTABLE_SIGNALS.map((signalType) => {
-          const isReported = reportedSignals.has(signalType);
-          const isPending = reportSignalMutation.isPending && 
-            reportSignalMutation.variables === signalType;
+      
+      {/* Negative signals */}
+      {USER_REPORTABLE_SIGNALS_NEGATIVE.length > 0 && (
+        <div className="mb-4">
+          <p className="text-xs text-muted-foreground mb-2 font-semibold">Señales negativas:</p>
+          <div className="flex flex-wrap gap-2">
+            {USER_REPORTABLE_SIGNALS_NEGATIVE.map((signalType) => {
+              const isReported = reportedSignals.has(signalType);
+              const isPending = reportSignalMutation.isPending && 
+                reportSignalMutation.variables === signalType;
 
-          return (
-            <Button
-              key={signalType}
-              variant={isReported ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleReportSignal(signalType)}
-              disabled={isReported || isPending}
-              className="text-sm"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Reportando...
-                </>
-              ) : (
-                <>
-                  <span className="mr-1">{getSignalIcon(signalType)}</span>
-                  {getSignalLabel(signalType)}
-                </>
-              )}
-            </Button>
-          );
-        })}
-      </div>
+              return (
+                <Button
+                  key={signalType}
+                  variant={isReported ? 'destructive' : 'outline'}
+                  size="sm"
+                  onClick={() => handleReportSignal(signalType)}
+                  disabled={isReported || isPending}
+                  className="text-sm"
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Reportando...
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-1">{getSignalIcon(signalType)}</span>
+                      {getSignalLabel(signalType)}
+                    </>
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Positive signals */}
+      {USER_REPORTABLE_SIGNALS_POSITIVE.length > 0 && (
+        <div>
+          <p className="text-xs text-muted-foreground mb-2 font-semibold">Señales positivas:</p>
+          <div className="flex flex-wrap gap-2">
+            {USER_REPORTABLE_SIGNALS_POSITIVE.map((signalType) => {
+              const isReported = reportedSignals.has(signalType);
+              const isPending = reportSignalMutation.isPending && 
+                reportSignalMutation.variables === signalType;
+
+              return (
+                <Button
+                  key={signalType}
+                  variant={isReported ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleReportSignal(signalType)}
+                  disabled={isReported || isPending}
+                  className="text-sm bg-green-50 hover:bg-green-100 border-green-300 text-green-800"
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Reportando...
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-1">{getSignalIcon(signalType)}</span>
+                      {getSignalLabel(signalType)}
+                    </>
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      
       {reportedSignals.size > 0 && (
         <p className="text-xs text-muted-foreground mt-2">
           {reportedSignals.size} señal{reportedSignals.size > 1 ? 'es' : ''} reportada{reportedSignals.size > 1 ? 's' : ''}

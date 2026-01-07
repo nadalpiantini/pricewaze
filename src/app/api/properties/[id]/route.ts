@@ -55,12 +55,12 @@ export async function GET(
 
     // Create automatic signal for high activity (views)
     supabase
-      .from('pricewaze_property_signals')
+      .from('pricewaze_property_signals_raw')
       .insert({
         property_id: id,
         signal_type: 'high_activity',
         source: 'system',
-        weight: 1,
+        // user_id and visit_id are NULL for system signals
       })
       .then(() => {});
 

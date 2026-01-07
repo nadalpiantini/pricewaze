@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
       // Fetch updated state (all signal types for this property)
       const { data: states, error: stateError } = await supabase
-        .from('pricewaze_property_signal_state')
+        .from('pricewaze_property_signal_type_state')
         .select('signal_type, strength, confirmed, last_seen_at, updated_at')
         .eq('property_id', property_id);
 
