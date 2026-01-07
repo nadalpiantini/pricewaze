@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PriceWaze (PriceMap)
 
-## Getting Started
+AI-powered real estate intelligence platform for property pricing analysis, offer recommendations, and negotiation assistance.
 
-First, run the development server:
+## 🚀 Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Install dependencies
+pnpm install
+
+# Run development server
 pnpm dev
-# or
-bun dev
+
+# Build for production
+pnpm build
+
+# Run linting
+pnpm lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📋 Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Frontend**: Next.js 16.1, React 19, TypeScript, Tailwind CSS 4
+- **Backend**: Next.js API Routes, Supabase
+- **AI**: DeepSeek API, CrewAI (Python)
+- **Maps**: Mapbox GL
+- **State**: Zustand
+- **Deployment**: Vercel
 
-## Learn More
+## 🔄 CI/CD
 
-To learn more about Next.js, take a look at the following resources:
+This project uses GitHub Actions for automated CI/CD:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Automatic builds** on push/PR
+- **Automated tests** (Frontend + Backend)
+- **Security scans** (weekly)
+- **Auto-deployment** to Vercel (main branch)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+See [docs/devops.md](./docs/devops.md) for detailed CI/CD documentation.
 
-## Deploy on Vercel
+## 📚 Documentation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [Architecture Overview](./docs/README.md)
+- [Tech Stack](./docs/tech-stack.md)
+- [DevOps & CI/CD](./docs/devops.md)
+- [Design Decisions](./docs/adr/)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🧪 Testing
+
+### Frontend
+```bash
+pnpm lint
+pnpm build
+```
+
+### Backend (CrewAI)
+```bash
+cd crewai
+pip install -e ".[dev]"
+pytest tests/
+```
+
+## 🌍 Multi-Market Support
+
+Configure via `NEXT_PUBLIC_MARKET_CODE`:
+- `DO` - Dominican Republic
+- `US` - United States
+- `MX` - Mexico
+- `ES` - Spain
+- `CO` - Colombia
+- `global` - Default
+
+## 📦 Deployment
+
+### Automatic (CI/CD)
+- Push to `main` → Auto-deploy to Vercel
+
+### Manual
+```bash
+vercel --prod
+```
+
+## 🔐 Environment Variables
+
+See `.env.example` (create `.env.local`):
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `DEEPSEEK_API_KEY`
+- `NEXT_PUBLIC_MAPBOX_TOKEN`
+- `NEXT_PUBLIC_MARKET_CODE`
+
+## 📖 Learn More
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [CrewAI Documentation](https://docs.crewai.com)
