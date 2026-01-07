@@ -353,7 +353,8 @@ export interface SignalReport {
   visit?: Visit;
 }
 
-export interface PropertySignalState {
+// Legacy interface for backward compatibility (deprecated - use PropertySignalTypeState[])
+export interface PropertySignalStateLegacy {
   property_id: string;
   signals: Record<PropertySignalType, number>; // { "noise": 3, "humidity": 1, "many_visits": 6 }
   updated_at: string;
