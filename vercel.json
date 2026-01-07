@@ -3,11 +3,7 @@
   "framework": "nextjs",
   "crons": [
     {
-      "path": "/api/alerts/process",
-      "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/signals/recalculate",
+      "path": "/api/cron/daily",
       "schedule": "0 0 * * *"
     }
   ]

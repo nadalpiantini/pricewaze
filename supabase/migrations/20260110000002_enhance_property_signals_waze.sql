@@ -128,7 +128,10 @@ BEGIN
 END $$;
 
 -- Step 4: Function to calculate decay factor based on days since last seen
-CREATE OR REPLACE FUNCTION pricewaze_signal_decay_factor(days_since NUMERIC)
+-- Drop existing function first if it has different parameter name
+DROP FUNCTION IF EXISTS pricewaze_signal_decay_factor(NUMERIC);
+
+CREATE FUNCTION pricewaze_signal_decay_factor(days_since NUMERIC)
 RETURNS NUMERIC AS $$
 BEGIN
   IF days_since <= 7 THEN
