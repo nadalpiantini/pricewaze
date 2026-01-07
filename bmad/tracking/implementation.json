@@ -2,21 +2,39 @@
   "features": {
     "comparison": {
       "started_at": "2026-01-07T11:35:36.023113",
-      "status": "in_progress",
+      "status": "completed",
       "iterations": [],
-      "tasks_completed": [],
-      "tasks_pending": [],
+      "tasks_completed": [
+        "comparison-store.ts",
+        "useComparison.ts",
+        "PropertyComparison.tsx",
+        "ComparisonTable.tsx",
+        "comparison/page.tsx",
+        "comparisons/route.ts",
+        "comparisons/[id]/route.ts",
+        "exportComparison.ts",
+        "20260107000001_create_comparisons.sql",
+        "Sidebar integration",
+        "PropertyCard button"
+      ],
+      "tasks_pending": [
+        "Apply SQL migration to Supabase"
+      ],
       "scores": [
         {
           "score": 9.0,
           "timestamp": "2026-01-07T11:48:09.235317"
+        },
+        {
+          "score": 9.5,
+          "timestamp": "2026-01-07T15:30:00.000000"
         }
       ],
       "errors": [],
-      "updated_at": "2026-01-07T11:48:09.235297"
+      "updated_at": "2026-01-07T15:30:00.000000"
     }
   },
-  "current": "comparison",
+  "current": null,
   "phase": "Fase 1: MVP Plus",
   "started_at": null
 }
