@@ -46,7 +46,7 @@ fi
 echo ""
 
 # Check build
-echo "🔨 Testing build:"
+echo "🔨 Build Configuration:"
 if [ -f ".env.local" ] || [ -f ".env" ]; then
   echo -e "${GREEN}✅ Environment file found${NC}"
 else
@@ -54,12 +54,23 @@ else
   echo "   Build may fail without proper environment variables"
 fi
 
-if command -v pnpm &> /dev/null && [ -d "node_modules" ]; then
-  echo "Attempting: pnpm build (dry-run check)"
-  # Just check if build command exists, don't actually build
-  pnpm run build --dry-run 2>&1 | head -5 || echo "⚠️ Build command check failed"
+if [ -f "package.json" ]; then
+  if grep -q '"build"' package.json; then
+    echo -e "${GREEN}✅ Build script found in package.json${NC}"
+    echo "   To test build: pnpm build"
+  else
+    echo -e "${YELLOW}⚠️ No build script found in package.json${NC}"
+  fi
 else
-  echo -e "${YELLOW}⚠️ Skipping build test (dependencies not installed)${NC}"
+  echo -e "${RED}❌ package.json not found${NC}"
+fi
+
+if [ -d "node_modules" ]; then
+  echo -e "${GREEN}✅ node_modules directory exists${NC}"
+  echo "   Dependencies are installed"
+else
+  echo -e "${YELLOW}⚠️ node_modules not found${NC}"
+  echo "   Run: pnpm install"
 fi
 echo ""
 
