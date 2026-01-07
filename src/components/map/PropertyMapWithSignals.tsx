@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import type { Property, PropertySignalTypeState } from '@/types/database';
@@ -8,6 +9,8 @@ import { getMarketConfig } from '@/config/market';
 import { createClient } from '@/lib/supabase/client';
 import { getSignalIcon } from '@/lib/signals';
 import { isPositiveSignal } from '@/lib/signals';
+import { buildSignalsPopup } from '@/lib/buildSignalsPopup';
+import { ConfirmedToggle } from '@/components/ConfirmedToggle';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
@@ -48,12 +51,24 @@ export function PropertyMapWithSignals({
   zoom = DEFAULT_ZOOM,
   className = '',
 }: PropertyMapWithSignalsProps) {
+  const router = useRouter();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [propertiesWithSignals, setPropertiesWithSignals] = useState<PropertyWithSignals[]>([]);
+  const [onlyConfirmed, setOnlyConfirmed] = useState(false);
   const supabase = createClient();
+
+  // Handle property click - navigate to detail page if no custom handler
+  const handlePropertyClick = useCallback((property: Property) => {
+    if (onPropertyClick) {
+      onPropertyClick(property);
+    } else {
+      // Default behavior: navigate to property detail page
+      router.push(`/properties/${property.id}`);
+    }
+  }, [onPropertyClick, router]);
 
   // Fetch signal states for all properties
   useEffect(() => {
@@ -200,8 +215,13 @@ export function PropertyMapWithSignals({
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
+    // Filter properties based on onlyConfirmed toggle
+    const filteredProperties = onlyConfirmed
+      ? propertiesWithSignals.filter((p) => p.hasConfirmedSignals)
+      : propertiesWithSignals;
+
     // Add new markers with signal-aware styling
-    propertiesWithSignals.forEach((property) => {
+    filteredProperties.forEach((property) => {
       const pinColor = getPinColor(property);
       const pinSize = getPinSize(property);
       
@@ -224,77 +244,79 @@ export function PropertyMapWithSignals({
         el.style.transform = 'scale(1)';
       });
 
-      // Build popup content with signals
+      // Build popup content with signals using helper
+      const signalsHtml = property.signalStates && property.signalStates.length > 0
+        ? buildSignalsPopup(property.signalStates)
+        : '';
+
       let popupContent = `
         <div class="p-2 min-w-[200px]">
-          <h3 class="font-semibold text-sm">${property.title}</h3>
+          <h3 class="font-semibold text-sm cursor-pointer hover:underline" onclick="window.location.href='/properties/${property.id}'">${property.title}</h3>
           <p class="text-gray-600 text-xs">${property.address}</p>
           <div class="flex justify-between mt-2 text-xs">
             <span>${property.area_m2} m²</span>
             <span class="font-semibold">$${property.price.toLocaleString()}</span>
           </div>
           <p class="text-xs text-gray-500 mt-1">$${property.price_per_m2.toLocaleString()}/m²</p>
+          ${signalsHtml ? `<div class="mt-2 pt-2 border-t border-gray-200">${signalsHtml}</div>` : ''}
+          <button 
+            onclick="window.location.href='/properties/${property.id}'"
+            class="mt-2 w-full px-3 py-1.5 text-xs font-medium text-white bg-primary hover:bg-primary/90 rounded-md transition-colors"
+            style="background-color: #2563eb;"
+          >
+            Ver detalles
+          </button>
+        </div>
       `;
 
-      // Add signals to popup if they exist
-      if (property.signalStates && property.signalStates.length > 0) {
-        popupContent += `
-          <div class="mt-2 pt-2 border-t border-gray-200">
-            <p class="text-xs font-semibold mb-1">Señales:</p>
-            <div class="flex flex-wrap gap-1">
-        `;
-        
-        property.signalStates.forEach((signal) => {
-          const icon = getSignalIcon(signal.signal_type);
-          const strength = Math.round(signal.strength);
-          const confirmed = signal.confirmed ? '✓' : '';
-          popupContent += `
-            <span class="text-xs px-1.5 py-0.5 rounded ${
-              signal.confirmed 
-                ? (isPositiveSignal(signal.signal_type) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')
-                : 'bg-gray-100 text-gray-700'
-            }">
-              ${icon} ${strength}${confirmed}
-            </span>
-          `;
-        });
-        
-        popupContent += `
-            </div>
-          </div>
-        `;
-      }
-
-      popupContent += `</div>`;
-
-      // Create popup
-      const popup = new mapboxgl.Popup({ offset: 25, closeButton: false }).setHTML(popupContent);
+      // Create popup for hover
+      const popup = new mapboxgl.Popup({ 
+        closeButton: false, 
+        offset: 12 
+      }).setHTML(popupContent);
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat([property.longitude, property.latitude])
-        .setPopup(popup)
         .addTo(map.current!);
+
+      // Show popup on hover
+      el.addEventListener('mouseenter', () => {
+        popup.setLngLat([property.longitude, property.latitude]).addTo(map.current!);
+        map.current!.getCanvas().style.cursor = 'pointer';
+      });
+
+      // Hide popup on mouse leave
+      el.addEventListener('mouseleave', () => {
+        popup.remove();
+        map.current!.getCanvas().style.cursor = '';
+      });
 
       el.addEventListener('click', (e) => {
         e.stopPropagation();
-        onPropertyClick?.(property);
+        handlePropertyClick(property);
       });
 
       markersRef.current.push(marker);
     });
 
     // Fit bounds if we have properties
-    if (propertiesWithSignals.length > 0) {
+    if (filteredProperties.length > 0) {
       const bounds = new mapboxgl.LngLatBounds();
-      propertiesWithSignals.forEach((p) => {
+      filteredProperties.forEach((p) => {
         bounds.extend([p.longitude, p.latitude]);
       });
       map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
     }
-  }, [propertiesWithSignals, mapLoaded, getPinColor, getPinSize, onPropertyClick]);
+  }, [propertiesWithSignals, mapLoaded, getPinColor, getPinSize, handlePropertyClick, onlyConfirmed]);
 
   return (
     <div className={`relative ${className}`}>
+      <div className="mb-2">
+        <ConfirmedToggle
+          value={onlyConfirmed}
+          onChange={setOnlyConfirmed}
+        />
+      </div>
       <div ref={mapContainer} className="w-full h-full min-h-[400px] rounded-lg" />
       {/* Legend */}
       <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 text-xs space-y-1 z-10">

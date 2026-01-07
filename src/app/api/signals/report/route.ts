@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, supabaseAdmin } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
@@ -92,7 +92,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert raw signal (user-generated)
-    // The trigger will automatically recalculate the aggregated state with temporal decay
     const { data: signal, error: signalError } = await supabase
       .from('pricewaze_property_signals_raw')
       .insert({
@@ -111,6 +110,28 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create signal report', details: signalError.message },
         { status: 500 }
       );
+    }
+
+    // FASE 1.5: Trigger explicit recalculation with decay
+    // (The trigger also does this, but we call it explicitly for clarity)
+    if (supabaseAdmin) {
+      try {
+        const { error: recalcError } = await supabaseAdmin.rpc(
+          'pricewaze_recalculate_signal_state',
+          { p_property_id: property_id }
+        );
+
+        if (recalcError) {
+          logger.warn('Failed to recalculate signal state after report', {
+            property_id,
+            error: recalcError.message,
+          });
+          // Don't fail the request if recalculation fails - trigger will handle it
+        }
+      } catch (recalcError) {
+        logger.warn('Error calling recalculate function', recalcError);
+        // Don't fail the request - trigger will handle recalculation
+      }
     }
 
     return NextResponse.json({
