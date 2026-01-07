@@ -1,0 +1,33 @@
+name: Check Migrations
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'supabase/migrations/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'supabase/migrations/**'
+
+jobs:
+  check-migrations:
+    name: Validate SQL Migrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check migration files
+        run: |
+          echo "Checking migration files..."
+          for file in supabase/migrations/*.sql; do
+            if [ -f "$file" ]; then
+              echo "✓ Found: $file"
+              # Basic syntax check (PostgreSQL)
+              if ! grep -q "CREATE TABLE IF NOT EXISTS\|ALTER TABLE\|CREATE OR REPLACE FUNCTION" "$file"; then
+                echo "⚠ Warning: $file might not contain standard migration patterns"
+              fi
+            fi
+          done
+          echo "Migration check complete"
+

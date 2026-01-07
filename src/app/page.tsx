@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
-import { PropertyMap } from '@/components/map/PropertyMap';
+import { PropertyMapWithSignals } from '@/components/map/PropertyMapWithSignals';
 import { PropertyFilters } from '@/components/properties/PropertyFilters';
 import { PropertyCard } from '@/components/properties/PropertyCard';
 import { PropertyDetail } from '@/components/properties/PropertyDetail';
@@ -209,7 +209,7 @@ export default function Home() {
               {/* Map or List View */}
               <div className={view === 'map' ? 'lg:col-span-2' : 'lg:col-span-3'}>
                 {view === 'map' ? (
-                  <PropertyMap
+                  <PropertyMapWithSignals
                     properties={properties}
                     onPropertyClick={handlePropertyClick}
                     className="h-[600px] rounded-lg shadow-md border border-gray-200"

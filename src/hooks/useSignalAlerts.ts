@@ -22,7 +22,7 @@ export function useSignalAlerts() {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'pricewaze_property_signal_type_state',
+          table: 'pricewaze_property_signal_state',
         },
         (payload) => {
           const oldState = payload.old as PropertySignalTypeState | null;

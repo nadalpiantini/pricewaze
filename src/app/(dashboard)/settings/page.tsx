@@ -8,6 +8,7 @@ import {
   Save,
   Loader2,
   Camera,
+  Lock,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useUIStore } from '@/stores/ui-store';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -51,6 +53,12 @@ export default function SettingsPage() {
     pushPriceAlerts: false,
   });
   const [savingNotifications, setSavingNotifications] = useState(false);
+
+  // Password change form
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Sync profile data
   useEffect(() => {
@@ -110,6 +118,49 @@ export default function SettingsPage() {
       ...prev,
       [key]: !prev[key],
     }));
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const supabase = createClient();
+      
+      // Update password (Supabase doesn't require current password for authenticated users)
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        toast.error('Failed to change password', { description: error.message });
+        return;
+      }
+
+      toast.success('Password changed successfully');
+      
+      // Clear form
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      toast.error('Something went wrong', { description: 'Please try again later' });
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const themes: { value: Theme; label: string; description: string }[] = [
@@ -302,6 +353,66 @@ export default function SettingsPage() {
                 <Save className="h-4 w-4 mr-2" />
               )}
               Save Preferences
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Security Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Lock className="h-5 w-5" />
+            <CardTitle>Security</CardTitle>
+          </div>
+          <CardDescription>
+            Change your password to keep your account secure
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">New Password</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Enter new password"
+              disabled={changingPassword}
+            />
+            <p className="text-xs text-muted-foreground">
+              Password must be at least 6 characters long
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm new password"
+              disabled={changingPassword}
+            />
+          </div>
+
+          <div className="flex justify-end">
+            <Button 
+              onClick={handleChangePassword} 
+              disabled={changingPassword || !newPassword || !confirmPassword}
+            >
+              {changingPassword ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Changing...
+                </>
+              ) : (
+                <>
+                  <Lock className="h-4 w-4 mr-2" />
+                  Change Password
+                </>
+              )}
             </Button>
           </div>
         </CardContent>

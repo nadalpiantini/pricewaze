@@ -31,7 +31,7 @@ export function PropertySignals({ propertyId, className }: PropertySignalsProps)
     async function fetchSignals() {
       try {
         const { data, error } = await supabase
-          .from('pricewaze_property_signal_type_state')
+          .from('pricewaze_property_signal_state')
           .select('*')
           .eq('property_id', propertyId)
           .gt('strength', 0) // Only show signals with strength > 0
@@ -59,7 +59,7 @@ export function PropertySignals({ propertyId, className }: PropertySignalsProps)
         {
           event: '*',
           schema: 'public',
-          table: 'pricewaze_property_signal_type_state',
+          table: 'pricewaze_property_signal_state',
           filter: `property_id=eq.${propertyId}`,
         },
         () => {

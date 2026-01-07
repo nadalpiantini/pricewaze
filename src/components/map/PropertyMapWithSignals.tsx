@@ -63,7 +63,7 @@ export function PropertyMapWithSignals({
       const propertyIds = properties.map(p => p.id);
       
       const { data: signalStates, error } = await supabase
-        .from('pricewaze_property_signal_type_state')
+        .from('pricewaze_property_signal_state')
         .select('*')
         .in('property_id', propertyIds)
         .gt('strength', 0);
@@ -111,7 +111,7 @@ export function PropertyMapWithSignals({
         {
           event: '*',
           schema: 'public',
-          table: 'pricewaze_property_signal_type_state',
+          table: 'pricewaze_property_signal_state',
         },
         () => {
           // Refetch signal states when any signal changes
