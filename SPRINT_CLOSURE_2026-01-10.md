@@ -66,6 +66,13 @@ Este sprint se enfocó en completar funcionalidades críticas pendientes:
 - ✅ Optimización automática de orden de paradas (TSP)
 - ✅ Visualización en mapa con geometría optimizada
 - ✅ Integración con propiedades existentes
+- ✅ Reordenamiento drag-and-drop de paradas
+- ✅ Exportación de rutas (texto, JSON, links compartibles)
+- ✅ Navegación integrada (Waze, Google Maps)
+
+**Archivos adicionales**:
+- `src/components/routes/DraggableRouteStopsList.tsx` - Lista arrastrable
+- `src/lib/routeExport.ts` - Funcionalidad de exportación
 
 **Migración SQL**: `supabase/migrations/20260109000001_create_visit_routes.sql`
 
@@ -77,11 +84,16 @@ Este sprint se enfocó en completar funcionalidades críticas pendientes:
 - `src/app/api/signals/report/route.ts` - API de reporte de señales
 - `src/app/api/signals/recalculate/route.ts` - API de recálculo
 - `src/lib/signals.ts` - Lógica de señales
+- `src/components/signals/PropertySignals.tsx` - Componente de visualización
+- `src/components/signals/ReportSignalButtons.tsx` - Botones de reporte
+- `src/components/signals/index.ts` - Exports
 
 **Funcionalidades**:
 - ✅ Generación automática de señales al crear propiedades
 - ✅ Señales de precio (price_drop, price_increase, new_listing)
 - ✅ Integración con sistema de alertas de mercado
+- ✅ Componentes UI para mostrar y reportar señales
+- ✅ Actualización en tiempo real de señales
 
 **Migración SQL**: `supabase/migrations/20260110000001_create_property_signals.sql`
 
@@ -104,18 +116,21 @@ Este sprint se enfocó en completar funcionalidades críticas pendientes:
 ## 📊 ESTADÍSTICAS DEL SPRINT
 
 ### Archivos Creados/Modificados
-- **Total de archivos**: 33 archivos
-- **Líneas agregadas**: ~7,435 líneas
-- **Nuevos componentes**: 3
+- **Total de archivos**: 48 archivos
+- **Líneas agregadas**: ~8,350 líneas
+- **Nuevos componentes**: 7 (incluyendo signals y draggable)
 - **Nuevas API routes**: 6
 - **Nuevas migraciones SQL**: 2
 - **Nuevos scripts**: 8
+- **Nuevas utilidades**: 2 (routeExport, signals)
 
 ### Commits Realizados
 1. `c2c5ae0` - feat: Add property creation page and visit routes system
 2. `6a339b4` - chore: Add signals migration script and update user flow simulation
 3. `a7191c1` - feat: Add route dialog component and update property detail
 4. `7525c5c` - chore: Update route optimization endpoint
+5. `a3d4bf6` - docs: Add sprint closure document
+6. `16957f3` - feat: Add signals components, draggable route stops, and route export functionality
 
 ---
 
@@ -215,7 +230,7 @@ Todas las funcionalidades planificadas han sido implementadas, probadas y commit
 ---
 
 **Fecha de cierre**: 10 de Enero, 2026  
-**Último commit**: `7525c5c`  
+**Último commit**: `16957f3`  
 **Branch**: `main`  
 **Estado Git**: Working tree limpio
 
