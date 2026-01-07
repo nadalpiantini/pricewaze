@@ -22,9 +22,11 @@ import {
   Share2,
   MessageSquare,
   X,
+  Route,
 } from 'lucide-react';
 import { PropertyGallery } from './PropertyGallery';
 import { PropertyReviews } from '@/components/reviews/PropertyReviews';
+import { AddToRouteDialog } from '@/components/routes/AddToRouteDialog';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChat } from '@/hooks/useChat';
 import type { Property } from '@/types/database';
@@ -45,6 +47,7 @@ const propertyTypeLabels: Record<Property['property_type'], string> = {
 export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
   const { user } = useAuthStore();
   const { startConversation, isCreating } = useChat();
+  const [showAddToRoute, setShowAddToRoute] = useState(false);
   const images = property.images?.length ? property.images : ['/placeholder-property.jpg'];
 
   const formatPrice = (price: number) => {
@@ -219,6 +222,14 @@ export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
               <Calendar className="h-4 w-4" />
               Schedule Visit
             </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setShowAddToRoute(true)}
+            >
+              <Route className="h-4 w-4" />
+              Add to Route
+            </Button>
             <Button variant="outline" size="icon">
               <Heart className="h-4 w-4" />
             </Button>
@@ -228,6 +239,15 @@ export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
           </div>
         </div>
       </DialogContent>
+
+      <AddToRouteDialog
+        property={property}
+        open={showAddToRoute}
+        onOpenChange={setShowAddToRoute}
+        onSuccess={() => {
+          // Optionally show a success message or navigate
+        }}
+      />
     </Dialog>
   );
 }
