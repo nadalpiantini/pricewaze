@@ -39,3 +39,28 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# bmad logs and reports (keep tracking)
+bmad/logs/*.log
+bmad/reports/*.json
+!bmad/tracking/
+!bmad/logs/.gitkeep
+!bmad/reports/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.class
+.pytest_cache/
+*.egg-info/
+.ruff_cache/
