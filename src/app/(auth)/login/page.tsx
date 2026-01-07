@@ -67,7 +67,7 @@ function LoginForm() {
       <CardHeader className="text-center">
         <Link href="/" className="flex items-center justify-center gap-2 mb-4">
           <MapPin className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-bold">PriceMap</span>
+          <span className="text-2xl font-bold">PriceWaze</span>
         </Link>
         <CardTitle>Welcome back</CardTitle>
         <CardDescription>
@@ -170,7 +170,7 @@ function LoginFormSkeleton() {
       <CardHeader className="text-center">
         <div className="flex items-center justify-center gap-2 mb-4">
           <MapPin className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-bold">PriceMap</span>
+          <span className="text-2xl font-bold">PriceWaze</span>
         </div>
         <CardTitle>Welcome back</CardTitle>
         <CardDescription>Sign in to your account to continue</CardDescription>
