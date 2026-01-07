@@ -29,7 +29,7 @@ export class MobileChecks {
       if (box) {
         const minSize = 44;
         if (box.width < minSize || box.height < minSize) {
-          const text = await element.textContent().catch(() => '');
+          const text = await element.textContent().catch(() => '') || '';
           issues.push(`Element "${text.substring(0, 30)}" has size ${box.width}x${box.height}`);
         }
       }
