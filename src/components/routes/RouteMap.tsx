@@ -91,8 +91,9 @@ export function RouteMap({ geometry, stops = [], className = '' }: RouteMapProps
       },
       paint: {
         'line-color': '#2563eb',
-        'line-width': 5,
-        'line-opacity': 0.8,
+        'line-width': 6,
+        'line-opacity': 0.9,
+        'line-dasharray': [0.5, 0.5],
       },
     });
 
@@ -118,8 +119,12 @@ export function RouteMap({ geometry, stops = [], className = '' }: RouteMapProps
     stops.forEach((stop) => {
       const el = document.createElement('div');
       el.className = 'route-stop-marker';
+      // Color gradient based on order
+      const colors = ['#2563eb', '#059669', '#dc2626', '#ea580c', '#7c3aed', '#db2777'];
+      const colorIndex = stop.order_index % colors.length;
+      const bgColor = colors[colorIndex];
       el.innerHTML = `
-        <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-semibold text-sm shadow-lg">
+        <div class="text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-sm shadow-xl transition-transform hover:scale-110" style="background-color: ${bgColor};">
           ${stop.order_index + 1}
         </div>
       `;

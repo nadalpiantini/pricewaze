@@ -155,6 +155,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create offer' }, { status: 500 });
     }
 
+    // Create automatic signal for competing offers
+    try {
+      await supabase.from('pricewaze_property_signals').insert({
+        property_id,
+        signal_type: 'competing_offers',
+        source: 'system',
+        weight: 1,
+      });
+    } catch (signalError) {
+      // Don't fail the offer creation if signal creation fails
+      console.error('Error creating offer signal:', signalError);
+    }
+
     // Award gamification rewards for first offer
     try {
       const { count: offerCount } = await supabase

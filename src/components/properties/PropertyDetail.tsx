@@ -27,6 +27,7 @@ import {
 import { PropertyGallery } from './PropertyGallery';
 import { PropertyReviews } from '@/components/reviews/PropertyReviews';
 import { AddToRouteDialog } from '@/components/routes/AddToRouteDialog';
+import { PropertySignals } from '@/components/signals';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChat } from '@/hooks/useChat';
 import type { Property } from '@/types/database';
@@ -100,6 +101,11 @@ export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
                 {formatPrice(property.price_per_m2)}/m²
               </p>
             </div>
+          </div>
+
+          {/* Property Signals (Waze-style) */}
+          <div className="mb-4">
+            <PropertySignals propertyId={property.id} />
           </div>
 
           {/* Quick Stats */}

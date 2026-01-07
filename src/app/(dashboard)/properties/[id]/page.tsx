@@ -22,6 +22,7 @@ import {
 import { PropertyGallery } from '@/components/properties/PropertyGallery';
 import { PropertyReviews } from '@/components/reviews/PropertyReviews';
 import { PricingInsights } from '@/components/pricing/PricingInsights';
+import { PropertySignals } from '@/components/signals';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChat } from '@/hooks/useChat';
 import type { Property } from '@/types/database';
@@ -149,6 +150,11 @@ export default function PropertyPage() {
                 {formatPrice(property.price_per_m2)}/m²
               </p>
             </div>
+          </div>
+
+          {/* Property Signals (Waze-style) */}
+          <div className="mb-4">
+            <PropertySignals propertyId={property.id} />
           </div>
 
           {/* Quick Stats */}

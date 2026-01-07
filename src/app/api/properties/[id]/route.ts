@@ -53,6 +53,17 @@ export async function GET(
         .then(() => {});
     }
 
+    // Create automatic signal for high activity (views)
+    supabase
+      .from('pricewaze_property_signals')
+      .insert({
+        property_id: id,
+        signal_type: 'high_activity',
+        source: 'system',
+        weight: 1,
+      })
+      .then(() => {});
+
     return NextResponse.json(data);
   } catch (error) {
     logger.error('Unexpected error in GET /api/properties/[id]', error);

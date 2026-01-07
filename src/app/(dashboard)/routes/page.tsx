@@ -16,8 +16,10 @@ import {
 } from '@/components/ui/dialog';
 import { RouteMap } from '@/components/routes/RouteMap';
 import { RouteStopsList } from '@/components/routes/RouteStopsList';
+import { DraggableRouteStopsList } from '@/components/routes/DraggableRouteStopsList';
 import { Plus, Route, Sparkles, Trash2, MapPin, Search } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
+import { copyRouteLink, downloadRouteAsText, shareRoute } from '@/lib/routeExport';
 import type { Property } from '@/types/database';
 
 interface VisitRoute {
@@ -104,6 +106,22 @@ async function deleteStop(routeId: string, stopId: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete stop');
 }
 
+// Reorder stops
+async function reorderStops(routeId: string, stops: Array<{ id: string; order_index: number }>): Promise<void> {
+  // Update each stop's order_index
+  const promises = stops.map((stop) =>
+    fetch(`/api/routes/${routeId}/stops/${stop.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order_index: stop.order_index }),
+    })
+  );
+  
+  const results = await Promise.all(promises);
+  const failed = results.some((r) => !r.ok);
+  if (failed) throw new Error('Failed to reorder stops');
+}
+
 // Fetch properties for adding to route
 async function fetchProperties(): Promise<Property[]> {
   const res = await fetch('/api/properties?status=active&limit=50');
@@ -136,9 +154,10 @@ export default function RoutesPage() {
     enabled: !!selectedRouteId,
   });
 
-  // Reset optimized geometry when route changes
+  // Reset optimized geometry and stats when route changes
   useEffect(() => {
     setOptimizedGeometry(null);
+    setRouteStats(null);
   }, [selectedRouteId]);
 
   // Create route mutation
@@ -210,6 +229,20 @@ export default function RoutesPage() {
       deleteStop(routeId, stopId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['route', selectedRouteId] });
+    },
+  });
+
+  // Reorder stops mutation
+  const reorderMutation = useMutation({
+    mutationFn: (stops: Array<{ id: string; order_index: number }>) => {
+      if (!selectedRouteId) throw new Error('No route selected');
+      return reorderStops(selectedRouteId, stops);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['route', selectedRouteId] });
+      // Clear optimized geometry since order changed
+      setOptimizedGeometry(null);
+      setRouteStats(null);
     },
   });
 
@@ -320,6 +353,22 @@ export default function RoutesPage() {
                         <CardTitle>{selectedRoute.name}</CardTitle>
                         <CardDescription>
                           {selectedRoute.stops?.length || 0} stops
+                          {routeStats && (
+                            <span className="ml-4 flex items-center gap-4">
+                              {routeStats.distance && (
+                                <span className="flex items-center gap-1">
+                                  <Navigation className="h-3 w-3" />
+                                  {(routeStats.distance / 1000).toFixed(1)} km
+                                </span>
+                              )}
+                              {routeStats.duration && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {Math.round(routeStats.duration / 60)} min
+                                </span>
+                              )}
+                            </span>
+                          )}
                         </CardDescription>
                       </div>
                       <div className="flex gap-2">
@@ -330,7 +379,7 @@ export default function RoutesPage() {
                             disabled={optimizeMutation.isPending}
                           >
                             <Sparkles className="h-4 w-4 mr-2" />
-                            Optimize Route
+                            {optimizeMutation.isPending ? 'Optimizing...' : 'Optimize Route'}
                           </Button>
                         )}
                         <Button
@@ -381,8 +430,16 @@ export default function RoutesPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <RouteStopsList
+                    <DraggableRouteStopsList
                       stops={selectedRoute.stops || []}
+                      onReorder={(newOrder) => {
+                        reorderMutation.mutate(
+                          newOrder.map((stop, index) => ({
+                            id: stop.id,
+                            order_index: index,
+                          }))
+                        );
+                      }}
                       onDeleteStop={handleDeleteStop}
                       showNavigation={true}
                     />
