@@ -119,6 +119,7 @@ export function PropertySignals({ propertyId, className }: PropertySignalsProps)
         return (
           <Badge
             key={signal_type}
+            data-testid={confirmed ? "signal-badge confirmed" : "signal-badge"}
             variant={badgeVariant}
             className={badgeClassName}
             title={tooltipText}

@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, Bell, Search } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -12,9 +12,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/stores/auth-store';
 import { useUIStore } from '@/stores/ui-store';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import Link from 'next/link';
 
 interface DashboardHeaderProps {
@@ -80,18 +80,7 @@ export function DashboardHeader({ title }: DashboardHeaderProps) {
       {/* Actions */}
       <div className="flex items-center gap-2">
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative hover:bg-cyan-50 hover:text-cyan-600" asChild>
-          <Link href="/dashboard/notifications">
-            <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <Badge
-                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-gradient-to-r from-cyan-600 to-emerald-600 text-white border-0"
-              >
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </Badge>
-            )}
-          </Link>
-        </Button>
+        <NotificationBell />
 
         {/* User menu */}
         <DropdownMenu>

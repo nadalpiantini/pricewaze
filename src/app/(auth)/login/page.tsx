@@ -81,6 +81,7 @@ function LoginForm() {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              data-testid="email-input"
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -99,6 +100,7 @@ function LoginForm() {
             </div>
             <Input
               id="password"
+              data-testid="password-input"
               type="password"
               placeholder="••••••••"
               value={password}
@@ -108,7 +110,7 @@ function LoginForm() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" data-testid="login-button" className="w-full" disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

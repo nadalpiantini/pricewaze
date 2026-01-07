@@ -60,6 +60,7 @@ export function RouteStopsList({
       {sortedStops.map((stop, index) => (
         <div
           key={stop.id}
+          data-testid="route-stop"
           className="p-4 border rounded-lg bg-white hover:shadow-md transition-shadow"
         >
           <div className="flex items-start justify-between gap-3">

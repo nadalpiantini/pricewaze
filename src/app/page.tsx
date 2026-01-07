@@ -8,7 +8,13 @@ import { useQuery } from '@tanstack/react-query';
 import { PropertyMapWithSignals } from '@/components/map/PropertyMapWithSignals';
 import { PropertyFilters } from '@/components/properties/PropertyFilters';
 import { PropertyCard } from '@/components/properties/PropertyCard';
-import { PropertyDetail } from '@/components/properties/PropertyDetail';
+import dynamic from 'next/dynamic';
+
+// Lazy load PropertyDetail (heavy component with gallery, reviews, etc.)
+const PropertyDetail = dynamic(
+  () => import('@/components/properties/PropertyDetail').then((mod) => ({ default: mod.PropertyDetail })),
+  { ssr: false }
+);
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

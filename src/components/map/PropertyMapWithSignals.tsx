@@ -11,6 +11,7 @@ import { getSignalIcon } from '@/lib/signals';
 import { isPositiveSignal } from '@/lib/signals';
 import { buildSignalsPopup } from '@/lib/buildSignalsPopup';
 import { ConfirmedToggle } from '@/components/ConfirmedToggle';
+import { useAuthStore } from '@/stores/auth-store';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
@@ -52,6 +53,7 @@ export function PropertyMapWithSignals({
   className = '',
 }: PropertyMapWithSignalsProps) {
   const router = useRouter();
+  const { user } = useAuthStore();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -59,6 +61,46 @@ export function PropertyMapWithSignals({
   const [propertiesWithSignals, setPropertiesWithSignals] = useState<PropertyWithSignals[]>([]);
   const [onlyConfirmed, setOnlyConfirmed] = useState(false);
   const supabase = createClient();
+
+  // FASE 2.4: Load preference from DB on mount
+  useEffect(() => {
+    if (!user?.id) return;
+
+    (async () => {
+      const { data } = await supabase
+        .from('pricewaze_user_ui_prefs')
+        .select('map_only_confirmed')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (data?.map_only_confirmed !== undefined) {
+        setOnlyConfirmed(data.map_only_confirmed);
+      }
+    })();
+  }, [user?.id, supabase]);
+
+  // FASE 2.4: Save preference to DB when it changes
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // Debounce: wait a bit before saving to avoid too many writes
+    const timeoutId = setTimeout(() => {
+      supabase
+        .from('pricewaze_user_ui_prefs')
+        .upsert({
+          user_id: user.id,
+          map_only_confirmed: onlyConfirmed,
+          updated_at: new Date().toISOString(),
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error saving map preference:', error);
+          }
+        });
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [onlyConfirmed, user?.id, supabase]);
 
   // Handle property click - navigate to detail page if no custom handler
   const handlePropertyClick = useCallback((property: Property) => {

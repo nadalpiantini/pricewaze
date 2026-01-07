@@ -74,6 +74,7 @@ function SortableStopItem({
   return (
     <div
       ref={setNodeRef}
+      data-testid="route-stop"
       style={style}
       className={`p-4 border rounded-lg bg-white hover:shadow-md transition-shadow ${
         isDragging ? 'shadow-lg' : ''

@@ -156,10 +156,11 @@ export function AddToRouteDialog({
                 <p className="text-sm mt-1">Create your first route</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <div className="space-y-2 max-h-[300px] overflow-y-auto" data-testid="route-select">
                 {routes.map((route) => (
                   <div
                     key={route.id}
+                    data-testid="route-select-option"
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                       selectedRouteId === route.id
                         ? 'bg-blue-50 border-blue-500'

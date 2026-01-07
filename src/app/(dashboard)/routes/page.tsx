@@ -14,7 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { RouteMap } from '@/components/routes/RouteMap';
+import dynamic from 'next/dynamic';
+
+// Lazy load RouteMap (heavy component with Mapbox)
+const RouteMap = dynamic(
+  () => import('@/components/routes/RouteMap').then((mod) => ({ default: mod.RouteMap })),
+  { ssr: false, loading: () => <div className="h-[400px] bg-gray-100 rounded-lg animate-pulse" /> }
+);
 import { RouteStopsList } from '@/components/routes/RouteStopsList';
 import { DraggableRouteStopsList } from '@/components/routes/DraggableRouteStopsList';
 import { Clock, MapPin, Navigation, Plus, Route, Search, Sparkles, Trash2 } from 'lucide-react';
@@ -356,13 +362,13 @@ export default function RoutesPage() {
                           {routeStats && (
                             <span className="ml-4 flex items-center gap-4">
                               {routeStats.distance && (
-                                <span className="flex items-center gap-1">
+                                <span data-testid="route-distance" className="flex items-center gap-1">
                                   <Navigation className="h-3 w-3" />
                                   {(routeStats.distance / 1000).toFixed(1)} km
                                 </span>
                               )}
                               {routeStats.duration && (
-                                <span className="flex items-center gap-1">
+                                <span data-testid="route-duration" className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
                                   {Math.round(routeStats.duration / 60)} min
                                 </span>
@@ -374,6 +380,7 @@ export default function RoutesPage() {
                       <div className="flex gap-2">
                         {selectedRoute.stops && selectedRoute.stops.length >= 2 && (
                           <Button
+                            data-testid="optimize-route-button"
                             variant="outline"
                             onClick={handleOptimize}
                             disabled={optimizeMutation.isPending}
@@ -478,6 +485,7 @@ export default function RoutesPage() {
               <Label htmlFor="route-name">Route Name</Label>
               <Input
                 id="route-name"
+                data-testid="route-name-input"
                 placeholder="e.g., Saturday Property Tour"
                 value={routeName}
                 onChange={(e) => setRouteName(e.target.value)}

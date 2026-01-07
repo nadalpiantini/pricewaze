@@ -156,7 +156,7 @@ export function RouteMap({ geometry, stops = [], className = '' }: RouteMapProps
   }, [stops, mapLoaded, geometry]);
 
   return (
-    <div ref={mapContainer} className={`w-full ${className}`} style={{ minHeight: '400px' }} />
+    <div ref={mapContainer} data-testid="mapbox-map" className={`w-full ${className}`} style={{ minHeight: '400px' }} />
   );
 }
 

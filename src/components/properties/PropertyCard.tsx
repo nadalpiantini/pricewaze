@@ -95,6 +95,7 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
 
   return (
     <Card
+      data-testid="property-card"
       className="cursor-pointer hover:shadow-xl transition-all duration-200 overflow-hidden group border-gray-200 bg-white"
       onClick={onClick}
     >
