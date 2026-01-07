@@ -10,7 +10,7 @@ interface VirtualTourProps {
 
 export function VirtualTour({ media, className = '' }: VirtualTourProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<any>(null);
+  const viewerRef = useRef<import('pannellum').Viewer | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || media.media_type !== 'virtual_tour' && media.media_type !== 'video_360') {
@@ -21,7 +21,7 @@ export function VirtualTour({ media, className = '' }: VirtualTourProps) {
     import('pannellum').then((pannellum) => {
       if (!containerRef.current || viewerRef.current) return;
 
-      const config = {
+      const config: import('pannellum').ViewerConfig = {
         type: 'equirectangular',
         panorama: media.url,
         autoLoad: true,
@@ -31,7 +31,7 @@ export function VirtualTour({ media, className = '' }: VirtualTourProps) {
       };
 
       try {
-        viewerRef.current = pannellum.viewer(containerRef.current, config);
+        viewerRef.current = pannellum.default.viewer(containerRef.current, config);
       } catch (error) {
         console.error('Error initializing Pannellum viewer:', error);
       }
