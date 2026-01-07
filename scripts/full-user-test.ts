@@ -177,8 +177,9 @@ async function testUserFlow(userId: string) {
     } else {
       console.log(`   ⚠️  Properties API: ${res.status}`);
     }
-  } catch (err: any) {
-    console.log(`   ⚠️  Properties API: ${err.message}`);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.log(`   ⚠️  Properties API: ${error.message}`);
   }
 
   // CrewAI health
@@ -190,7 +191,7 @@ async function testUserFlow(userId: string) {
     } else {
       console.log(`   ⚠️  CrewAI API: ${res.status}`);
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log(`   ⚠️  CrewAI API: Not available`);
   }
 

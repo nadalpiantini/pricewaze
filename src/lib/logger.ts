@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+ 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 const isDev = process.env.NODE_ENV === 'development';

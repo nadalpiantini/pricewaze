@@ -71,13 +71,27 @@ export function InvestmentStep() {
       setSavedAlertZone(zone);
     }
 
+    // Award welcome badge and complete onboarding
+    try {
+      const badgeRes = await fetch('/api/gamification/award-badge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badge_code: 'welcome' }),
+      });
+      if (badgeRes.ok) {
+        // Badge awarded successfully
+      }
+    } catch (error) {
+      console.error('Failed to award welcome badge:', error);
+    }
+
     // Simulate API call to save preferences
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     completeOnboarding();
 
     toast.success('Welcome to PriceWaze!', {
-      description: 'Your preferences have been saved.',
+      description: 'Your preferences have been saved. You earned your first badge! 🎉',
     });
 
     router.push('/');

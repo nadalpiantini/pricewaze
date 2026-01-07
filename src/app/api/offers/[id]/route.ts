@@ -149,6 +149,49 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           .update({ status: 'pending' })
           .eq('id', offer.property_id);
 
+        // Award gamification rewards for accepted offer
+        try {
+          // Award points to both parties
+          await supabase.rpc('pricewaze_award_points', {
+            p_user_id: offer.buyer_id,
+            p_points: 25,
+            p_source: 'action',
+            p_source_id: id,
+            p_description: 'Offer accepted',
+          });
+
+          await supabase.rpc('pricewaze_award_points', {
+            p_user_id: offer.seller_id,
+            p_points: 25,
+            p_source: 'action',
+            p_source_id: id,
+            p_description: 'Offer accepted',
+          });
+
+          // Update achievement progress for both parties
+          await supabase.rpc('pricewaze_update_achievement', {
+            p_user_id: offer.buyer_id,
+            p_achievement_code: 'power_negotiator',
+            p_progress_increment: 1,
+          });
+
+          await supabase.rpc('pricewaze_update_achievement', {
+            p_user_id: offer.seller_id,
+            p_achievement_code: 'power_negotiator',
+            p_progress_increment: 1,
+          });
+
+          // Recalculate trust scores
+          await supabase.rpc('pricewaze_calculate_trust_score', {
+            p_user_id: offer.buyer_id,
+          });
+          await supabase.rpc('pricewaze_calculate_trust_score', {
+            p_user_id: offer.seller_id,
+          });
+        } catch (gamificationError) {
+          console.error('Gamification error:', gamificationError);
+        }
+
         // TODO: Create agreement record
         // TODO: Send notifications to both parties
 

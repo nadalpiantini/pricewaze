@@ -3,16 +3,20 @@ import { createServerClient } from '@supabase/ssr';
 
 // Routes that require authentication
 const protectedRoutes = [
-  '/dashboard',
-  '/properties/new',
-  '/properties/edit',
-  '/profile',
+  '/properties',
+  '/offers',
+  '/visits',
   '/favorites',
-  '/negotiations',
+  '/comparison',
   '/notifications',
+  '/market-alerts',
+  '/alerts',
+  '/messages',
+  '/settings',
+  '/onboarding',
 ];
 
-// Routes that should redirect to dashboard if already authenticated
+// Routes that should redirect to home if already authenticated
 const authRoutes = ['/login', '/register', '/forgot-password'];
 
 export async function middleware(request: NextRequest) {
@@ -66,9 +70,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect to dashboard if accessing auth routes while logged in
+  // Redirect to home if accessing auth routes while logged in
   if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   return response;

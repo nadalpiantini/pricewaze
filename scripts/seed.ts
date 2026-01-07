@@ -520,7 +520,7 @@ async function createUsers(): Promise<Map<string, string>> {
         // If user already exists, try to get the existing user
         if (errorDetails.includes('already') || errorDetails.includes('exists')) {
           const { data: existingUsers } = await supabase.auth.admin.listUsers();
-          const existingUser = existingUsers?.users?.find((u: any) => u.email === user.email);
+          const existingUser = existingUsers?.users?.find((u: { email?: string }) => u.email === user.email);
           if (existingUser) {
             userIdMap.set(user.email, existingUser.id);
             log('⚠️', `User ${user.email} already exists, using existing user`);

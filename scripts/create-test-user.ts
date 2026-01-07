@@ -105,8 +105,9 @@ async function createUser(user: TestUser) {
     }
 
     return userId;
-  } catch (err: any) {
-    console.error(`  ❌ Exception: ${err.message}`);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error(`  ❌ Exception: ${error.message}`);
     return null;
   }
 }

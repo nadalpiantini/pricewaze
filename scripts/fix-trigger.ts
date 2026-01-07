@@ -52,8 +52,9 @@ async function fixTrigger() {
           console.warn('   Migration file:', migrationPath);
           break;
         }
-      } catch (err: any) {
-        if (err.message?.includes('exec_sql')) {
+      } catch (err: unknown) {
+        const error = err as Error;
+        if (error.message?.includes('exec_sql')) {
           console.warn('⚠️  RPC exec_sql not available');
           console.warn('   Please run the migration manually in Supabase SQL Editor:');
           console.warn('   ', migrationPath);
@@ -70,8 +71,9 @@ async function fixTrigger() {
     console.log('   3. Paste and run in SQL Editor');
     console.log('\n   Then run: pnpm simulate:user\n');
 
-  } catch (error: any) {
-    console.error('❌ Error fixing trigger:', error.message);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('❌ Error fixing trigger:', err.message);
     console.error('\n💡 Please apply the migration manually:');
     console.error('   1. Go to Supabase Dashboard > SQL Editor');
     console.error('   2. Copy contents of: supabase/migrations/20260106000002_fix_profile_trigger.sql');

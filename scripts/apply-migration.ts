@@ -82,8 +82,9 @@ async function applyMigration() {
         } else {
           console.log(`  ✅ Statement ${i + 1} executed successfully`);
         }
-      } catch (err: any) {
-        if (err.message?.includes('Cannot execute') || err.message?.includes('DDL')) {
+      } catch (err: unknown) {
+        const error = err as Error;
+        if (error.message?.includes('Cannot execute') || error.message?.includes('DDL')) {
           console.log('\n❌ Cannot execute DDL statements (CREATE POLICY, CREATE FUNCTION) via API');
           console.log('\n📋 Please apply the migration manually:');
           console.log('   1. Go to Supabase Dashboard > SQL Editor');
@@ -102,8 +103,9 @@ async function applyMigration() {
     console.log('   pnpm seed');
     console.log('   pnpm simulate:user\n');
 
-  } catch (error: any) {
-    console.error('\n❌ Error applying migration:', error.message);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('\n❌ Error applying migration:', err.message);
     console.error('\n📋 Please apply the migration manually:');
     console.error('   1. Go to Supabase Dashboard > SQL Editor');
     console.error('   2. Copy the contents of: supabase/migrations/20260106000002_fix_profile_trigger.sql');

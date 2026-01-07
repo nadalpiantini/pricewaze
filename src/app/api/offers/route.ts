@@ -154,6 +154,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create offer' }, { status: 500 });
     }
 
+    // Award gamification rewards for first offer
+    try {
+      const { count: offerCount } = await supabase
+        .from('pricewaze_offers')
+        .select('*', { count: 'exact', head: true })
+        .eq('buyer_id', user.id);
+
+      if (offerCount === 1) {
+        // First offer - award badge
+        await supabase.rpc('pricewaze_award_badge', {
+          p_user_id: user.id,
+          p_badge_code: 'first_offer',
+        });
+      }
+
+      // Award points for making an offer
+      await supabase.rpc('pricewaze_award_points', {
+        p_user_id: user.id,
+        p_points: 5,
+        p_source: 'action',
+        p_source_id: offer.id,
+        p_description: 'Made a property offer',
+      });
+    } catch (gamificationError) {
+      console.error('Gamification error:', gamificationError);
+    }
+
     // TODO: Send notification to property owner
     // TODO: Send email notification
 

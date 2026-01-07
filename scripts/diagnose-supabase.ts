@@ -50,8 +50,9 @@ async function diagnose() {
     } else {
       console.log(`   ✅ Can query pricewaze_profiles`);
     }
-  } catch (err: any) {
-    console.log(`   ❌ Exception: ${err.message}`);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.log(`   ❌ Exception: ${error.message}`);
   }
 
   // Test 2: Can we query auth schema?
@@ -65,7 +66,7 @@ async function diagnose() {
     } else {
       console.log(`   ✅ Can query auth.users`);
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log(`   ⚠️  RPC not available (this is normal)`);
   }
 
@@ -85,9 +86,10 @@ async function diagnose() {
       console.log(`   ✅ Admin API works`);
       console.log(`   Found ${data.users.length} users (showing first page)`);
     }
-  } catch (err: any) {
-    console.log(`   ❌ Exception: ${err.message}`);
-    console.log(`   Stack: ${err.stack?.substring(0, 200)}`);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.log(`   ❌ Exception: ${error.message}`);
+    console.log(`   Stack: ${error.stack?.substring(0, 200)}`);
   }
 
   // Test 4: Check if trigger exists
@@ -108,7 +110,7 @@ async function diagnose() {
     } else {
       console.log(`   ⚠️  Trigger not found in query (may need direct SQL)`);
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log(`   ⚠️  Cannot check trigger via API (normal)`);
   }
 
@@ -125,8 +127,9 @@ async function diagnose() {
     } else {
       console.log(`   ✅ Can access pricewaze_profiles table`);
     }
-  } catch (err: any) {
-    console.log(`   ❌ Exception: ${err.message}`);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.log(`   ❌ Exception: ${error.message}`);
   }
 
   console.log('\n📋 Recommendations:');

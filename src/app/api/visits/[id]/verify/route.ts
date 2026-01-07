@@ -143,8 +143,48 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Failed to verify visit' }, { status: 500 });
     }
 
+    // Award gamification rewards
+    try {
+      // Award points for verified visit
+      await supabase.rpc('pricewaze_award_points', {
+        p_user_id: user.id,
+        p_points: 10,
+        p_source: 'action',
+        p_source_id: id,
+        p_description: 'Verified property visit',
+      });
+
+      // Update achievement progress
+      await supabase.rpc('pricewaze_update_achievement', {
+        p_user_id: user.id,
+        p_achievement_code: 'verified_explorer',
+        p_progress_increment: 1,
+      });
+
+      // Award first visit badge if this is the first verified visit
+      const { count: visitCount } = await supabase
+        .from('pricewaze_visits')
+        .select('*', { count: 'exact', head: true })
+        .eq('visitor_id', user.id)
+        .not('verified_at', 'is', null);
+
+      if (visitCount === 1) {
+        await supabase.rpc('pricewaze_award_badge', {
+          p_user_id: user.id,
+          p_badge_code: 'first_visit',
+        });
+      }
+
+      // Recalculate trust score
+      await supabase.rpc('pricewaze_calculate_trust_score', {
+        p_user_id: user.id,
+      });
+    } catch (gamificationError) {
+      // Don't fail the visit verification if gamification fails
+      console.error('Gamification error:', gamificationError);
+    }
+
     // TODO: Send notification to property owner that visit was completed
-    // TODO: Award trust/reputation points to visitor
 
     return NextResponse.json({
       success: true,
