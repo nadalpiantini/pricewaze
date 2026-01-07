@@ -26,6 +26,7 @@ import {
 import { PropertyGallery } from './PropertyGallery';
 import { PropertyReviews } from '@/components/reviews/PropertyReviews';
 import { useAuthStore } from '@/stores/auth-store';
+import { useChat } from '@/hooks/useChat';
 import type { Property } from '@/types/database';
 
 interface PropertyDetailProps {
@@ -43,6 +44,7 @@ const propertyTypeLabels: Record<Property['property_type'], string> = {
 
 export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
   const { user } = useAuthStore();
+  const { startConversation, isCreating } = useChat();
   const images = property.images?.length ? property.images : ['/placeholder-property.jpg'];
 
   const formatPrice = (price: number) => {
@@ -205,9 +207,13 @@ export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button className="flex-1 gap-2">
+            <Button
+              className="flex-1 gap-2 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700"
+              onClick={() => startConversation(property)}
+              disabled={isCreating}
+            >
               <MessageSquare className="h-4 w-4" />
-              Make an Offer
+              {isCreating ? 'Iniciando...' : 'Contactar Vendedor'}
             </Button>
             <Button variant="outline" className="gap-2">
               <Calendar className="h-4 w-4" />

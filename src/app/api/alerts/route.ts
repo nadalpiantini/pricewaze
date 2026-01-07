@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 const createSavedSearchSchema = z.object({
   name: z.string().optional().nullable(),
-  filters: z.record(z.unknown()),
+  filters: z.record(z.string(), z.unknown()),
   notification_frequency: z.enum(['instant', 'daily', 'weekly']).default('daily'),
 });
 

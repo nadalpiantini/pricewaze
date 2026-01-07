@@ -3,11 +3,12 @@
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bed, Bath, Maximize, MapPin, Heart, GitCompare } from 'lucide-react';
+import { Bed, Bath, Maximize, MapPin, Heart, GitCompare, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Property } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { useComparison } from '@/hooks/useComparison';
+import { useChat } from '@/hooks/useChat';
 
 interface PropertyCardProps {
   property: Property;
@@ -25,6 +26,7 @@ const propertyTypeLabels: Record<Property['property_type'], string> = {
 
 export function PropertyCard({ property, onClick, compact = false }: PropertyCardProps) {
   const { isSelected, toggleProperty, canAddMore } = useComparison();
+  const { startConversation, isCreating } = useChat();
 
   const formatPrice = (price: number) => {
     if (price >= 1000000) {
@@ -181,7 +183,7 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
         )}
 
         {/* Property Features - Clean Layout */}
-        <div className="flex items-center gap-4 text-sm text-gray-700 border-t border-gray-100 pt-3">
+        <div className="flex items-center gap-4 text-sm text-gray-700 border-t border-gray-100 pt-3 mb-3">
           {property.bedrooms !== null && (
             <span className="flex items-center gap-1.5">
               <Bed className="h-4 w-4 text-gray-500" />
@@ -202,6 +204,19 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
             <span className="text-gray-500">m²</span>
           </span>
         </div>
+
+        {/* Contact Button */}
+        <Button
+          className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700"
+          onClick={(e) => {
+            e.stopPropagation();
+            startConversation(property);
+          }}
+          disabled={isCreating}
+        >
+          <MessageSquare className="h-4 w-4 mr-2" />
+          {isCreating ? 'Iniciando...' : 'Contactar'}
+        </Button>
       </CardContent>
     </Card>
   );

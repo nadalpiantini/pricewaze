@@ -7,7 +7,7 @@ const createMessageSchema = z.object({
   conversation_id: z.string().uuid(),
   content: z.string().min(1).max(5000),
   message_type: z.enum(['text', 'image', 'file', 'offer_link', 'visit_link']).default('text'),
-  metadata: z.record(z.unknown()).optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
 // POST /api/messages - Send a message
