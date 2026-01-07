@@ -36,8 +36,11 @@ jobs:
 
       - name: Verify critical dependencies
         run: |
-          echo "Verifying critical dependency versions..."
-          pnpm list next react react-dom typescript @types/node --depth=0 || true
+          echo "🔍 Verifying critical dependency versions..."
+          echo ""
+          echo "Checking package.json for critical packages:"
+          grep -E '"next"|"react"|"react-dom"|"typescript"|"@types/node"' package.json || echo "⚠️ Some packages not found in package.json"
+          echo ""
           echo "✅ Dependency check complete"
 
       - name: Run ESLint

@@ -30,8 +30,6 @@ updates:
       # Ignore major version updates for TypeScript (requires manual review)
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
-    # Allow minor and patch updates only for these
-    versioning-strategy: increase
 
   # Enable version updates for Python
   - package-ecosystem: "pip"

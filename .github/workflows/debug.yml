@@ -1,0 +1,108 @@
+name: Debug CI/CD Issues
+
+on:
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: 'What to check'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - dependencies
+          - build
+          - types
+          - python
+
+jobs:
+  debug:
+    name: Debug ${{ github.event.inputs.check_type }}
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Debug Info
+        run: |
+          echo "🔍 Debug Information"
+          echo "==================="
+          echo "Node version: $(node --version)"
+          echo "pnpm version: $(pnpm --version)"
+          echo "Git branch: ${{ github.ref }}"
+          echo "Git commit: ${{ github.sha }}"
+          echo ""
+          echo "📦 Package.json exists:"
+          test -f package.json && echo "✅ Yes" || echo "❌ No"
+          echo ""
+          echo "🔒 pnpm-lock.yaml exists:"
+          test -f pnpm-lock.yaml && echo "✅ Yes" || echo "❌ No"
+
+      - name: Check Dependencies
+        if: github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'dependencies'
+        run: |
+          echo "📦 Checking dependencies..."
+          pnpm install --frozen-lockfile
+          echo ""
+          echo "✅ Dependencies installed"
+          echo ""
+          echo "Critical packages:"
+          pnpm list next react react-dom typescript @types/node --depth=0 || echo "⚠️ Could not list packages"
+
+      - name: Check Build
+        if: github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'build'
+        run: |
+          echo "🔨 Testing build..."
+          pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.test' }}
+          NEXT_PUBLIC_MARKET_CODE: ${{ secrets.NEXT_PUBLIC_MARKET_CODE || 'global' }}
+
+      - name: Check Types
+        if: github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'types'
+        run: |
+          echo "📝 Checking TypeScript types..."
+          pnpm exec tsc --noEmit
+
+      - name: Check Python
+        if: github.event.inputs.check_type == 'all' || github.event.inputs.check_type == 'python'
+        run: |
+          echo "🐍 Checking Python setup..."
+          python3 --version
+          pip3 --version || echo "⚠️ pip3 not found"
+          
+          if [ -d "crewai" ]; then
+            echo "✅ crewai directory exists"
+            cd crewai
+            pip3 install -e ".[dev]" || echo "⚠️ Failed to install Python dependencies"
+          else
+            echo "❌ crewai directory not found"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo ""
+          echo "📊 Debug Summary"
+          echo "================"
+          echo "Check type: ${{ github.event.inputs.check_type }}"
+          echo "Status: ${{ job.status }}"
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ All checks passed"
+          else
+            echo "❌ Some checks failed - see logs above"
+          fi
+
