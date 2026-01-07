@@ -1463,7 +1463,7 @@ async function main() {
           .single();
 
         if (offer) {
-          // Try to create agreement
+          // Try to create agreement (correct schema: content, final_price, not contract_text, status)
           const { error: agreementError } = await supabase
             .from('pricewaze_agreements')
             .insert({
@@ -1471,8 +1471,12 @@ async function main() {
               buyer_id: offer.buyer_id,
               seller_id: offer.seller_id,
               property_id: offer.property_id,
-              contract_text: `Purchase agreement for property. Amount: RD$${offer.amount.toLocaleString()}`,
-              status: 'draft',
+              content: `Purchase agreement for property. Amount: RD$${offer.amount.toLocaleString()}`,
+              final_price: offer.amount,
+              terms: {
+                payment_terms: '30 days',
+                closing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              },
             });
 
           if (!agreementError) {
