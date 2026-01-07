@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx scripts/seed-runner.ts",
-    "seed:clear": "tsx -e \"import('./scripts/seed').then(m => m.clearExistingData())\""
+    "seed:clear": "tsx -e \"import('./scripts/seed').then(m => m.clearExistingData())\"",
+    "bmad:setup": "bash bmad/scripts/setup.sh",
+    "bmad:start": "bash bmad/scripts/quick_start.sh",
+    "bmad:status": "python3 bmad/scripts/feature_tracker.py --report",
+    "bmad:track": "python3 bmad/scripts/feature_tracker.py"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
