@@ -1,6 +1,10 @@
 -- Property Signals System (Waze-style)
 -- Signals with temporal decay and community confirmation
 -- Based on Waze model: signals lose strength over time, confirmed by consensus
+--
+-- IMPORTANT: This is the DEFINITIVE migration for the Waze-style signals system.
+-- If migration 20260110000002_enhance_property_signals_waze.sql exists, it should be
+-- renamed or removed as this migration replaces it completely.
 
 -- ============================================================================
 -- 1. RAW SIGNALS TABLE (Individual Events)
@@ -21,15 +25,15 @@ CREATE TABLE IF NOT EXISTS pricewaze_property_signals_raw (
   source TEXT NOT NULL CHECK (source IN ('system', 'user')),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- NULL for system signals
   visit_id UUID REFERENCES pricewaze_visits(id) ON DELETE CASCADE, -- NULL for system signals
-  created_at TIMESTAMPTZ DEFAULT now(),
-  -- One signal type per visit per user (prevents duplicate reports)
-  UNIQUE (user_id, visit_id, signal_type) WHERE user_id IS NOT NULL AND visit_id IS NOT NULL
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- ============================================================================
 -- 2. SIGNAL STATE TABLE (Aggregated + Decay + Confirmation)
 -- ============================================================================
 -- One row per property + signal_type with strength, confirmation status, and last seen
+-- Drop old table if it exists with different name and create the correct one
+DROP TABLE IF EXISTS pricewaze_property_signal_type_state CASCADE;
 CREATE TABLE IF NOT EXISTS pricewaze_property_signal_state (
   property_id UUID NOT NULL REFERENCES pricewaze_properties(id) ON DELETE CASCADE,
   signal_type TEXT NOT NULL CHECK (signal_type IN (
@@ -57,6 +61,12 @@ CREATE INDEX IF NOT EXISTS idx_property_signals_raw_created_at ON pricewaze_prop
 CREATE INDEX IF NOT EXISTS idx_property_signals_raw_source ON pricewaze_property_signals_raw(source);
 CREATE INDEX IF NOT EXISTS idx_property_signals_raw_user_id ON pricewaze_property_signals_raw(user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_property_signals_raw_visit_id ON pricewaze_property_signals_raw(visit_id) WHERE visit_id IS NOT NULL;
+
+-- Unique constraint: one signal type per visit per user (prevents duplicate reports)
+-- Using partial unique index instead of UNIQUE constraint with WHERE clause
+CREATE UNIQUE INDEX IF NOT EXISTS idx_property_signals_raw_unique_user_visit_signal 
+  ON pricewaze_property_signals_raw(user_id, visit_id, signal_type) 
+  WHERE user_id IS NOT NULL AND visit_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_property_signal_state_property_id ON pricewaze_property_signal_state(property_id);
 CREATE INDEX IF NOT EXISTS idx_property_signal_state_type ON pricewaze_property_signal_state(signal_type);
@@ -143,6 +153,8 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- ============================================================================
 -- Recalculates strength, confirmation, and last_seen_at for a property
 -- Applies temporal decay and community confirmation rules
+-- Drop old function if it exists (from previous migration that used different table name)
+DROP FUNCTION IF EXISTS pricewaze_recalculate_signal_state(UUID);
 CREATE OR REPLACE FUNCTION pricewaze_recalculate_signal_state(p_property_id UUID)
 RETURNS void AS $$
 DECLARE
@@ -158,31 +170,31 @@ DECLARE
 BEGIN
   -- Process each signal type for this property
   FOR v_signal_type IN
-    SELECT DISTINCT signal_type
-    FROM pricewaze_property_signals_raw
-    WHERE property_id = p_property_id
+    SELECT DISTINCT psr.signal_type
+    FROM pricewaze_property_signals_raw psr
+    WHERE psr.property_id = p_property_id
   LOOP
     -- Count total signals of this type
     SELECT COUNT(*)
     INTO v_signals_count
-    FROM pricewaze_property_signals_raw
-    WHERE property_id = p_property_id
-    AND signal_type = v_signal_type;
+    FROM pricewaze_property_signals_raw psr
+    WHERE psr.property_id = p_property_id
+    AND psr.signal_type = v_signal_type;
 
     -- Count unique users (for confirmation)
-    SELECT COUNT(DISTINCT user_id)
+    SELECT COUNT(DISTINCT psr.user_id)
     INTO v_unique_users
-    FROM pricewaze_property_signals_raw
-    WHERE property_id = p_property_id
-    AND signal_type = v_signal_type
-    AND user_id IS NOT NULL;
+    FROM pricewaze_property_signals_raw psr
+    WHERE psr.property_id = p_property_id
+    AND psr.signal_type = v_signal_type
+    AND psr.user_id IS NOT NULL;
 
     -- Get last seen timestamp
-    SELECT MAX(created_at)
+    SELECT MAX(psr.created_at)
     INTO v_last_seen
-    FROM pricewaze_property_signals_raw
-    WHERE property_id = p_property_id
-    AND signal_type = v_signal_type;
+    FROM pricewaze_property_signals_raw psr
+    WHERE psr.property_id = p_property_id
+    AND psr.signal_type = v_signal_type;
 
     -- Calculate days old
     v_days_old := EXTRACT(EPOCH FROM (NOW() - v_last_seen)) / 86400.0;
@@ -222,12 +234,15 @@ BEGIN
   END LOOP;
 
   -- Remove signal states that no longer have any raw signals
+  -- Delete states for signal types that no longer exist in raw table
+  -- Use explicit table references to avoid alias resolution issues
   DELETE FROM pricewaze_property_signal_state
-  WHERE property_id = p_property_id
-  AND signal_type NOT IN (
-    SELECT DISTINCT signal_type
+  WHERE pricewaze_property_signal_state.property_id = p_property_id
+  AND NOT EXISTS (
+    SELECT 1 
     FROM pricewaze_property_signals_raw
-    WHERE property_id = p_property_id
+    WHERE pricewaze_property_signals_raw.property_id = pricewaze_property_signal_state.property_id
+    AND pricewaze_property_signals_raw.signal_type = pricewaze_property_signal_state.signal_type
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
