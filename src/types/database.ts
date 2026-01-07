@@ -300,31 +300,52 @@ export interface ReviewHelpful {
 
 // Property Signals (Waze-style)
 export type PropertySignalType = 
-  | 'high_activity'      // System: many views
-  | 'many_visits'        // System: verified visits
-  | 'competing_offers'   // System: active offers
-  | 'noise'              // User: zona ruidosa
-  | 'humidity'           // User: posible humedad
-  | 'misleading_photos'  // User: fotos engañosas
-  | 'price_issue';        // User: precio discutido
+  // System signals (automatic)
+  | 'high_activity'        // System: many views
+  | 'many_visits'          // System: verified visits
+  | 'competing_offers'     // System: active offers
+  | 'long_time_on_market'  // System: much time without closing
+  | 'recent_price_change'  // System: recent price change
+  // User negative signals (post-visit)
+  | 'noise'                // User: zona ruidosa
+  | 'humidity'             // User: posible humedad
+  | 'misleading_photos'    // User: fotos engañosas
+  | 'poor_parking'         // User: parqueo complicado
+  | 'security_concern'     // User: sensación de inseguridad
+  | 'maintenance_needed'   // User: mantenimiento evidente
+  | 'price_issue'          // User: precio percibido como fuera de mercado
+  // User positive signals (post-visit)
+  | 'quiet_area'           // User: zona tranquila confirmada
+  | 'good_condition'       // User: propiedad bien mantenida
+  | 'transparent_listing'; // User: fotos y descripción fieles
 
 export type SignalSource = 'system' | 'user';
 
-export interface PropertySignal {
+// Raw signal event (individual report) - matches pricewaze_property_signals_raw
+export interface PropertySignalRaw {
   id: string;
   property_id: string;
   signal_type: PropertySignalType;
   source: SignalSource;
-  weight: number;
+  user_id?: string | null; // NULL for system signals
+  visit_id?: string | null; // NULL for system signals
   created_at: string;
   property?: Property;
+  user?: Profile;
+  visit?: Visit;
 }
+
+// Legacy alias for backward compatibility
+export interface PropertySignal extends PropertySignalRaw {}
 
 export interface SignalReport {
   id: string;
   property_id: string;
   user_id: string;
-  signal_type: 'noise' | 'humidity' | 'misleading_photos' | 'price_issue';
+  signal_type: 
+    | 'noise' | 'humidity' | 'misleading_photos' | 'poor_parking' 
+    | 'security_concern' | 'maintenance_needed' | 'price_issue'
+    | 'quiet_area' | 'good_condition' | 'transparent_listing';
   visit_id: string;
   created_at: string;
   property?: Property;
@@ -338,6 +359,21 @@ export interface PropertySignalState {
   updated_at: string;
   property?: Property;
 }
+
+// Signal state with decay and confirmation (Waze-style) - matches pricewaze_property_signal_state
+// One row per property_id + signal_type
+export interface PropertySignalTypeState {
+  property_id: string;
+  signal_type: PropertySignalType;
+  strength: number; // Decayed strength (0-100+)
+  confirmed: boolean; // Confirmed by ≥3 users in last 30 days
+  last_seen_at: string; // Last time this signal was reported
+  updated_at: string;
+  property?: Property;
+}
+
+// Alias for consistency with database table name
+export type PropertySignalState = PropertySignalTypeState;
 
 // Chat System
 export interface Conversation {

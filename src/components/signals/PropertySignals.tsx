@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { 
-  getSignalIcon, 
-  getSignalLabel, 
+import {
+  getSignalIcon,
+  getSignalLabel,
   getSignalDescription,
-  type PropertySignalType 
+  isPositiveSignal,
 } from '@/lib/signals';
-import type { PropertySignalState } from '@/types/database';
+import type { PropertySignalTypeState, PropertySignalType } from '@/types/database';
 
 interface PropertySignalsProps {
   propertyId: string;
@@ -19,26 +19,28 @@ interface PropertySignalsProps {
 /**
  * PropertySignals Component (Waze-style)
  * Displays aggregated signals for a property with realtime updates
+ * Shows colors: gray (unconfirmed), red (confirmed negative), green (confirmed positive)
  */
 export function PropertySignals({ propertyId, className }: PropertySignalsProps) {
-  const [signals, setSignals] = useState<Record<PropertySignalType, number>>({} as Record<PropertySignalType, number>);
+  const [signalStates, setSignalStates] = useState<PropertySignalTypeState[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
 
-  // Fetch initial signal state
+  // Fetch initial signal state (using new signal_type_state table)
   useEffect(() => {
     async function fetchSignals() {
       try {
         const { data, error } = await supabase
-          .from('pricewaze_property_signal_state')
-          .select('signals')
+          .from('pricewaze_property_signal_type_state')
+          .select('*')
           .eq('property_id', propertyId)
-          .single();
+          .gt('strength', 0) // Only show signals with strength > 0
+          .order('strength', { ascending: false });
 
         if (error && error.code !== 'PGRST116') {
           console.error('Error fetching signals:', error);
         } else if (data) {
-          setSignals((data.signals as Record<PropertySignalType, number>) || {});
+          setSignalStates(data as PropertySignalTypeState[]);
         }
       } catch (error) {
         console.error('Error fetching signals:', error);
@@ -57,14 +59,12 @@ export function PropertySignals({ propertyId, className }: PropertySignalsProps)
         {
           event: '*',
           schema: 'public',
-          table: 'pricewaze_property_signal_state',
+          table: 'pricewaze_property_signal_type_state',
           filter: `property_id=eq.${propertyId}`,
         },
-        (payload) => {
-          const newState = payload.new as PropertySignalState;
-          if (newState.signals) {
-            setSignals(newState.signals as Record<PropertySignalType, number>);
-          }
+        () => {
+          // Refetch signals when state changes
+          fetchSignals();
         }
       )
       .subscribe();
@@ -82,32 +82,58 @@ export function PropertySignals({ propertyId, className }: PropertySignalsProps)
     );
   }
 
-  // Filter out signals with count 0 or undefined
-  const activeSignals = Object.entries(signals).filter(
-    ([, count]) => count !== undefined && count > 0
-  ) as [PropertySignalType, number][];
-
-  if (activeSignals.length === 0) {
+  if (signalStates.length === 0) {
     return null; // Don't show anything if there are no signals
   }
 
   return (
     <div className={`flex gap-2 flex-wrap ${className || ''}`}>
-      {activeSignals.map(([signalType, count]) => (
-        <Badge
-          key={signalType}
-          variant="secondary"
-          className="text-sm px-3 py-1 cursor-help"
-          title={getSignalDescription(signalType)}
-        >
-          <span className="mr-1">{getSignalIcon(signalType)}</span>
-          <span>{getSignalLabel(signalType)}</span>
-          {count > 1 && (
-            <span className="ml-1 font-semibold">×{count}</span>
-          )}
-        </Badge>
-      ))}
+      {signalStates.map((signalState) => {
+        const { signal_type, strength, confirmed } = signalState;
+        const roundedStrength = Math.round(strength);
+        
+        // Determine badge variant and color based on confirmation and signal type
+        let badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
+        let badgeClassName = 'text-sm px-3 py-1 cursor-help';
+        
+        if (confirmed) {
+          if (isPositiveSignal(signal_type)) {
+            // Green for confirmed positive signals
+            badgeVariant = 'default';
+            badgeClassName += ' bg-green-100 text-green-800 hover:bg-green-200 border-green-300';
+          } else {
+            // Red for confirmed negative signals
+            badgeVariant = 'destructive';
+            badgeClassName += ' bg-red-100 text-red-800 hover:bg-red-200';
+          }
+        } else {
+          // Gray for unconfirmed signals
+          badgeVariant = 'secondary';
+          badgeClassName += ' bg-gray-100 text-gray-700 hover:bg-gray-200';
+        }
+
+        const tooltipText = confirmed 
+          ? `${getSignalDescription(signal_type)} (confirmado por comunidad)`
+          : getSignalDescription(signal_type);
+
+        return (
+          <Badge
+            key={signal_type}
+            variant={badgeVariant}
+            className={badgeClassName}
+            title={tooltipText}
+          >
+            <span className="mr-1">{getSignalIcon(signal_type)}</span>
+            <span>{getSignalLabel(signal_type)}</span>
+            {roundedStrength > 1 && (
+              <span className="ml-1 font-semibold">×{roundedStrength}</span>
+            )}
+            {confirmed && (
+              <span className="ml-1 text-xs" title="Confirmado por comunidad">✓</span>
+            )}
+          </Badge>
+        );
+      })}
     </div>
   );
 }
-

@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  getSignalIcon, 
+import {
+  getSignalIcon,
   getSignalLabel,
   USER_REPORTABLE_SIGNALS,
-  type PropertySignalType 
 } from '@/lib/signals';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import type { PropertySignalType } from '@/types/database';
 
 interface ReportSignalButtonsProps {
   propertyId: string;

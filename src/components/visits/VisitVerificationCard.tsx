@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useVisits } from '@/hooks/use-visits';
+import { ReportSignalButtons } from '@/components/signals';
+import { useAuthStore } from '@/stores/auth-store';
 import { toast } from 'sonner';
 import { MapPin, Navigation, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react';
 import type { Visit } from '@/types/visit';
@@ -22,6 +24,7 @@ export function VisitVerificationCard({ visit, onVerified }: VisitVerificationCa
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [loadingGps, setLoadingGps] = useState(false);
   const { verifyVisit, loading } = useVisits();
+  const { user } = useAuthStore();
 
   const isScheduled = visit.status === 'scheduled';
   const isCompleted = visit.status === 'completed';
@@ -146,15 +149,30 @@ export function VisitVerificationCard({ visit, onVerified }: VisitVerificationCa
         </div>
 
         {isCompleted && visit.verified_at && (
-          <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
-            <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-              <CheckCircle className="w-5 h-5" />
-              <span className="font-medium">Visit Verified</span>
+          <>
+            <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-medium">Visit Verified</span>
+              </div>
+              <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                Verified on {formatDate(visit.verified_at)}
+              </p>
             </div>
-            <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-              Verified on {formatDate(visit.verified_at)}
-            </p>
-          </div>
+            
+            {/* Report Signals (Waze-style) - Only show to the visitor */}
+            {user?.id === visit.visitor_id && visit.property_id && (
+              <div className="mt-4 p-4 border rounded-lg bg-muted/50">
+                <ReportSignalButtons
+                  propertyId={visit.property_id}
+                  visitId={visit.id}
+                  onSignalReported={() => {
+                    // Optionally refresh or show feedback
+                  }}
+                />
+              </div>
+            )}
+          </>
         )}
 
         {isScheduled && (

@@ -1,9 +1,12 @@
 -- Property Signals System (Waze-style)
--- Quick, aggregated signals visible on properties (no long reviews)
--- Signals are either system-generated (views, visits, offers) or user-reported (post-visit)
+-- Signals with temporal decay and community confirmation
+-- Based on Waze model: signals lose strength over time, confirmed by consensus
 
--- Property Signals Table (individual signal events)
-CREATE TABLE IF NOT EXISTS pricewaze_property_signals (
+-- ============================================================================
+-- 1. RAW SIGNALS TABLE (Individual Events)
+-- ============================================================================
+-- Each signal event (user report or system-generated)
+CREATE TABLE IF NOT EXISTS pricewaze_property_signals_raw (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   property_id UUID NOT NULL REFERENCES pricewaze_properties(id) ON DELETE CASCADE,
   signal_type TEXT NOT NULL CHECK (signal_type IN (
@@ -16,93 +19,77 @@ CREATE TABLE IF NOT EXISTS pricewaze_property_signals (
     'price_issue'         -- User: precio discutido
   )),
   source TEXT NOT NULL CHECK (source IN ('system', 'user')),
-  weight INTEGER DEFAULT 1, -- For future: trust-based weighting
-  created_at TIMESTAMPTZ DEFAULT now()
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- NULL for system signals
+  visit_id UUID REFERENCES pricewaze_visits(id) ON DELETE CASCADE, -- NULL for system signals
+  created_at TIMESTAMPTZ DEFAULT now(),
+  -- One signal type per visit per user (prevents duplicate reports)
+  UNIQUE (user_id, visit_id, signal_type) WHERE user_id IS NOT NULL AND visit_id IS NOT NULL
 );
 
--- Signal Reports Table (user reports linked to verified visits)
--- Only users who verified a visit can report signals
-CREATE TABLE IF NOT EXISTS pricewaze_signal_reports (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+-- ============================================================================
+-- 2. SIGNAL STATE TABLE (Aggregated + Decay + Confirmation)
+-- ============================================================================
+-- One row per property + signal_type with strength, confirmation status, and last seen
+CREATE TABLE IF NOT EXISTS pricewaze_property_signal_state (
   property_id UUID NOT NULL REFERENCES pricewaze_properties(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   signal_type TEXT NOT NULL CHECK (signal_type IN (
+    'high_activity',
+    'many_visits',
+    'competing_offers',
     'noise',
     'humidity',
     'misleading_photos',
     'price_issue'
   )),
-  visit_id UUID NOT NULL REFERENCES pricewaze_visits(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE (user_id, visit_id, signal_type) -- One signal type per visit per user
+  strength NUMERIC NOT NULL DEFAULT 0, -- Decayed strength (0-100+)
+  confirmed BOOLEAN DEFAULT false, -- Confirmed by ≥3 users in last 30 days
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(), -- Last time this signal was reported
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (property_id, signal_type)
 );
 
--- Property Signal State Table (aggregated view for realtime)
--- This is the "live dashboard" that shows current signal counts
-CREATE TABLE IF NOT EXISTS pricewaze_property_signal_state (
-  property_id UUID PRIMARY KEY REFERENCES pricewaze_properties(id) ON DELETE CASCADE,
-  signals JSONB NOT NULL DEFAULT '{}', -- { "noise": 3, "humidity": 1, "many_visits": 6 }
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+-- ============================================================================
+-- 3. INDEXES
+-- ============================================================================
+CREATE INDEX IF NOT EXISTS idx_property_signals_raw_property_id ON pricewaze_property_signals_raw(property_id);
+CREATE INDEX IF NOT EXISTS idx_property_signals_raw_type ON pricewaze_property_signals_raw(signal_type);
+CREATE INDEX IF NOT EXISTS idx_property_signals_raw_created_at ON pricewaze_property_signals_raw(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_property_signals_raw_source ON pricewaze_property_signals_raw(source);
+CREATE INDEX IF NOT EXISTS idx_property_signals_raw_user_id ON pricewaze_property_signals_raw(user_id) WHERE user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_property_signals_raw_visit_id ON pricewaze_property_signals_raw(visit_id) WHERE visit_id IS NOT NULL;
 
--- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_property_signals_property_id ON pricewaze_property_signals(property_id);
-CREATE INDEX IF NOT EXISTS idx_property_signals_type ON pricewaze_property_signals(signal_type);
-CREATE INDEX IF NOT EXISTS idx_property_signals_created_at ON pricewaze_property_signals(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_property_signals_source ON pricewaze_property_signals(source);
+CREATE INDEX IF NOT EXISTS idx_property_signal_state_property_id ON pricewaze_property_signal_state(property_id);
+CREATE INDEX IF NOT EXISTS idx_property_signal_state_type ON pricewaze_property_signal_state(signal_type);
+CREATE INDEX IF NOT EXISTS idx_property_signal_state_confirmed ON pricewaze_property_signal_state(confirmed);
+CREATE INDEX IF NOT EXISTS idx_property_signal_state_strength ON pricewaze_property_signal_state(strength DESC);
 
-CREATE INDEX IF NOT EXISTS idx_signal_reports_property_id ON pricewaze_signal_reports(property_id);
-CREATE INDEX IF NOT EXISTS idx_signal_reports_user_id ON pricewaze_signal_reports(user_id);
-CREATE INDEX IF NOT EXISTS idx_signal_reports_visit_id ON pricewaze_signal_reports(visit_id);
-CREATE INDEX IF NOT EXISTS idx_signal_reports_type ON pricewaze_signal_reports(signal_type);
-
--- RLS Policies
-ALTER TABLE pricewaze_property_signals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pricewaze_signal_reports ENABLE ROW LEVEL SECURITY;
+-- ============================================================================
+-- 4. RLS POLICIES
+-- ============================================================================
+ALTER TABLE pricewaze_property_signals_raw ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pricewaze_property_signal_state ENABLE ROW LEVEL SECURITY;
 
--- Property Signals: Anyone can view (public signals)
-DROP POLICY IF EXISTS "Anyone can view property signals" ON pricewaze_property_signals;
-CREATE POLICY "Anyone can view property signals"
-  ON pricewaze_property_signals
+-- Raw Signals: Anyone can view (transparency)
+DROP POLICY IF EXISTS "Anyone can view property signals raw" ON pricewaze_property_signals_raw;
+CREATE POLICY "Anyone can view property signals raw"
+  ON pricewaze_property_signals_raw
   FOR SELECT
   USING (true);
 
 -- System can insert signals (via service role)
-DROP POLICY IF EXISTS "System can insert property signals" ON pricewaze_property_signals;
-CREATE POLICY "System can insert property signals"
-  ON pricewaze_property_signals
+DROP POLICY IF EXISTS "System can insert property signals raw" ON pricewaze_property_signals_raw;
+CREATE POLICY "System can insert property signals raw"
+  ON pricewaze_property_signals_raw
   FOR INSERT
   WITH CHECK (source = 'system');
 
--- Users can insert their own user signals
-DROP POLICY IF EXISTS "Users can insert their own signals" ON pricewaze_property_signals;
-CREATE POLICY "Users can insert their own signals"
-  ON pricewaze_property_signals
+-- Users can insert their own user signals (must have verified visit)
+DROP POLICY IF EXISTS "Users can insert their own signals raw" ON pricewaze_property_signals_raw;
+CREATE POLICY "Users can insert their own signals raw"
+  ON pricewaze_property_signals_raw
   FOR INSERT
   WITH CHECK (
     source = 'user' AND
-    EXISTS (
-      SELECT 1 FROM pricewaze_signal_reports
-      WHERE pricewaze_signal_reports.user_id = auth.uid()
-      AND pricewaze_signal_reports.property_id = property_id
-      AND pricewaze_signal_reports.signal_type = signal_type
-    )
-  );
-
--- Signal Reports: Users can view all (transparency)
-DROP POLICY IF EXISTS "Anyone can view signal reports" ON pricewaze_signal_reports;
-CREATE POLICY "Anyone can view signal reports"
-  ON pricewaze_signal_reports
-  FOR SELECT
-  USING (true);
-
--- Users can only report signals for their own verified visits
-DROP POLICY IF EXISTS "Users can report signals for their verified visits" ON pricewaze_signal_reports;
-CREATE POLICY "Users can report signals for their verified visits"
-  ON pricewaze_signal_reports
-  FOR INSERT
-  WITH CHECK (
     auth.uid() = user_id AND
     EXISTS (
       SELECT 1 FROM pricewaze_visits
@@ -113,7 +100,7 @@ CREATE POLICY "Users can report signals for their verified visits"
     )
   );
 
--- Property Signal State: Anyone can view (public aggregated state)
+-- Signal State: Anyone can view (public aggregated state)
 DROP POLICY IF EXISTS "Anyone can view property signal state" ON pricewaze_property_signal_state;
 CREATE POLICY "Anyone can view property signal state"
   ON pricewaze_property_signal_state
@@ -128,35 +115,126 @@ CREATE POLICY "System can update signal state"
   USING (true)
   WITH CHECK (true);
 
--- Function to recalculate signal state for a property
+-- ============================================================================
+-- 5. DECAY FUNCTION (Temporal Decay Logic)
+-- ============================================================================
+-- Returns decay factor based on days since last signal
+-- 0-7 days: 1.0 (full strength)
+-- 8-14 days: 0.7 (70%)
+-- 15-30 days: 0.4 (40%)
+-- 31+ days: 0.1 (10%)
+CREATE OR REPLACE FUNCTION pricewaze_signal_decay_factor(days_old NUMERIC)
+RETURNS NUMERIC AS $$
+BEGIN
+  IF days_old <= 7 THEN
+    RETURN 1.0;
+  ELSIF days_old <= 14 THEN
+    RETURN 0.7;
+  ELSIF days_old <= 30 THEN
+    RETURN 0.4;
+  ELSE
+    RETURN 0.1;
+  END IF;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- ============================================================================
+-- 6. RECALCULATE SIGNAL STATE FUNCTION
+-- ============================================================================
+-- Recalculates strength, confirmation, and last_seen_at for a property
+-- Applies temporal decay and community confirmation rules
 CREATE OR REPLACE FUNCTION pricewaze_recalculate_signal_state(p_property_id UUID)
 RETURNS void AS $$
 DECLARE
-  v_signals JSONB;
+  v_signal_record RECORD;
+  v_signal_type TEXT;
+  v_signals_count INTEGER;
+  v_unique_users INTEGER;
+  v_last_seen TIMESTAMPTZ;
+  v_days_old NUMERIC;
+  v_decay_factor NUMERIC;
+  v_strength NUMERIC;
+  v_confirmed BOOLEAN;
 BEGIN
-  -- Aggregate signals by type
-  SELECT jsonb_object_agg(signal_type, count)
-  INTO v_signals
-  FROM (
-    SELECT 
-      signal_type,
-      SUM(weight)::INTEGER as count
-    FROM pricewaze_property_signals
+  -- Process each signal type for this property
+  FOR v_signal_type IN
+    SELECT DISTINCT signal_type
+    FROM pricewaze_property_signals_raw
     WHERE property_id = p_property_id
-    GROUP BY signal_type
-  ) aggregated;
+  LOOP
+    -- Count total signals of this type
+    SELECT COUNT(*)
+    INTO v_signals_count
+    FROM pricewaze_property_signals_raw
+    WHERE property_id = p_property_id
+    AND signal_type = v_signal_type;
 
-  -- Upsert the state
-  INSERT INTO pricewaze_property_signal_state (property_id, signals, updated_at)
-  VALUES (p_property_id, COALESCE(v_signals, '{}'::jsonb), now())
-  ON CONFLICT (property_id)
-  DO UPDATE SET
-    signals = EXCLUDED.signals,
-    updated_at = EXCLUDED.updated_at;
+    -- Count unique users (for confirmation)
+    SELECT COUNT(DISTINCT user_id)
+    INTO v_unique_users
+    FROM pricewaze_property_signals_raw
+    WHERE property_id = p_property_id
+    AND signal_type = v_signal_type
+    AND user_id IS NOT NULL;
+
+    -- Get last seen timestamp
+    SELECT MAX(created_at)
+    INTO v_last_seen
+    FROM pricewaze_property_signals_raw
+    WHERE property_id = p_property_id
+    AND signal_type = v_signal_type;
+
+    -- Calculate days old
+    v_days_old := EXTRACT(EPOCH FROM (NOW() - v_last_seen)) / 86400.0;
+
+    -- Get decay factor
+    v_decay_factor := pricewaze_signal_decay_factor(v_days_old);
+
+    -- Calculate strength (count * decay factor)
+    v_strength := v_signals_count * v_decay_factor;
+
+    -- Check confirmation: ≥3 unique users AND within last 30 days
+    v_confirmed := (v_unique_users >= 3) AND (v_days_old <= 30);
+
+    -- Upsert signal state
+    INSERT INTO pricewaze_property_signal_state (
+      property_id,
+      signal_type,
+      strength,
+      confirmed,
+      last_seen_at,
+      updated_at
+    )
+    VALUES (
+      p_property_id,
+      v_signal_type,
+      v_strength,
+      v_confirmed,
+      v_last_seen,
+      NOW()
+    )
+    ON CONFLICT (property_id, signal_type)
+    DO UPDATE SET
+      strength = EXCLUDED.strength,
+      confirmed = EXCLUDED.confirmed,
+      last_seen_at = EXCLUDED.last_seen_at,
+      updated_at = EXCLUDED.updated_at;
+  END LOOP;
+
+  -- Remove signal states that no longer have any raw signals
+  DELETE FROM pricewaze_property_signal_state
+  WHERE property_id = p_property_id
+  AND signal_type NOT IN (
+    SELECT DISTINCT signal_type
+    FROM pricewaze_property_signals_raw
+    WHERE property_id = p_property_id
+  );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger to auto-recalculate when signals change
+-- ============================================================================
+-- 7. TRIGGERS (Auto-recalculate on changes)
+-- ============================================================================
 CREATE OR REPLACE FUNCTION pricewaze_trigger_recalculate_signals()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -167,19 +245,23 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS recalculate_signals_on_insert ON pricewaze_property_signals;
+-- Trigger on insert
+DROP TRIGGER IF EXISTS recalculate_signals_on_insert ON pricewaze_property_signals_raw;
 CREATE TRIGGER recalculate_signals_on_insert
-  AFTER INSERT ON pricewaze_property_signals
+  AFTER INSERT ON pricewaze_property_signals_raw
   FOR EACH ROW
   EXECUTE FUNCTION pricewaze_trigger_recalculate_signals();
 
-DROP TRIGGER IF EXISTS recalculate_signals_on_delete ON pricewaze_property_signals;
+-- Trigger on delete
+DROP TRIGGER IF EXISTS recalculate_signals_on_delete ON pricewaze_property_signals_raw;
 CREATE TRIGGER recalculate_signals_on_delete
-  AFTER DELETE ON pricewaze_property_signals
+  AFTER DELETE ON pricewaze_property_signals_raw
   FOR EACH ROW
   EXECUTE FUNCTION pricewaze_trigger_recalculate_signals();
 
--- Enable Realtime for signal_state (Waze-style live updates)
+-- ============================================================================
+-- 8. REALTIME (Waze-style live updates)
+-- ============================================================================
 DO $$
 BEGIN
   IF EXISTS (
@@ -199,9 +281,10 @@ BEGIN
   END IF;
 END $$;
 
--- Comments
-COMMENT ON TABLE pricewaze_property_signals IS 'Individual signal events (system or user-generated)';
-COMMENT ON TABLE pricewaze_signal_reports IS 'User reports linked to verified visits (prevents spam)';
-COMMENT ON TABLE pricewaze_property_signal_state IS 'Aggregated signal counts for realtime display (Waze-style)';
-COMMENT ON FUNCTION pricewaze_recalculate_signal_state IS 'Recalculates aggregated signal state for a property';
-
+-- ============================================================================
+-- 9. COMMENTS
+-- ============================================================================
+COMMENT ON TABLE pricewaze_property_signals_raw IS 'Individual signal events (system or user-generated). Events decay over time.';
+COMMENT ON TABLE pricewaze_property_signal_state IS 'Aggregated signal state with temporal decay and community confirmation (Waze-style). One row per property+signal_type.';
+COMMENT ON FUNCTION pricewaze_signal_decay_factor IS 'Returns decay factor based on signal age (1.0 for 0-7 days, 0.7 for 8-14, 0.4 for 15-30, 0.1 for 31+)';
+COMMENT ON FUNCTION pricewaze_recalculate_signal_state IS 'Recalculates signal strength with temporal decay and community confirmation (≥3 users in last 30 days)';

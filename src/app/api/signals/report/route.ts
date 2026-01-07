@@ -6,7 +6,11 @@ import { z } from 'zod';
 const reportSignalSchema = z.object({
   property_id: z.string().uuid(),
   visit_id: z.string().uuid(),
-  signal_type: z.enum(['noise', 'humidity', 'misleading_photos', 'price_issue']),
+  signal_type: z.enum([
+    'noise', 'humidity', 'misleading_photos', 'poor_parking', 
+    'security_concern', 'maintenance_needed', 'price_issue',
+    'quiet_area', 'good_condition', 'transparent_listing'
+  ]),
 });
 
 // POST /api/signals/report - Report a signal after verified visit
@@ -106,15 +110,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert corresponding signal (user-generated)
-    // The trigger will automatically recalculate the aggregated state
+    // Insert corresponding raw signal (user-generated)
+    // The trigger will automatically recalculate the aggregated state with temporal decay
     const { error: signalError } = await supabase
-      .from('pricewaze_property_signals')
+      .from('pricewaze_property_signals_raw')
       .insert({
         property_id,
         signal_type,
         source: 'user',
-        weight: 1,
+        user_id: user.id,
+        visit_id,
       });
 
     if (signalError) {
