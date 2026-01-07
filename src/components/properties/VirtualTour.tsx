@@ -18,8 +18,14 @@ export function VirtualTour({ media, className = '' }: VirtualTourProps) {
     }
 
     // Dynamically import pannellum
-    import('pannellum').then((pannellum) => {
+    import('pannellum').then((pannellumModule) => {
       if (!containerRef.current || viewerRef.current) return;
+
+      const pannellum = pannellumModule.default || pannellumModule;
+      if (!pannellum || typeof pannellum.viewer !== 'function') {
+        console.error('Pannellum viewer not available');
+        return;
+      }
 
       const config: import('pannellum').ViewerConfig = {
         type: 'equirectangular',
@@ -31,7 +37,7 @@ export function VirtualTour({ media, className = '' }: VirtualTourProps) {
       };
 
       try {
-        viewerRef.current = pannellum.default.viewer(containerRef.current, config);
+        viewerRef.current = pannellum.viewer(containerRef.current, config);
       } catch (error) {
         console.error('Error initializing Pannellum viewer:', error);
       }

@@ -19,5 +19,6 @@ declare module 'pannellum' {
 
   const pannellum: Pannellum;
   export default pannellum;
+  export { pannellum };
 }
 
