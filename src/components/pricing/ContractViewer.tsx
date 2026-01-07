@@ -21,8 +21,10 @@ import {
   Printer,
   Copy,
   Check,
+  FileDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { jsPDF } from 'jspdf';
 
 interface ContractViewerProps {
   offerId: string;
@@ -111,7 +113,7 @@ export function ContractViewer({ offerId, disabled }: ContractViewerProps) {
     printWindow.print();
   };
 
-  const handleDownload = () => {
+  const handleDownloadTxt = () => {
     if (!contract) return;
 
     const content = contract.disclaimer + '\n\n' + contract.content;
@@ -124,7 +126,149 @@ export function ContractViewer({ offerId, disabled }: ContractViewerProps) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success('Contract downloaded');
+    toast.success('Contract downloaded as TXT');
+  };
+
+  const handleDownloadPdf = () => {
+    if (!contract) return;
+
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'letter',
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxWidth = pageWidth - margin * 2;
+      let yPosition = margin;
+
+      // Helper function to add text with word wrap
+      const addText = (text: string, fontSize: number, isBold = false) => {
+        doc.setFontSize(fontSize);
+        doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+        const lines = doc.splitTextToSize(text, maxWidth);
+
+        for (const line of lines) {
+          if (yPosition > pageHeight - margin) {
+            doc.addPage();
+            yPosition = margin;
+          }
+          doc.text(line, margin, yPosition);
+          yPosition += fontSize * 0.4;
+        }
+        yPosition += 2;
+      };
+
+      // Title
+      doc.setFillColor(245, 158, 11); // Yellow background
+      doc.rect(margin - 5, yPosition - 5, maxWidth + 10, 15, 'F');
+      addText('⚠️ BORRADOR NO VINCULANTE / NON-BINDING DRAFT ⚠️', 12, true);
+      yPosition += 5;
+
+      // Header
+      addText('DRAFT PURCHASE AGREEMENT', 16, true);
+      addText('BORRADOR DE CONTRATO DE COMPRAVENTA', 14, true);
+      yPosition += 5;
+
+      // Contract details
+      addText(`Reference: ${contract.offerId}`, 10);
+      addText(`Generated: ${new Date(contract.generatedAt).toLocaleDateString()}`, 10);
+      yPosition += 5;
+
+      // Parties section
+      doc.setDrawColor(200);
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 5;
+
+      addText('PARTIES / PARTES', 12, true);
+      addText(`Buyer / Comprador: ${contract.parties.buyer.name}`, 10);
+      addText(`Seller / Vendedor: ${contract.parties.seller.name}`, 10);
+      yPosition += 3;
+
+      // Property section
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 5;
+
+      addText('PROPERTY / INMUEBLE', 12, true);
+      addText(`Address: ${contract.property.address}`, 10);
+      if (contract.property.area_m2) {
+        addText(`Area: ${contract.property.area_m2} m²`, 10);
+      }
+      addText(`Description: ${contract.property.description}`, 10);
+      yPosition += 3;
+
+      // Terms section
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 5;
+
+      addText('TERMS / TÉRMINOS', 12, true);
+      addText(`Agreed Price: ${formatCurrency(contract.terms.agreedPrice)} ${contract.terms.currency}`, 11, true);
+      addText(`Payment Terms: ${contract.terms.paymentTerms}`, 10);
+      yPosition += 3;
+
+      // Conditions
+      addText('Conditions:', 10, true);
+      contract.terms.conditions.forEach((condition) => {
+        addText(`• ${condition}`, 9);
+      });
+      yPosition += 5;
+
+      // Main contract content
+      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 5;
+
+      addText('CONTRACT CONTENT / CONTENIDO DEL CONTRATO', 12, true);
+      yPosition += 3;
+
+      // Split contract content by lines and add
+      const contentLines = contract.content.split('\n');
+      contentLines.forEach((line) => {
+        if (line.trim()) {
+          addText(line, 9);
+        } else {
+          yPosition += 2;
+        }
+      });
+
+      // Disclaimer at the end
+      if (yPosition > pageHeight - 60) {
+        doc.addPage();
+        yPosition = margin;
+      }
+      yPosition += 10;
+
+      doc.setFillColor(255, 243, 205); // Light yellow
+      doc.rect(margin - 5, yPosition - 5, maxWidth + 10, 50, 'F');
+      addText('LEGAL DISCLAIMER / AVISO LEGAL', 10, true);
+      addText(contract.disclaimer.substring(0, 500) + '...', 8);
+
+      // Footer on each page
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(128);
+        doc.text(
+          `Page ${i} of ${pageCount} | Generated by PriceMap | Draft - Not legally binding`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+        doc.setTextColor(0);
+      }
+
+      // Save PDF
+      doc.save(`contract-draft-${contract.offerId.slice(0, 8)}.pdf`);
+      toast.success('Contract downloaded as PDF');
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast.error('Failed to generate PDF. Downloading as TXT instead.');
+      handleDownloadTxt();
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -242,12 +386,16 @@ export function ContractViewer({ offerId, disabled }: ContractViewerProps) {
                 <Printer className="w-4 h-4 mr-1" />
                 Print
               </Button>
-              <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Button variant="outline" size="sm" onClick={handleDownloadTxt}>
                 <Download className="w-4 h-4 mr-1" />
-                Download
+                TXT
+              </Button>
+              <Button variant="default" size="sm" onClick={handleDownloadPdf}>
+                <FileDown className="w-4 h-4 mr-1" />
+                PDF
               </Button>
             </div>
-            <Button variant="default" onClick={() => setIsOpen(false)}>
+            <Button variant="ghost" onClick={() => setIsOpen(false)}>
               Close
             </Button>
           </DialogFooter>
