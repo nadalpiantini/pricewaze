@@ -15,6 +15,7 @@ import {
   LogOut,
   X,
   GitCompare,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -57,6 +58,11 @@ const navItems = [
     label: 'Notifications',
     href: '/notifications',
     icon: Bell,
+  },
+  {
+    label: 'Market Alerts',
+    href: '/market-alerts',
+    icon: AlertTriangle,
   },
   {
     label: 'Settings',

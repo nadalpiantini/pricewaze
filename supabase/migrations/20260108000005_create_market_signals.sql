@@ -125,7 +125,17 @@ CREATE POLICY "Users can update their own notification preferences"
   WITH CHECK (auth.uid() = user_id);
 
 -- Enable Realtime for alert_events (Waze-style live updates)
-ALTER PUBLICATION supabase_realtime ADD TABLE pricewaze_alert_events;
+-- Note: This may need to be done via Supabase Dashboard if ALTER PUBLICATION fails
+-- Go to Database > Replication > Enable for pricewaze_alert_events
+-- For SQL execution, try:
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE pricewaze_alert_events;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- If publication doesn't exist or table already added, continue
+    RAISE NOTICE 'Realtime publication may need manual configuration in Supabase Dashboard';
+END $$;
 
 -- Functions
 CREATE OR REPLACE FUNCTION update_alert_rules_updated_at()

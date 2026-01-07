@@ -206,6 +206,61 @@ export interface PriceAlert {
   property?: Property;
 }
 
+// Market Signals & Alert Rules System
+export interface MarketSignal {
+  id: string;
+  zone_id: string | null;
+  property_id: string | null;
+  signal_type: 'price_drop' | 'price_increase' | 'inventory_spike' | 'inventory_drop' | 'trend_change' | 'new_listing' | 'status_change';
+  severity: 'info' | 'warning' | 'critical';
+  payload: Record<string, unknown>;
+  created_at: string;
+  zone?: Zone;
+  property?: Property;
+}
+
+export interface AlertRule {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  zone_id: string | null;
+  property_id: string | null;
+  rule: Record<string, unknown>; // JSON Logic
+  active: boolean;
+  notification_channels: ('in_app' | 'email' | 'push')[];
+  created_at: string;
+  updated_at: string;
+  zone?: Zone;
+  property?: Property;
+}
+
+export interface AlertEvent {
+  id: string;
+  user_id: string;
+  rule_id: string;
+  signal_id: string;
+  message: string;
+  severity: 'info' | 'warning' | 'critical';
+  read: boolean;
+  read_at: string | null;
+  created_at: string;
+  rule?: AlertRule;
+  signal?: MarketSignal;
+}
+
+export interface NotificationPreferences {
+  user_id: string;
+  in_app: boolean;
+  email: boolean;
+  push: boolean;
+  frequency: 'instant' | 'daily_digest' | 'weekly_digest';
+  quiet_hours_start: string | null;
+  quiet_hours_end: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Reviews and Ratings
 export interface Review {
   id: string;
