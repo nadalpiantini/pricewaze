@@ -81,7 +81,7 @@ async function deleteRoute(id: string): Promise<void> {
 }
 
 // Optimize route
-async function optimizeRoute(id: string): Promise<{ geometry: any; order: number[] }> {
+async function optimizeRoute(id: string): Promise<{ geometry: any; order: number[]; distance?: number; duration?: number }> {
   const res = await fetch(`/api/routes/${id}/optimize`, { method: 'POST' });
   if (!res.ok) throw new Error('Failed to optimize route');
   return res.json();
@@ -119,6 +119,7 @@ export default function RoutesPage() {
   const [routeName, setRouteName] = useState('');
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [optimizedGeometry, setOptimizedGeometry] = useState<{ type: 'LineString'; coordinates: [number, number][] } | null>(null);
+  const [routeStats, setRouteStats] = useState<{ distance?: number; duration?: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch routes list
@@ -186,6 +187,11 @@ export default function RoutesPage() {
       queryClient.invalidateQueries({ queryKey: ['route', selectedRouteId] });
       // Store optimized geometry for map display
       setOptimizedGeometry(data.geometry);
+      // Store route statistics
+      setRouteStats({
+        distance: data.distance,
+        duration: data.duration,
+      });
     },
   });
 

@@ -60,7 +60,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
 
     // Optimize route
-    const { geometry, order } = await optimizeRoute(points);
+    const { geometry, order, distance, duration } = await optimizeRoute(points);
 
     // Update stop order_index based on optimized order
     for (let i = 0; i < order.length; i++) {
@@ -79,6 +79,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({
       geometry,
       order,
+      distance, // meters
+      duration, // seconds
     });
   } catch (error) {
     console.error('Route optimize error:', error);
