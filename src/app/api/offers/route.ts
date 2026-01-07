@@ -157,11 +157,11 @@ export async function POST(request: NextRequest) {
 
     // Create automatic signal for competing offers
     try {
-      await supabase.from('pricewaze_property_signals').insert({
+      await supabase.from('pricewaze_property_signals_raw').insert({
         property_id,
         signal_type: 'competing_offers',
         source: 'system',
-        weight: 1,
+        // user_id and visit_id are NULL for system signals
       });
     } catch (signalError) {
       // Don't fail the offer creation if signal creation fails

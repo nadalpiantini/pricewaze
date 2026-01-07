@@ -187,11 +187,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     // Create automatic signal for verified visit (many_visits)
     try {
-      await supabase.from('pricewaze_property_signals').insert({
+      await supabase.from('pricewaze_property_signals_raw').insert({
         property_id: property.id,
         signal_type: 'many_visits',
         source: 'system',
-        weight: 1,
+        // user_id and visit_id are NULL for system signals
       });
     } catch (signalError) {
       // Don't fail the visit verification if signal creation fails
