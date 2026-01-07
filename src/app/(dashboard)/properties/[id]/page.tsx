@@ -18,6 +18,8 @@ import {
   Heart,
   Share2,
   MessageSquare,
+  Bell,
+  BellOff,
 } from 'lucide-react';
 import { PropertyGallery } from '@/components/properties/PropertyGallery';
 import { PropertyReviews } from '@/components/reviews/PropertyReviews';
@@ -25,6 +27,8 @@ import { PricingInsights } from '@/components/pricing/PricingInsights';
 import { PropertySignals } from '@/components/signals';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChat } from '@/hooks/useChat';
+import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 import type { Property } from '@/types/database';
 
 const propertyTypeLabels: Record<Property['property_type'], string> = {
@@ -45,6 +49,25 @@ export default function PropertyPage() {
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isTogglingFollow, setIsTogglingFollow] = useState(false);
+  const supabase = createClient();
+
+  // Check if user is following this property
+  useEffect(() => {
+    if (!user?.id || !propertyId) return;
+
+    (async () => {
+      const { data } = await supabase
+        .from('pricewaze_property_follows')
+        .select('property_id')
+        .eq('user_id', user.id)
+        .eq('property_id', propertyId)
+        .maybeSingle();
+
+      setIsFollowing(!!data);
+    })();
+  }, [user?.id, propertyId, supabase]);
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -83,6 +106,50 @@ export default function PropertyPage() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
+  };
+
+  // FASE 4: Toggle follow/unfollow property
+  const toggleFollow = async () => {
+    if (!user?.id || !propertyId) {
+      toast.error('Debes iniciar sesión para seguir propiedades');
+      return;
+    }
+
+    setIsTogglingFollow(true);
+
+    try {
+      if (isFollowing) {
+        // Unfollow
+        const { error } = await supabase
+          .from('pricewaze_property_follows')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('property_id', propertyId);
+
+        if (error) throw error;
+
+        setIsFollowing(false);
+        toast.success('Dejaste de seguir esta propiedad');
+      } else {
+        // Follow
+        const { error } = await supabase
+          .from('pricewaze_property_follows')
+          .insert({
+            user_id: user.id,
+            property_id: propertyId,
+          });
+
+        if (error) throw error;
+
+        setIsFollowing(true);
+        toast.success('Ahora sigues esta propiedad. Recibirás alertas cuando se confirmen señales.');
+      }
+    } catch (error: any) {
+      console.error('Error toggling follow:', error);
+      toast.error(error.message || 'Error al actualizar seguimiento');
+    } finally {
+      setIsTogglingFollow(false);
+    }
   };
 
   if (loading) {
@@ -263,6 +330,21 @@ export default function PropertyPage() {
             <Button variant="outline" className="gap-2">
               <Calendar className="h-4 w-4" />
               Schedule Visit
+            </Button>
+            <Button
+              variant={isFollowing ? 'default' : 'outline'}
+              size="icon"
+              onClick={toggleFollow}
+              disabled={isTogglingFollow}
+              title={isFollowing ? 'Dejar de seguir' : 'Seguir propiedad para alertas'}
+            >
+              {isTogglingFollow ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isFollowing ? (
+                <Bell className="h-4 w-4" />
+              ) : (
+                <BellOff className="h-4 w-4" />
+              )}
             </Button>
             <Button variant="outline" size="icon">
               <Heart className="h-4 w-4" />

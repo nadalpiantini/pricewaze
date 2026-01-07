@@ -7,11 +7,9 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import type { Property, PropertySignalTypeState } from '@/types/database';
 import { getMarketConfig } from '@/config/market';
 import { createClient } from '@/lib/supabase/client';
-import { getSignalIcon } from '@/lib/signals';
 import { isPositiveSignal } from '@/lib/signals';
 import { buildSignalsPopup } from '@/lib/buildSignalsPopup';
 import { ConfirmedToggle } from '@/components/ConfirmedToggle';
-import { useAuthStore } from '@/stores/auth-store';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
@@ -53,54 +51,27 @@ export function PropertyMapWithSignals({
   className = '',
 }: PropertyMapWithSignalsProps) {
   const router = useRouter();
-  const { user } = useAuthStore();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [propertiesWithSignals, setPropertiesWithSignals] = useState<PropertyWithSignals[]>([]);
-  const [onlyConfirmed, setOnlyConfirmed] = useState(false);
+  const [onlyConfirmed, setOnlyConfirmed] = useState(() => {
+    // Load preference from localStorage on mount
+    if (typeof globalThis.window !== 'undefined') {
+      const saved = globalThis.window.localStorage.getItem('pricewaze-map-only-confirmed');
+      return saved === 'true';
+    }
+    return false;
+  });
   const supabase = createClient();
 
-  // FASE 2.4: Load preference from DB on mount
+  // Save preference to localStorage when it changes
   useEffect(() => {
-    if (!user?.id) return;
-
-    (async () => {
-      const { data } = await supabase
-        .from('pricewaze_user_ui_prefs')
-        .select('map_only_confirmed')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (data?.map_only_confirmed !== undefined) {
-        setOnlyConfirmed(data.map_only_confirmed);
-      }
-    })();
-  }, [user?.id, supabase]);
-
-  // FASE 2.4: Save preference to DB when it changes
-  useEffect(() => {
-    if (!user?.id) return;
-
-    // Debounce: wait a bit before saving to avoid too many writes
-    const timeoutId = setTimeout(() => {
-      supabase
-        .from('pricewaze_user_ui_prefs')
-        .upsert({
-          user_id: user.id,
-          map_only_confirmed: onlyConfirmed,
-          updated_at: new Date().toISOString(),
-        })
-        .then(({ error }) => {
-          if (error) {
-            console.error('Error saving map preference:', error);
-          }
-        });
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [onlyConfirmed, user?.id, supabase]);
+    if (typeof globalThis.window !== 'undefined') {
+      globalThis.window.localStorage.setItem('pricewaze-map-only-confirmed', String(onlyConfirmed));
+    }
+  }, [onlyConfirmed]);
 
   // Handle property click - navigate to detail page if no custom handler
   const handlePropertyClick = useCallback((property: Property) => {
@@ -218,14 +189,6 @@ export function PropertyMapWithSignals({
     };
   }, [center, zoom, onMapClick]);
 
-  // Format price for display
-  const formatPrice = useCallback((price: number) => {
-    if (price >= 1000000) {
-      return `$${(price / 1000000).toFixed(1)}M`;
-    }
-    return `$${(price / 1000).toFixed(0)}K`;
-  }, []);
-
   // Get pin color based on signal state
   const getPinColor = useCallback((property: PropertyWithSignals): string => {
     if (property.hasPositiveSignals) {
@@ -270,6 +233,7 @@ export function PropertyMapWithSignals({
       // Create custom marker element
       const el = document.createElement('div');
       el.className = 'property-marker';
+      el.setAttribute('data-testid', 'property-pin');
       el.style.width = `${pinSize}px`;
       el.style.height = `${pinSize}px`;
       el.style.borderRadius = '50%';
@@ -291,7 +255,7 @@ export function PropertyMapWithSignals({
         ? buildSignalsPopup(property.signalStates)
         : '';
 
-      let popupContent = `
+      const popupContent = `
         <div class="p-2 min-w-[200px]">
           <h3 class="font-semibold text-sm cursor-pointer hover:underline" onclick="window.location.href='/properties/${property.id}'">${property.title}</h3>
           <p class="text-gray-600 text-xs">${property.address}</p>
@@ -306,7 +270,7 @@ export function PropertyMapWithSignals({
             class="mt-2 w-full px-3 py-1.5 text-xs font-medium text-white bg-primary hover:bg-primary/90 rounded-md transition-colors"
             style="background-color: #2563eb;"
           >
-            Ver detalles
+            View details
           </button>
         </div>
       `;
@@ -359,25 +323,25 @@ export function PropertyMapWithSignals({
           onChange={setOnlyConfirmed}
         />
       </div>
-      <div ref={mapContainer} className="w-full h-full min-h-[400px] rounded-lg" />
+      <div ref={mapContainer} data-testid="mapbox-map" className="w-full h-full min-h-[400px] rounded-lg" />
       {/* Legend */}
       <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 text-xs space-y-1 z-10">
-        <p className="font-semibold mb-2">Leyenda:</p>
+        <p className="font-semibold mb-2">Legend:</p>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-          <span>Sin señales</span>
+          <span>No signals</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-          <span>Señales no confirmadas</span>
+          <span>Unconfirmed signals</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <span>Señales confirmadas (negativas)</span>
+          <span>Confirmed signals (negative)</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
-          <span>Señales confirmadas (positivas)</span>
+          <span>Confirmed signals (positive)</span>
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ export function ConfirmedToggle({
         checked={value}
         onChange={e => onChange(e.target.checked)}
       />
-      Mostrar solo confirmadas
+      Show only confirmed
     </label>
   );
 }

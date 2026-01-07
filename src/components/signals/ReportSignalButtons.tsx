@@ -91,6 +91,7 @@ export function ReportSignalButtons({
               return (
                 <Button
                   key={signalType}
+                  data-testid={`signal-button-${signalType}`}
                   variant={isReported ? 'destructive' : 'outline'}
                   size="sm"
                   onClick={() => handleReportSignal(signalType)}

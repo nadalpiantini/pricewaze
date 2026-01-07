@@ -1,26 +1,76 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { getSignalIcon, getSignalLabel, isPositiveSignal } from '@/lib/signals';
 import type { PropertySignalTypeState } from '@/types/database';
+import { useAuthStore } from '@/stores/auth-store';
 
 /**
- * FASE 3 - Hook to listen for signal confirmation alerts (Waze-style)
+ * Hook to listen for signal confirmation alerts (Waze-style)
  * Shows a toast notification when a signal transitions from unconfirmed to confirmed
  * 
- * Solo alerta cuando confirmed cambia de false → true (una sola vez)
- * No spam, no alertas por cada reporte, solo cuando cambia el estado
+ * Only alerts when:
+ * 1. confirmed changes from false → true (once)
+ * 2. The property is in the user's "followed" list
  * 
- * El trigger SQL usa pg_notify como respaldo, pero Supabase Realtime
- * escucha directamente los cambios en la tabla via postgres_changes
+ * No spam, no alerts for each report, only when state changes
  */
 export function useSignalAlerts() {
   const supabase = createClient();
+  const { user } = useAuthStore();
+  const followedProperties = useRef<Set<string>>(new Set());
+
+  // Load followed properties on mount
+  useEffect(() => {
+    if (!user?.id) return;
+
+    (async () => {
+      const { data } = await supabase
+        .from('pricewaze_property_follows')
+        .select('property_id')
+        .eq('user_id', user.id);
+
+      followedProperties.current = new Set((data ?? []).map((x: { property_id: string }) => x.property_id));
+    })();
+  }, [user?.id, supabase]);
+
+  // Keep follows in sync (realtime updates)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('follows-live')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pricewaze_property_follows',
+          filter: `user_id=eq.${user.id}`,
+        },
+        async () => {
+          // Refetch follows when they change
+          const { data } = await supabase
+            .from('pricewaze_property_follows')
+            .select('property_id')
+            .eq('user_id', user.id);
+
+          followedProperties.current = new Set((data ?? []).map((x: { property_id: string }) => x.property_id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, supabase]);
 
   useEffect(() => {
-    // Helper function to show signal toast (UX limpio)
+    if (!user?.id) return; // Don't listen if not authenticated
+
+    // Helper function to show signal toast
     const showSignalToast = (
       propertyId: string,
       signalType: string
@@ -30,14 +80,14 @@ export function useSignalAlerts() {
       const isPositive = isPositiveSignal(signalType);
 
       toast(
-        `${signalIcon} Señal confirmada: ${signalLabel}`,
+        `${signalIcon} Signal confirmed: ${signalLabel}`,
         {
           description: isPositive
-            ? 'La comunidad confirmó que esta es una señal positiva'
-            : 'La comunidad confirmó esta señal (≥3 usuarios en 30 días)',
+            ? 'Community confirmed this is a positive signal'
+            : 'Community confirmed this signal (≥3 users in 30 days)',
           duration: 5000,
           action: {
-            label: 'Ver propiedad',
+            label: 'View property',
             onClick: () => {
               window.location.href = `/properties/${propertyId}`;
             },
@@ -47,7 +97,6 @@ export function useSignalAlerts() {
     };
 
     // Listen for signal confirmation via postgres_changes (Supabase Realtime)
-    // El trigger SQL también usa pg_notify como respaldo para otros sistemas
     const channel = supabase
       .channel('signal-confirmed-alerts')
       .on(
@@ -61,17 +110,20 @@ export function useSignalAlerts() {
           const oldState = payload.old as PropertySignalTypeState | null;
           const newState = payload.new as PropertySignalTypeState;
 
-          // FASE 3: Solo alertar cuando confirmed cambia de false → true
-          // Esto garantiza que solo se notifica una vez por transición
-          if (
+          // Only alert when confirmed changes from false → true
+          const becameConfirmed =
             newState.confirmed === true &&
-            (oldState?.confirmed === false || oldState?.confirmed === null || !oldState)
-          ) {
-            showSignalToast(
-              newState.property_id,
-              newState.signal_type
-            );
-          }
+            (oldState?.confirmed === false || oldState?.confirmed === null || !oldState);
+
+          if (!becameConfirmed) return;
+
+          const propertyId = newState.property_id;
+          if (!propertyId) return;
+
+          // Only alert if the property is followed
+          if (!followedProperties.current.has(propertyId)) return;
+
+          showSignalToast(propertyId, newState.signal_type);
         }
       )
       .subscribe();
@@ -79,5 +131,5 @@ export function useSignalAlerts() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, user?.id]);
 }
