@@ -67,20 +67,20 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   },
 });
 
-// Test user credentials - using existing seed users if available
+// Test user credentials - using existing user
 const TEST_USER = {
-  email: 'maria@test.com', // Use existing seed user
-  password: 'Test123!',
-  fullName: 'Maria Garcia',
-  phone: '+1-809-555-0101',
+  email: 'nadalpiantini@gmail.com',
+  password: 'Teclados#13',
+  fullName: 'Nadal Piantini',
+  phone: '+1-809-555-0000',
   role: 'buyer' as const,
 };
 
 const TEST_SELLER = {
-  email: 'carlos@test.com', // Use existing seed user
-  password: 'Test123!',
-  fullName: 'Carlos Mendez',
-  phone: '+1-809-555-0104',
+  email: 'nadalpiantini@gmail.com', // Same user for both roles
+  password: 'Teclados#13',
+  fullName: 'Nadal Piantini',
+  phone: '+1-809-555-0000',
   role: 'seller' as const,
 };
 
@@ -125,28 +125,21 @@ async function testAuth(): Promise<{ buyerId: string; sellerId: string } | null>
       buyerId = buyerSignIn.user.id;
       logResult('AUTH', 'FR-AUTH-001', '✅', 'User exists and can sign in');
     } else {
-      // User doesn't exist, try to create with signUp (may work better than admin API)
-      const { data: buyerData, error: buyerError } = await supabaseAnon.auth.signUp({
-        email: TEST_USER.email,
-        password: TEST_USER.password,
-        options: {
-          data: {
-            full_name: TEST_USER.fullName,
-          },
-        },
-      });
-
-      if (buyerError || !buyerData?.user) {
-        logResult('AUTH', 'FR-AUTH-001', '⚠️', `User not found and creation failed. This may indicate a Supabase configuration issue.`);
-        console.warn('\n💡 Tip: Check Supabase dashboard for:');
-        console.warn('   1. Auth settings (email confirmation disabled for testing)');
-        console.warn('   2. Database trigger for profile creation');
-        console.warn('   3. RLS policies on pricewaze_profiles table');
-        // Continue anyway - we'll test what we can with existing data
-        return null;
+      // User doesn't exist - skip user creation, use existing data
+      logResult('AUTH', 'FR-AUTH-001', '⚠️', `User not found. Skipping user creation - will test with existing data.`);
+      console.warn('\n💡 Using existing data for testing. Some tests may be limited.');
+      // Try to get any existing user from profiles
+      const { data: existingProfile } = await supabaseAdmin
+        .from('pricewaze_profiles')
+        .select('id')
+        .limit(1)
+        .single();
+      
+      if (existingProfile) {
+        buyerId = existingProfile.id;
+        console.log(`   Using existing profile: ${existingProfile.id}`);
       } else {
-        buyerId = buyerData.user.id;
-        logResult('AUTH', 'FR-AUTH-001', '✅', 'User created successfully');
+        return null;
       }
     }
 

@@ -9,6 +9,10 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+config({ path: resolve(process.cwd(), '.env.local') });
 
 // Types
 type UserRole = 'buyer' | 'seller' | 'agent' | 'admin';
