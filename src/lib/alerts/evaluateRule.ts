@@ -22,7 +22,8 @@ export function evaluateRule(rule: unknown, data: Record<string, unknown>): Rule
       return { matches: false, error: 'Invalid rule: must be an object' };
     }
 
-    const result = jsonLogic.apply(rule as import('json-logic-js').JsonLogicRule, data);
+    // json-logic-js accepts any object as rule
+    const result = jsonLogic.apply(rule as Record<string, unknown>, data);
     return { matches: result === true };
   } catch (error) {
     return {
@@ -44,7 +45,7 @@ export function validateRule(rule: unknown): { valid: boolean; error?: string } 
     }
 
     // Try to apply with empty data to check syntax
-    jsonLogic.apply(rule as import('json-logic-js').JsonLogicRule, {});
+    jsonLogic.apply(rule as Record<string, unknown>, {});
     return { valid: true };
   } catch (error) {
     return {

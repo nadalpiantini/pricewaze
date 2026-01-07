@@ -8,15 +8,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, supabaseAdmin } from '@/lib/supabase/server';
 import { evaluateRule } from '@/lib/alerts/evaluateRule';
 import { logger } from '@/lib/logger';
+import type { MarketSignal, AlertRule } from '@/types/database';
 
 // POST /api/alerts/process - Process signals and trigger alerts
 export async function POST(request: NextRequest) {
   try {
     // Verify this is an internal/system call
+    // Allow Vercel Cron (has x-vercel-signature header) or token auth
     const authHeader = request.headers.get('authorization');
+    const vercelSignature = request.headers.get('x-vercel-signature');
     const expectedToken = process.env.INTERNAL_API_TOKEN;
 
-    if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
+    // Vercel Cron sends x-vercel-signature header, or use token
+    const isVercelCron = !!vercelSignature;
+    const hasValidToken = expectedToken && authHeader === `Bearer ${expectedToken}`;
+
+    if (!isVercelCron && !hasValidToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -85,8 +92,8 @@ export async function POST(request: NextRequest) {
       severity: string;
     }> = [];
 
-    for (const signal of signals) {
-      for (const rule of rules) {
+    for (const signal of signals as MarketSignal[]) {
+      for (const rule of rules as AlertRule[]) {
         // Skip if rule is zone-specific and doesn't match
         if (rule.zone_id && rule.zone_id !== signal.zone_id) {
           continue;
@@ -98,7 +105,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Evaluate rule against signal payload
-        const result = evaluateRule(rule.rule, signal.payload as Record<string, unknown>);
+        const result = evaluateRule(rule.rule, signal.payload);
 
         if (result.matches) {
           // Generate alert message
@@ -151,7 +158,7 @@ export async function POST(request: NextRequest) {
 /**
  * Generate human-readable alert message
  */
-function generateAlertMessage(ruleName: string, signal: any): string {
+function generateAlertMessage(ruleName: string, signal: MarketSignal): string {
   const signalType = signal.signal_type;
   const payload = signal.payload || {};
 
