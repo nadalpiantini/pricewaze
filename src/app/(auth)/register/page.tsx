@@ -54,9 +54,10 @@ export default function RegisterPage() {
         return;
       }
 
-      toast.success('Check your email', { description: 'We sent you a confirmation link to complete your registration.' });
+      toast.success('Account created!', { description: 'Let\'s set up your preferences.' });
 
-      router.push('/login');
+      // Redirect to onboarding instead of login
+      router.push('/onboarding');
     } catch {
       toast.error('Something went wrong', { description: 'Please try again later.' });
     } finally {

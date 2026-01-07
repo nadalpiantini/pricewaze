@@ -54,48 +54,57 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-zinc-950/95 backdrop-blur-xl supports-[backdrop-filter]:bg-zinc-950/80">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/logo.png"
-              alt="PriceWaze"
-              width={120}
-              height={40}
-              className="h-10 w-auto"
-              priority
-            />
+        <div className="flex h-20 items-center justify-between">
+          {/* Logo - PROTAGONIST */}
+          <Link
+            href="/"
+            className="group relative flex items-center"
+          >
+            {/* Glow effect behind logo */}
+            <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-emerald-500/20 opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100" />
+
+            {/* Logo container with animation */}
+            <div className="relative">
+              <Image
+                src="/logo.png"
+                alt="PriceWaze"
+                width={200}
+                height={60}
+                className="h-14 w-auto drop-shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all duration-300 group-hover:scale-105 group-hover:drop-shadow-[0_0_35px_rgba(16,185,129,0.5)]"
+                priority
+              />
+            </div>
           </Link>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">
+          <nav className="hidden md:flex items-center gap-8">
+            <Link href="/" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors duration-200">
               Explore
             </Link>
-            <Link href="/properties" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link href="/properties" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors duration-200">
               Properties
             </Link>
-            <Link href="/zones" className="text-sm font-medium hover:text-primary transition-colors">
+            <Link href="/zones" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors duration-200">
               Zones
             </Link>
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {loading ? (
-              <div className="h-8 w-8 animate-pulse bg-muted rounded-full" />
+              <div className="h-8 w-8 animate-pulse bg-zinc-800 rounded-full" />
             ) : user ? (
               <>
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" asChild className="border-zinc-700 bg-transparent text-white hover:bg-zinc-800 hover:text-white">
                   <Link href="/properties/new" className="flex items-center gap-1">
                     <Plus className="h-4 w-4" />
                     List Property
                   </Link>
                 </Button>
 
-                <Button variant="ghost" size="icon" asChild>
+                <Button variant="ghost" size="icon" asChild className="text-zinc-400 hover:text-white hover:bg-zinc-800">
                   <Link href="/notifications">
                     <Bell className="h-5 w-5" />
                   </Link>
@@ -103,7 +112,7 @@ export function Header() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
+                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-zinc-800">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user.avatar_url || undefined} />
                         <AvatarFallback>{getInitials(user.full_name)}</AvatarFallback>
@@ -150,10 +159,10 @@ export function Header() {
               </>
             ) : (
               <>
-                <Button variant="ghost" size="sm" asChild>
+                <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-white hover:bg-zinc-800">
                   <Link href="/login">Sign In</Link>
                 </Button>
-                <Button size="sm" asChild>
+                <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-500 text-white border-0">
                   <Link href="/register">Get Started</Link>
                 </Button>
               </>
