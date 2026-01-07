@@ -12,11 +12,16 @@ PriceWaze utiliza GitHub Actions para automatizar el proceso de CI/CD, incluyend
 
 **Jobs:**
 - **Frontend**: Build & Lint de Next.js
+  - Verificación de dependencias críticas
+  - ESLint
+  - Build de producción
 - **Backend**: Tests de Python (CrewAI) con pytest
 - **Typecheck**: Verificación de tipos TypeScript
 - **Deploy**: Deployment automático a Vercel (solo en `main`)
 
 **Duración estimada:** ~5-8 minutos
+
+**Nota:** Para saltar deployment, incluir `[skip deploy]` en el mensaje del commit.
 
 ### 2. CrewAI Testing Agents (`.github/workflows/test-crewai.yml`)
 
@@ -42,6 +47,19 @@ PriceWaze utiliza GitHub Actions para automatizar el proceso de CI/CD, incluyend
 - `pnpm audit` para dependencias npm
 - `safety check` para dependencias Python
 
+### 4. Dependabot Validator (`.github/workflows/dependabot-validator.yml`)
+
+**Trigger:** Pull Requests de Dependabot que modifican dependencias
+
+**Funciones:**
+- Valida que las actualizaciones de dependencias no rompan el build
+- Detecta actualizaciones de versión mayor
+- Comenta en el PR si hay problemas
+
+**Nota:** Dependabot está configurado para ignorar actualizaciones de versión mayor en:
+- `@types/node` (mantener en v20)
+- `next`, `react`, `react-dom`, `typescript` (requieren revisión manual)
+
 ## Secrets Requeridos
 
 Configurar en GitHub: Settings > Secrets and variables > Actions
@@ -65,7 +83,15 @@ Configurar en GitHub: Settings > Secrets and variables > Actions
 
 Configurado en `.github/dependabot.yml`:
 - **npm**: Actualizaciones semanales (Lunes 9 AM)
+  - Ignora actualizaciones de versión mayor para paquetes críticos
+  - Solo actualiza minor y patch versions automáticamente
 - **pip**: Actualizaciones semanales (Lunes 9 AM)
+
+**Paquetes con actualizaciones mayores bloqueadas:**
+- `@types/node` (mantener v20)
+- `next`, `react`, `react-dom`, `typescript` (requieren revisión manual)
+
+Esto previene PRs de Dependabot que rompen el build por incompatibilidades.
 
 ## Deployment
 
@@ -133,4 +159,5 @@ Ver en: Vercel Dashboard
 3. **Tests deben pasar** antes de deployment
 4. **Actualizar dependencias** regularmente (Dependabot)
 5. **Monitorear security scans** semanales
+
 

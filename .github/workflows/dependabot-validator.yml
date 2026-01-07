@@ -1,0 +1,79 @@
+name: Validate Dependabot PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'crewai/pyproject.toml'
+
+jobs:
+  validate-dependencies:
+    name: Validate Dependency Updates
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Check for major version updates
+        run: |
+          echo "🔍 Checking for major version updates..."
+          
+          # Get changed files
+          git diff origin/${{ github.base_ref }}...HEAD --name-only | grep -E "(package.json|pnpm-lock.yaml)" || true
+          
+          # Check if package.json was modified
+          if git diff origin/${{ github.base_ref }}...HEAD --name-only | grep -q "package.json"; then
+            echo "📦 package.json was modified"
+            
+            # Extract version changes (basic check)
+            git diff origin/${{ github.base_ref }}...HEAD package.json | grep -E "^[\+\-].*\"[^"]+\":\s*\"[^"]+\"" || true
+          fi
+          
+          echo "✅ Version check complete"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        continue-on-error: true
+
+      - name: Verify build
+        run: |
+          echo "🔨 Attempting build with updated dependencies..."
+          pnpm build || {
+            echo "❌ Build failed with updated dependencies"
+            echo "This PR may contain breaking changes"
+            exit 1
+          }
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.test' }}
+          NEXT_PUBLIC_MARKET_CODE: ${{ secrets.NEXT_PUBLIC_MARKET_CODE || 'global' }}
+
+      - name: Comment on PR
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **Build failed with these dependency updates**\n\nThis PR may contain breaking changes. Please review:\n- Check if major version updates are intentional\n- Verify compatibility with current codebase\n- Test locally before merging'
+            })
+
