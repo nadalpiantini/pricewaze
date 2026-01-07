@@ -91,6 +91,9 @@ export async function POST(request: NextRequest) {
       message: string;
       severity: string;
     }> = [];
+    
+    // Track processed combinations to avoid duplicates
+    const processedCombinations = new Set<string>();
 
     for (const signal of signals as MarketSignal[]) {
       for (const rule of rules as AlertRule[]) {
@@ -101,6 +104,12 @@ export async function POST(request: NextRequest) {
 
         // Skip if rule is property-specific and doesn't match
         if (rule.property_id && rule.property_id !== signal.property_id) {
+          continue;
+        }
+
+        // Check if we've already processed this rule+signal combination
+        const combinationKey = `${rule.id}:${signal.id}`;
+        if (processedCombinations.has(combinationKey)) {
           continue;
         }
 
@@ -119,23 +128,49 @@ export async function POST(request: NextRequest) {
             severity: signal.severity || 'info',
           });
 
+          processedCombinations.add(combinationKey);
           alertsCreated++;
         }
       }
     }
 
-    // Bulk insert alert events
+    // Bulk insert alert events (with conflict handling to avoid duplicates)
     if (alertEvents.length > 0) {
-      const { error: insertError } = await supabaseAdmin
+      // Check for existing alerts to avoid duplicates
+      const existingAlerts = await supabaseAdmin
         .from('pricewaze_alert_events')
-        .insert(alertEvents);
+        .select('rule_id, signal_id')
+        .in('rule_id', alertEvents.map(e => e.rule_id))
+        .in('signal_id', alertEvents.map(e => e.signal_id));
 
-      if (insertError) {
-        logger.error('Failed to create alert events', insertError);
-        return NextResponse.json(
-          { error: 'Failed to create alerts' },
-          { status: 500 }
-        );
+      const existingKeys = new Set<string>();
+      if (existingAlerts.data) {
+        existingAlerts.data.forEach((alert: { rule_id: string; signal_id: string }) => {
+          existingKeys.add(`${alert.rule_id}:${alert.signal_id}`);
+        });
+      }
+
+      // Filter out duplicates
+      const newAlertEvents = alertEvents.filter(
+        (event) => !existingKeys.has(`${event.rule_id}:${event.signal_id}`)
+      );
+
+      if (newAlertEvents.length > 0) {
+        const { error: insertError } = await supabaseAdmin
+          .from('pricewaze_alert_events')
+          .insert(newAlertEvents);
+
+        if (insertError) {
+          logger.error('Failed to create alert events', insertError);
+          return NextResponse.json(
+            { error: 'Failed to create alerts' },
+            { status: 500 }
+          );
+        }
+        
+        alertsCreated = newAlertEvents.length;
+      } else {
+        alertsCreated = 0;
       }
     }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { generatePriceDropSignal, generatePriceIncreaseSignal } from '@/lib/alerts/generateSignals';
 import { z } from 'zod';
 
 // GET /api/properties/[id] - Get single property
@@ -130,6 +131,20 @@ export async function PATCH(
       );
     }
 
+    // Get old price before update (if price is being changed)
+    let oldPrice: number | null = null;
+    if (result.data.price !== undefined) {
+      const { data: oldProperty } = await supabase
+        .from('pricewaze_properties')
+        .select('price, zone_id')
+        .eq('id', id)
+        .single();
+      
+      if (oldProperty?.price) {
+        oldPrice = oldProperty.price;
+      }
+    }
+
     const { data, error } = await supabase
       .from('pricewaze_properties')
       .update(result.data)
@@ -147,6 +162,22 @@ export async function PATCH(
         { error: 'Failed to update property' },
         { status: 500 }
       );
+    }
+
+    // Generate market signal if price changed (fallback if trigger doesn't work)
+    if (oldPrice !== null && result.data.price !== undefined && data.price && oldPrice !== data.price) {
+      const zoneId = data.zone_id || null;
+      if (data.price < oldPrice) {
+        // Price dropped
+        generatePriceDropSignal(id, zoneId, oldPrice, data.price).catch((err) => {
+          logger.error('Failed to generate price drop signal', err);
+        });
+      } else if (data.price > oldPrice) {
+        // Price increased
+        generatePriceIncreaseSignal(id, zoneId, oldPrice, data.price).catch((err) => {
+          logger.error('Failed to generate price increase signal', err);
+        });
+      }
     }
 
     return NextResponse.json(data);

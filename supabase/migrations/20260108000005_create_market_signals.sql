@@ -74,67 +74,88 @@ ALTER TABLE pricewaze_alert_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pricewaze_notification_preferences ENABLE ROW LEVEL SECURITY;
 
 -- Market Signals: Read-only for authenticated users
+DROP POLICY IF EXISTS "Users can view market signals" ON pricewaze_market_signals;
 CREATE POLICY "Users can view market signals"
   ON pricewaze_market_signals FOR SELECT
   USING (auth.role() = 'authenticated');
 
 -- Alert Rules: Users manage their own
+DROP POLICY IF EXISTS "Users can view their own alert rules" ON pricewaze_alert_rules;
 CREATE POLICY "Users can view their own alert rules"
   ON pricewaze_alert_rules FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own alert rules" ON pricewaze_alert_rules;
 CREATE POLICY "Users can create their own alert rules"
   ON pricewaze_alert_rules FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own alert rules" ON pricewaze_alert_rules;
 CREATE POLICY "Users can update their own alert rules"
   ON pricewaze_alert_rules FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own alert rules" ON pricewaze_alert_rules;
 CREATE POLICY "Users can delete their own alert rules"
   ON pricewaze_alert_rules FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Alert Events: Users see their own
+DROP POLICY IF EXISTS "Users can view their own alert events" ON pricewaze_alert_events;
 CREATE POLICY "Users can view their own alert events"
   ON pricewaze_alert_events FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "System can create alert events" ON pricewaze_alert_events;
 CREATE POLICY "System can create alert events"
   ON pricewaze_alert_events FOR INSERT
   WITH CHECK (true); -- Managed by backend/cron
 
+DROP POLICY IF EXISTS "Users can update their own alert events" ON pricewaze_alert_events;
 CREATE POLICY "Users can update their own alert events"
   ON pricewaze_alert_events FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
 -- Notification Preferences: Users manage their own
+DROP POLICY IF EXISTS "Users can view their own notification preferences" ON pricewaze_notification_preferences;
 CREATE POLICY "Users can view their own notification preferences"
   ON pricewaze_notification_preferences FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own notification preferences" ON pricewaze_notification_preferences;
 CREATE POLICY "Users can create their own notification preferences"
   ON pricewaze_notification_preferences FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own notification preferences" ON pricewaze_notification_preferences;
 CREATE POLICY "Users can update their own notification preferences"
   ON pricewaze_notification_preferences FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
 -- Enable Realtime for alert_events (Waze-style live updates)
--- Note: This may need to be done via Supabase Dashboard if ALTER PUBLICATION fails
--- Go to Database > Replication > Enable for pricewaze_alert_events
--- For SQL execution, try:
+-- This enables live subscriptions to alert_events table for real-time UI updates
 DO $$
 BEGIN
-  ALTER PUBLICATION supabase_realtime ADD TABLE pricewaze_alert_events;
-EXCEPTION
-  WHEN OTHERS THEN
-    -- If publication doesn't exist or table already added, continue
-    RAISE NOTICE 'Realtime publication may need manual configuration in Supabase Dashboard';
+  -- Try to add table to realtime publication
+  -- This will work if pg_catalog.pg_publication exists and supabase_realtime publication exists
+  IF EXISTS (
+    SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime'
+  ) THEN
+    BEGIN
+      ALTER PUBLICATION supabase_realtime ADD TABLE pricewaze_alert_events;
+      RAISE NOTICE 'Realtime enabled for pricewaze_alert_events';
+    EXCEPTION
+      WHEN duplicate_object THEN
+        RAISE NOTICE 'Table already in realtime publication';
+      WHEN OTHERS THEN
+        RAISE NOTICE 'Could not add to realtime publication. Enable manually in Supabase Dashboard > Database > Replication';
+    END;
+  ELSE
+    RAISE NOTICE 'supabase_realtime publication not found. Enable manually in Supabase Dashboard > Database > Replication';
+  END IF;
 END $$;
 
 -- Functions
@@ -155,11 +176,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers
+DROP TRIGGER IF EXISTS update_alert_rules_updated_at ON pricewaze_alert_rules;
 CREATE TRIGGER update_alert_rules_updated_at
   BEFORE UPDATE ON pricewaze_alert_rules
   FOR EACH ROW
   EXECUTE FUNCTION update_alert_rules_updated_at();
 
+DROP TRIGGER IF EXISTS update_notification_preferences_updated_at ON pricewaze_notification_preferences;
 CREATE TRIGGER update_notification_preferences_updated_at
   BEFORE UPDATE ON pricewaze_notification_preferences
   FOR EACH ROW

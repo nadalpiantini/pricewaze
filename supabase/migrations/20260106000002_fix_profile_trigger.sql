@@ -5,6 +5,11 @@
 -- SECURITY DEFINER functions run with elevated privileges, but RLS still applies
 -- This policy allows the trigger to insert profiles for newly created users
 -- Note: The trigger validates that id matches NEW.id from auth.users
+
+-- Drop existing policy if it exists
+DROP POLICY IF EXISTS "Trigger can insert profiles" ON pricewaze_profiles;
+
+-- Create the policy
 CREATE POLICY "Trigger can insert profiles" ON pricewaze_profiles 
   FOR INSERT 
   WITH CHECK (

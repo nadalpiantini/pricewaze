@@ -96,6 +96,47 @@ export async function generateInventorySpikeSignal(
 }
 
 /**
+ * Generate a price increase signal
+ */
+export async function generatePriceIncreaseSignal(
+  propertyId: string,
+  zoneId: string | null,
+  oldPrice: number,
+  newPrice: number
+) {
+  if (!supabaseAdmin) {
+    logger.error('Supabase admin client not available');
+    return;
+  }
+
+  const priceIncreasePct = ((newPrice - oldPrice) / oldPrice) * 100;
+  const days = 0; // Could calculate from property created_at
+
+  if (priceIncreasePct > 0) {
+    const payload: SignalPayload = {
+      price_increase_pct: Math.round(priceIncreasePct * 100) / 100,
+      days,
+      old_price: oldPrice,
+      new_price: newPrice,
+    };
+
+    const { error } = await supabaseAdmin.from('pricewaze_market_signals').insert({
+      property_id: propertyId,
+      zone_id: zoneId,
+      signal_type: 'price_increase',
+      severity: priceIncreasePct > 10 ? 'warning' : 'info',
+      payload,
+    });
+
+    if (error) {
+      logger.error('Failed to generate price increase signal', error);
+    } else {
+      logger.info(`Generated price increase signal: ${priceIncreasePct.toFixed(2)}% for property ${propertyId}`);
+    }
+  }
+}
+
+/**
  * Generate a new listing signal
  */
 export async function generateNewListingSignal(propertyId: string, zoneId: string | null) {

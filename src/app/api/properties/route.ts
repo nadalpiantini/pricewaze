@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { generateNewListingSignal } from '@/lib/alerts/generateSignals';
 import { z } from 'zod';
 import type { PropertyFilters } from '@/types/database';
 
@@ -161,6 +162,14 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create property' },
         { status: 500 }
       );
+    }
+
+    // Generate new listing signal (fallback if trigger doesn't work)
+    if (data && data.status === 'active') {
+      const zoneId = data.zone_id || null;
+      generateNewListingSignal(data.id, zoneId).catch((err) => {
+        logger.error('Failed to generate new listing signal', err);
+      });
     }
 
     return NextResponse.json(data, { status: 201 });
