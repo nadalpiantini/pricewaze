@@ -34,7 +34,9 @@ CREATE TABLE IF NOT EXISTS pricewaze_property_signals_raw (
 -- One row per property + signal_type with strength, confirmation status, and last seen
 -- Drop old table if it exists with different name and create the correct one
 DROP TABLE IF EXISTS pricewaze_property_signal_type_state CASCADE;
-CREATE TABLE IF NOT EXISTS pricewaze_property_signal_state (
+-- Drop the correct table too if it exists to ensure clean creation
+DROP TABLE IF EXISTS pricewaze_property_signal_state CASCADE;
+CREATE TABLE pricewaze_property_signal_state (
   property_id UUID NOT NULL REFERENCES pricewaze_properties(id) ON DELETE CASCADE,
   signal_type TEXT NOT NULL CHECK (signal_type IN (
     'high_activity',
@@ -233,17 +235,9 @@ BEGIN
       updated_at = EXCLUDED.updated_at;
   END LOOP;
 
-  -- Remove signal states that no longer have any raw signals
-  -- Get list of signal types that still exist, then delete others
-  -- This avoids complex subquery issues
-  DELETE FROM pricewaze_property_signal_state
-  WHERE property_id = p_property_id
-  AND signal_type NOT IN (
-    SELECT DISTINCT signal_type
-    FROM pricewaze_property_signals_raw
-    WHERE property_id = p_property_id
-    AND signal_type IS NOT NULL
-  );
+  -- Note: We don't delete signal states that no longer have raw signals here
+  -- They will naturally decay to strength 0 and can be cleaned up separately if needed
+  -- This avoids potential column resolution issues in the DELETE statement
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

@@ -5,6 +5,10 @@
     {
       "path": "/api/alerts/process",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/signals/recalculate",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

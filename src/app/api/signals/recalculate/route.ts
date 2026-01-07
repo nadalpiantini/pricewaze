@@ -58,45 +58,47 @@ export async function POST(request: NextRequest) {
       }
 
       // Recalculate signal state (applies temporal decay and confirmation)
-      const { error: functionError } = await supabaseAdmin.rpc(
-        'pricewaze_recalculate_signal_state',
-        { p_property_id: property_id }
-      );
+    const { error: functionError } = await supabaseAdmin.rpc(
+      'pricewaze_recalculate_signal_state',
+      { p_property_id: property_id }
+    );
 
-      if (functionError) {
-        logger.error('Failed to recalculate signal state', functionError);
-        return NextResponse.json(
-          { error: 'Failed to recalculate signal state', details: functionError.message },
-          { status: 500 }
-        );
-      }
+    if (functionError) {
+      logger.error('Failed to recalculate signal state', functionError);
+      return NextResponse.json(
+        { error: 'Failed to recalculate signal state', details: functionError.message },
+        { status: 500 }
+      );
+    }
 
       // Fetch updated state (all signal types for this property)
       const { data: states, error: stateError } = await supabase
-        .from('pricewaze_property_signal_type_state')
+      .from('pricewaze_property_signal_state')
         .select('signal_type, strength, confirmed, last_seen_at, updated_at')
         .eq('property_id', property_id);
 
-      if (stateError) {
-        logger.error('Failed to fetch updated signal state', stateError);
-        // Still return success since recalculation worked
-      }
+    if (stateError) {
+      logger.error('Failed to fetch updated signal state', stateError);
+      // Still return success since recalculation worked
+    }
 
-      return NextResponse.json({
-        success: true,
-        property_id,
+    return NextResponse.json({
+      success: true,
+      property_id,
         signals: states || [],
         message: 'Signal state recalculated successfully with temporal decay',
       });
     } else {
-      // Bulk recalculation (for cron jobs) - requires service role
-      // Check if request has service role key (from cron or internal call)
+      // Bulk recalculation (for cron jobs)
+      // Accept from Vercel Cron (x-vercel-signature header) or service role
+      const vercelSignature = request.headers.get('x-vercel-signature');
       const authHeader = request.headers.get('authorization');
+      const isVercelCron = !!vercelSignature;
       const isServiceRole = authHeader?.includes(process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 
-      if (!isServiceRole && !user) {
+      if (!isVercelCron && !isServiceRole && !user) {
         return NextResponse.json(
-          { error: 'Service role required for bulk recalculation' },
+          { error: 'Service role or Vercel Cron required for bulk recalculation' },
           { status: 403 }
         );
       }
@@ -118,7 +120,7 @@ export async function POST(request: NextRequest) {
         success: true,
         ...result,
         message: 'All signal states recalculated successfully',
-      });
+    });
     }
   } catch (error) {
     logger.error('Error in POST /api/signals/recalculate', error);
