@@ -20,7 +20,17 @@ const propertyFiltersSchema = z.object({
 // GET /api/properties - List properties with filters
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    let supabase;
+    try {
+      supabase = await createClient();
+    } catch (error) {
+      logger.error('Failed to create Supabase client in GET /api/properties', error);
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
+    
     const { searchParams } = new URL(request.url);
 
     // Handle special case: fetch by IDs (for favorites, etc.)
