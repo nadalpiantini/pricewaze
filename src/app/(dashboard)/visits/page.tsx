@@ -93,7 +93,8 @@ export default function VisitsPage() {
   }, [currentMonth]);
 
   const getVisitsForDate = useCallback((date: Date) => {
-    return visits.filter((visit) => {
+    const safeVisits = Array.isArray(visits) ? visits : [];
+    return safeVisits.filter((visit) => {
       const visitDate = new Date(visit.scheduled_at);
       return (
         visitDate.getDate() === date.getDate() &&
@@ -109,8 +110,9 @@ export default function VisitsPage() {
   );
 
   const upcomingVisits = useMemo(() => {
+    const safeVisits = Array.isArray(visits) ? visits : [];
     const now = new Date();
-    return visits
+    return safeVisits
       .filter(
         (v) => v.status === 'scheduled' && new Date(v.scheduled_at) > now
       )

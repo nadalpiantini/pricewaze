@@ -18,7 +18,10 @@ export function OffersList({ role = 'all', currentUserId }: OffersListProps) {
     fetchOffers();
   }, [fetchOffers]);
 
-  if (loading && offers.length === 0) {
+  // Ensure offers is always an array
+  const safeOffers = Array.isArray(offers) ? offers : [];
+
+  if (loading && safeOffers.length === 0) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -37,7 +40,7 @@ export function OffersList({ role = 'all', currentUserId }: OffersListProps) {
     );
   }
 
-  if (offers.length === 0) {
+  if (safeOffers.length === 0) {
     return (
       <div className="text-center p-8 text-muted-foreground">
         <DollarSign className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -54,7 +57,7 @@ export function OffersList({ role = 'all', currentUserId }: OffersListProps) {
   }
 
   // Group offers by property for better organization
-  const groupedOffers = offers.reduce((acc, offer) => {
+  const groupedOffers = safeOffers.reduce((acc, offer) => {
     const propertyId = offer.property_id;
     if (!acc[propertyId]) {
       acc[propertyId] = [];

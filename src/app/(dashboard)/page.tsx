@@ -71,16 +71,21 @@ export default function DashboardPage() {
 
   // Calculate stats
   useEffect(() => {
-    const activeOffers = offers.filter(
+    // Ensure offers and visits are arrays
+    const safeOffers = Array.isArray(offers) ? offers : [];
+    const safeVisits = Array.isArray(visits) ? visits : [];
+    const safeProperties = Array.isArray(userProperties) ? userProperties : [];
+
+    const activeOffers = safeOffers.filter(
       (o) => o.status === 'pending' || o.status === 'countered'
     ).length;
 
-    const scheduledVisits = visits.filter(
+    const scheduledVisits = safeVisits.filter(
       (v) => v.status === 'scheduled'
     ).length;
 
     setStats({
-      totalProperties: userProperties.length,
+      totalProperties: safeProperties.length,
       activeOffers,
       scheduledVisits,
       unreadNotifications: 0, // Will be fetched from notifications API
@@ -90,7 +95,7 @@ export default function DashboardPage() {
     const activity: ActivityItem[] = [];
 
     // Add recent offers
-    offers.slice(0, 3).forEach((offer) => {
+    safeOffers.slice(0, 3).forEach((offer) => {
       activity.push({
         id: offer.id,
         type: 'offer',
@@ -101,7 +106,7 @@ export default function DashboardPage() {
     });
 
     // Add recent visits
-    visits.slice(0, 3).forEach((visit) => {
+    safeVisits.slice(0, 3).forEach((visit) => {
       activity.push({
         id: visit.id,
         type: 'visit',

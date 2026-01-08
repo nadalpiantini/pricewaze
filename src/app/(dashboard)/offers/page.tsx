@@ -100,8 +100,9 @@ export default function OffersPage() {
 
   const getFilteredOffers = () => {
     const offers = getOffersByTab();
-    if (statusFilter === 'all') return offers;
-    return offers.filter((offer) => offer.status === statusFilter);
+    const safeOffers = Array.isArray(offers) ? offers : [];
+    if (statusFilter === 'all') return safeOffers;
+    return safeOffers.filter((offer) => offer.status === statusFilter);
   };
 
   const isLoading = activeTab === 'received' ? receivedLoading :

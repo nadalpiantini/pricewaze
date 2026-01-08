@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch offers' }, { status: 500 });
     }
 
-    return NextResponse.json(offers);
+    return NextResponse.json(offers || []);
   } catch (error) {
     console.error('Offers GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
