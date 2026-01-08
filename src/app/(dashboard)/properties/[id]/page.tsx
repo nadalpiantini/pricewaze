@@ -24,6 +24,7 @@ import {
 import { PropertyGallery } from '@/components/properties/PropertyGallery';
 import { PropertyReviews } from '@/components/reviews/PropertyReviews';
 import { PricingInsights } from '@/components/pricing/PricingInsights';
+import { FairnessPanelV2 } from '@/components/pricing/FairnessPanelV2';
 import { PropertySignals } from '@/components/signals';
 import { OfferNegotiationView } from '@/components/offers/OfferNegotiationView';
 import { useAuthStore } from '@/stores/auth-store';
@@ -312,7 +313,7 @@ export default function PropertyPage() {
 
             <TabsContent value="pricing" className="mt-4">
               <div className="space-y-4">
-                <PricingInsights propertyId={property.id} />
+                <FairnessPanelV2 propertyId={property.id} />
               </div>
             </TabsContent>
 
