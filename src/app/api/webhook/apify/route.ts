@@ -169,21 +169,40 @@ async function processItems(
         existingId = existing?.id || null;
       }
 
-      // Prepare property data
+      // Build address from available data
+      let address = normalized.address || '';
+      if (!address && (normalized.city || normalized.zone)) {
+        address = [normalized.zone, normalized.city].filter(Boolean).join(', ');
+      }
+      if (!address) {
+        address = `${config.displayName} listing`;
+      }
+
+      // Prepare property data with correct DB field names
+      // Migrations applied: nullable columns (20260116000002) + source columns (20260116000003)
       const propertyData = {
         title: normalized.title,
         price: normalized.price,
-        currency: normalized.currency || 'USD',
-        area: normalized.area,
-        address: normalized.address,
-        city: normalized.city,
-        zone: normalized.zone,
-        property_type: normalized.property_type,
-        bedrooms: normalized.bedrooms,
-        bathrooms: normalized.bathrooms,
-        parking_spaces: normalized.parking_spaces,
-        description: `${normalized.description || ''}\n\n---\nsource:scraper source_name:${config.name}${runId ? ` run_id:${runId}` : ''}`,
-        source_url: sourceUrl,
+        area_m2: normalized.area || null,
+        address,
+        // Null for scraped properties (geocoding can be done later)
+        latitude: null as number | null,
+        longitude: null as number | null,
+        property_type: normalized.property_type || 'house',
+        bedrooms: normalized.bedrooms || null,
+        bathrooms: normalized.bathrooms || null,
+        parking_spaces: normalized.parking_spaces || null,
+        description: `${normalized.description || ''}\n\n---\n[Scraped from ${config.displayName}]${runId ? `\nRun ID: ${runId}` : ''}`,
+        images: normalized.images || [],
+        features: normalized.features || [],
+        // Source tracking columns
+        source_type: 'scraper',
+        source_name: config.name,
+        source_id: normalized.source_id || null,
+        source_url: sourceUrl || null,
+        source_updated_at: normalized.source_updated_at || null,
+        // owner_id is NULL for scraped properties
+        owner_id: null as string | null,
         status: 'active' as const,
         updated_at: new Date().toISOString(),
       };
@@ -222,7 +241,7 @@ async function processItems(
 
       results.property_ids.push(propertyId);
 
-      // Handle images
+      // Handle images in property_media table
       if (normalized.images && normalized.images.length > 0 && supabaseAdmin) {
         // Delete existing media for this property (refresh)
         await supabaseAdmin
@@ -252,9 +271,19 @@ async function processItems(
 
     } catch (err) {
       results.total_failed++;
+      // Capture more error details - Supabase errors may not be Error instances
+      let errorMessage = 'Unknown error';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (err && typeof err === 'object') {
+        const e = err as Record<string, unknown>;
+        errorMessage = String(e.message || e.error || e.details || e.hint || JSON.stringify(err));
+      } else if (err) {
+        errorMessage = String(err);
+      }
       results.errors.push({
         index: i,
-        error: err instanceof Error ? err.message : 'Unknown error',
+        error: errorMessage,
       });
     }
   }
