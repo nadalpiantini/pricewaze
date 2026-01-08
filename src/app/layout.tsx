@@ -4,6 +4,7 @@ import '@fontsource-variable/syne';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import { Providers } from './providers';
+import { PWAProvider } from '@/components/pwa/PWAProvider';
 import { getMarketConfig } from '@/config/market';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
     : 'PriceMap - AI-Powered Real Estate Intelligence',
   description: market.seo.description || 'Waze for Real Estate Pricing & Negotiation. Discover fair prices, make smarter offers, and close deals with confidence.',
   keywords: ['real estate', 'property', 'pricing', 'negotiation', ...market.seo.keywords],
+  manifest: '/manifest.json',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -63,6 +65,7 @@ export default function RootLayout({
         // Extensions like password managers, automation tools, etc. can modify the DOM
       >
         <Providers>{children}</Providers>
+        <PWAProvider />
         <Toaster />
       </body>
     </html>

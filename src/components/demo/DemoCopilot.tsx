@@ -1,80 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import type { CopilotAnalysis } from '@/types/copilot';
-import { Loader2, Bot, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import { Bot, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { DEMO_COPILOT_ANALYSIS } from '@/lib/demo-data';
 import { analytics } from '@/lib/analytics';
-import { isFeatureEnabled } from '@/lib/feature-flags';
-import { isPro } from '@/lib/subscription';
-import { useAuthStore } from '@/stores/auth-store';
-import { PaywallInline } from '@/components/paywall/PaywallInline';
+import { DemoCTA } from './DemoCTA';
 
-interface CopilotPanelProps {
-  offerId: string;
+interface DemoCopilotProps {
   className?: string;
 }
 
-export function CopilotPanel({ offerId, className = '' }: CopilotPanelProps) {
-  const [analysis, setAnalysis] = useState<CopilotAnalysis | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasProAccess, setHasProAccess] = useState<boolean | null>(null);
-  const { user } = useAuthStore();
+/**
+ * Demo Copilot - Pre-filled analysis for demo
+ * Shows the "WOW" moment of AI-powered negotiation advice
+ */
+export function DemoCopilot({ className = '' }: DemoCopilotProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const analysis = DEMO_COPILOT_ANALYSIS;
 
-  // Check Pro access on mount
-  useEffect(() => {
-    const checkPro = async () => {
-      if (user?.id) {
-        const pro = await isPro(user.id);
-        setHasProAccess(pro);
-      } else {
-        setHasProAccess(false);
-      }
-    };
-    checkPro();
-  }, [user]);
-
-  const analyzeNegotiation = async () => {
-    // Check Pro access first
-    if (hasProAccess === false) {
-      // Paywall will be shown, but track the attempt
-      analytics.track('copilot_paywall_shown', { offer_id: offerId });
-      return;
-    }
-
-    // Check feature flag
-    if (!isFeatureEnabled('copilot')) {
-      setError('Copilot is currently disabled');
-      return;
-    }
-
-    // Track copilot opened event (L1.2)
-    analytics.track('copilot_opened', { offer_id: offerId });
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/copilot/negotiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offer_id: offerId }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to analyze negotiation');
-      }
-
-      const data = await response.json();
-      setAnalysis(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-    } finally {
-      setLoading(false);
+  const handleAnalyze = () => {
+    if (!isOpen) {
+      analytics.track('demo_copilot_opened');
+      setIsOpen(true);
     }
   };
 
@@ -111,75 +61,38 @@ export function CopilotPanel({ offerId, className = '' }: CopilotPanelProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Bot className="w-5 h-5" />
-              Copiloto de negociación
+              🤖 Negotiation Copilot
             </CardTitle>
             <CardDescription>
-              Análisis contextual basado en señales del mercado y historial de ofertas
+              Contextual analysis based on market signals and offer history
             </CardDescription>
           </div>
-          <Button
-            onClick={analyzeNegotiation}
-            disabled={loading}
-            size="sm"
-            variant="outline"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Analizando...
-              </>
-            ) : (
-              <>
-                <Bot className="w-4 h-4 mr-2" />
-                Analizar negociación
-              </>
-            )}
-          </Button>
+          {!isOpen && (
+            <Button
+              onClick={handleAnalyze}
+              size="sm"
+              variant="outline"
+            >
+              <Bot className="w-4 h-4 mr-2" />
+              🤖 Analyze negotiation
+            </Button>
+          )}
         </div>
       </CardHeader>
 
       <CardContent>
-        {/* Show paywall if user doesn't have Pro access */}
-        {hasProAccess === false && (
-          <PaywallInline feature="copilot" />
-        )}
-
-        {/* Show loading state while checking Pro access */}
-        {hasProAccess === null && (
-          <div className="text-sm text-gray-500 text-center py-8">
-            Loading...
-          </div>
-        )}
-
-        {error && hasProAccess !== false && (
-          <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-red-800">
-              <strong>Error:</strong> {error}
-            </div>
-          </div>
-        )}
-
-        {analysis && hasProAccess !== false && (
+        {isOpen && (
           <div className="space-y-4">
             {/* Summary */}
             <div>
-              <h4 className="font-semibold text-sm mb-2">Resumen</h4>
+              <h4 className="font-semibold text-sm mb-2">Summary</h4>
               <p className="text-sm text-gray-700 leading-relaxed">{analysis.summary}</p>
-            </div>
-
-            {/* Confidence Level */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Nivel de confianza:</span>
-              <Badge className={getConfidenceColor(analysis.confidence_level)}>
-                {getConfidenceLabel(analysis.confidence_level)}
-              </Badge>
             </div>
 
             {/* Key Factors */}
             {analysis.key_factors.length > 0 && (
               <div>
-                <h4 className="font-semibold text-sm mb-2">Factores clave</h4>
+                <h4 className="font-semibold text-sm mb-2">Key factors</h4>
                 <ul className="space-y-1">
                   {analysis.key_factors.map((factor, idx) => (
                     <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
@@ -196,7 +109,7 @@ export function CopilotPanel({ offerId, className = '' }: CopilotPanelProps) {
               <div>
                 <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-orange-600" />
-                  Riesgos
+                  Risks
                 </h4>
                 <ul className="space-y-1">
                   {analysis.risks.map((risk, idx) => (
@@ -212,7 +125,7 @@ export function CopilotPanel({ offerId, className = '' }: CopilotPanelProps) {
             {/* Scenarios */}
             {analysis.scenarios.length > 0 && (
               <div>
-                <h4 className="font-semibold text-sm mb-3">Escenarios comparativos</h4>
+                <h4 className="font-semibold text-sm mb-3">Reasonable options</h4>
                 <div className="space-y-3">
                   {analysis.scenarios.map((scenario, idx) => (
                     <div
@@ -261,17 +174,22 @@ export function CopilotPanel({ offerId, className = '' }: CopilotPanelProps) {
               </div>
             )}
 
-            {analysis.scenarios.length === 0 && analysis.key_factors.length === 0 && (
-              <div className="text-sm text-gray-500 italic">
-                Datos insuficientes para generar escenarios comparativos.
-              </div>
-            )}
+            {/* Confidence Level */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Confidence level:</span>
+              <Badge className={getConfidenceColor(analysis.confidence_level)}>
+                {getConfidenceLabel(analysis.confidence_level)}
+              </Badge>
+            </div>
+
+            {/* CTA */}
+            <DemoCTA />
           </div>
         )}
 
-        {!analysis && !loading && !error && hasProAccess !== false && hasProAccess !== null && (
+        {!isOpen && (
           <div className="text-sm text-gray-500 text-center py-8">
-            Click "Analyze negotiation" to get contextual analysis based on
+            Click "🤖 Analyze negotiation" to get contextual analysis based on
             market signals and offer history.
           </div>
         )}
