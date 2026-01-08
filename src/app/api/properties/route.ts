@@ -159,9 +159,18 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query;
 
     if (error) {
-      logger.error('Failed to fetch properties', error);
+      logger.error('Failed to fetch properties', {
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        query: filters,
+      });
       return NextResponse.json(
-        { error: 'Failed to fetch properties' },
+        { 
+          error: 'Failed to fetch properties',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        },
         { status: 500 }
       );
     }
@@ -178,9 +187,20 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    logger.error('Unexpected error in GET /api/properties', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    logger.error('Unexpected error in GET /api/properties', {
+      message: errorMessage,
+      stack: errorStack,
+      error: error,
+    });
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+      },
       { status: 500 }
     );
   }
