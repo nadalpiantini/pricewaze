@@ -1,0 +1,91 @@
+{
+    "title": "Corotos Scraper Input",
+    "description": "Configuration for scraping Corotos.com.do real estate listings",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "maxItems": {
+            "title": "Maximum items",
+            "description": "Maximum number of listings to scrape",
+            "type": "integer",
+            "default": 50,
+            "minimum": 1,
+            "maximum": 500,
+            "editor": "number"
+        },
+        "city": {
+            "title": "City",
+            "description": "City to search in (use URL slug format)",
+            "type": "string",
+            "default": "santo-domingo",
+            "enum": [
+                "santo-domingo",
+                "distrito-nacional",
+                "santiago",
+                "punta-cana",
+                "la-romana",
+                "puerto-plata",
+                "san-pedro-de-macoris",
+                "la-vega",
+                "san-cristobal",
+                "all"
+            ],
+            "editor": "select"
+        },
+        "category": {
+            "title": "Category",
+            "description": "Type of real estate to search for",
+            "type": "string",
+            "default": "inmuebles",
+            "enum": [
+                "inmuebles",
+                "apartamentos",
+                "casas",
+                "terrenos",
+                "locales",
+                "oficinas"
+            ],
+            "enumTitles": [
+                "All Real Estate",
+                "Apartments",
+                "Houses",
+                "Land/Lots",
+                "Commercial Spaces",
+                "Offices"
+            ],
+            "editor": "select"
+        },
+        "transactionType": {
+            "title": "Transaction Type",
+            "description": "Sale or rent",
+            "type": "string",
+            "default": "venta",
+            "enum": ["venta", "alquiler"],
+            "enumTitles": ["For Sale", "For Rent"],
+            "editor": "select"
+        },
+        "webhookUrl": {
+            "title": "Webhook URL",
+            "description": "URL to send results to (optional - uses Apify webhook if not set)",
+            "type": "string",
+            "editor": "textfield",
+            "nullable": true
+        },
+        "webhookSecret": {
+            "title": "Webhook Secret",
+            "description": "Bearer token for webhook authentication",
+            "type": "string",
+            "editor": "textfield",
+            "isSecret": true,
+            "nullable": true
+        },
+        "startUrls": {
+            "title": "Start URLs",
+            "description": "Custom URLs to start scraping from (overrides city/category settings)",
+            "type": "array",
+            "editor": "stringList",
+            "default": []
+        }
+    },
+    "required": []
+}

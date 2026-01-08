@@ -1,0 +1,22 @@
+{
+  "name": "corotos-scraper",
+  "version": "1.0.0",
+  "description": "Scraper for Corotos.com.do - Dominican Republic classifieds (real estate)",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "author": "PriceWaze",
+  "license": "ISC",
+  "dependencies": {
+    "apify": "^3.1.0",
+    "crawlee": "^3.5.0",
+    "playwright": "^1.40.0",
+    "zod": "^3.23.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

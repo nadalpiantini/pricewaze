@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   try {
     let supabase;
     try {
-      supabase = await createClient();
+      supabase = await createClient(request);
     } catch (error) {
       logger.error('Failed to create Supabase client in GET /api/properties', error);
       return NextResponse.json(
@@ -116,14 +116,10 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100); // Max 100 per page
     const offset = (page - 1) * limit;
 
-    // Build query
+    // Build query - start simple, add relations if they work
     let query = supabase
       .from('pricewaze_properties')
-      .select(`
-        *,
-        zone:pricewaze_zones(id, name, city, avg_price_m2),
-        owner:pricewaze_profiles(id, full_name, avatar_url)
-      `, { count: 'exact' })
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -165,19 +161,58 @@ export async function GET(request: NextRequest) {
         details: error.details,
         hint: error.hint,
         query: filters,
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30),
       });
       return NextResponse.json(
         { 
           error: 'Failed to fetch properties',
-          details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+          message: error.message,
+          code: error.code,
+          details: process.env.NODE_ENV === 'development' ? {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+          } : undefined,
         },
         { status: 500 }
       );
     }
 
+    // Fetch related data separately if needed (fallback if joins fail)
+    let enrichedData = data || [];
+    if (enrichedData.length > 0) {
+      try {
+        // Fetch zones and owners separately
+        const zoneIds = Array.from(new Set(enrichedData.map(p => p.zone_id).filter(Boolean) as string[]));
+        const ownerIds = Array.from(new Set(enrichedData.map(p => p.owner_id).filter(Boolean) as string[]));
+        
+        const [zonesResult, ownersResult] = await Promise.all([
+          zoneIds.length > 0 
+            ? supabase.from('pricewaze_zones').select('id, name, city, avg_price_m2').in('id', zoneIds)
+            : Promise.resolve({ data: [], error: null }),
+          ownerIds.length > 0
+            ? supabase.from('pricewaze_profiles').select('id, full_name, avatar_url').in('id', ownerIds)
+            : Promise.resolve({ data: [], error: null }),
+        ]);
+
+        const zonesMap = new Map((zonesResult.data || []).map(z => [z.id, z]));
+        const ownersMap = new Map((ownersResult.data || []).map(o => [o.id, o]));
+
+        enrichedData = enrichedData.map(property => ({
+          ...property,
+          zone: property.zone_id ? zonesMap.get(property.zone_id) || null : null,
+          owner: property.owner_id ? ownersMap.get(property.owner_id) || null : null,
+        }));
+      } catch (enrichError) {
+        logger.warn('Failed to enrich properties with relations', enrichError);
+        // Continue without relations if enrichment fails
+      }
+    }
+
     // Return paginated response
     return NextResponse.json({
-      data: data || [],
+      data: enrichedData,
       pagination: {
         page,
         limit,
@@ -226,7 +261,7 @@ const createPropertySchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createClient(request);
 
     // Check authentication
     const { data: { user } } = await supabase.auth.getUser();

@@ -1,0 +1,17 @@
+{
+  "name": "@pricewaze/scraper-shared",
+  "version": "1.0.0",
+  "description": "Shared normalization and validation for PriceWaze scrapers",
+  "type": "module",
+  "main": "normalize.js",
+  "exports": {
+    ".": "./normalize.js",
+    "./schema": "./schema.js"
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
+  "peerDependencies": {
+    "crawlee": "^3.5.0"
+  }
+}

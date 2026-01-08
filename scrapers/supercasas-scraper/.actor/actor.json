@@ -1,0 +1,17 @@
+{
+    "actorSpecification": 1,
+    "name": "supercasas-scraper",
+    "title": "SuperCasas.com Scraper",
+    "description": "Scrapes real estate listings from SuperCasas.com (Dominican Republic)",
+    "version": "1.0.0",
+    "buildTag": "latest",
+    "dockerfile": "./Dockerfile",
+    "input": "./INPUT_SCHEMA.json",
+    "storages": {
+        "dataset": {
+            "actorSpecification": 1,
+            "title": "SuperCasas Properties",
+            "description": "Scraped real estate listings from SuperCasas.com"
+        }
+    }
+}
