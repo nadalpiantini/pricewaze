@@ -196,9 +196,9 @@ export function HeroSection({
                 'transition-all duration-300'
               )}
             >
-              <Link href="#how-it-works">
+              <Link href="/demo/map">
                 <Play className="mr-2 h-5 w-5" />
-                Ver cómo funciona
+                Ver demo interactivo
               </Link>
             </Button>
           </div>

@@ -99,7 +99,7 @@ test.describe('Complete User Flows', () => {
       // Select route
       const routeSelect = page.locator('[data-testid="route-select"]');
       if (await routeSelect.count() > 0) {
-        await routeSelect.selectOption({ label: /Integration Test Route/ });
+        await routeSelect.selectOption({ label: 'Integration Test Route' });
         await page.click('text=/Add|Confirm/i');
         await page.waitForTimeout(2000);
       }

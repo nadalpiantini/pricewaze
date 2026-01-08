@@ -144,6 +144,10 @@ export default function PropertyPage() {
 
         setIsFollowing(true);
         toast.success('Ahora sigues esta propiedad. Recibirás alertas cuando se confirmen señales.');
+        
+        // Track property_followed event (L1.2)
+        const { analytics } = await import('@/lib/analytics');
+        analytics.track('property_followed', { property_id: propertyId });
       }
     } catch (error: any) {
       console.error('Error toggling follow:', error);

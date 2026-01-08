@@ -4,9 +4,9 @@ import { deepseekChatJSON } from '@/lib/deepseek';
 import { isValidAnalysis, safeJsonParse, fallbackAnalysis } from '@/lib/copilotValidator';
 import type { CopilotContext, CopilotAnalysis } from '@/types/copilot';
 import { getMarketConfig, formatPrice } from '@/config/market';
-
-// Feature flag
-const COPILOT_ENABLED = process.env.NEXT_PUBLIC_COPILOT_ENABLED !== 'false';
+import { isFeatureEnabled } from '@/lib/feature-flags';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/copilot/negotiate
@@ -14,7 +14,9 @@ const COPILOT_ENABLED = process.env.NEXT_PUBLIC_COPILOT_ENABLED !== 'false';
  */
 export async function POST(request: NextRequest) {
   try {
-    if (!COPILOT_ENABLED) {
+    // Check feature flag
+    if (!isFeatureEnabled('copilot')) {
+      logger.warn('Copilot API called but feature is disabled');
       return NextResponse.json(
         { error: 'Copilot is currently disabled' },
         { status: 503 }
@@ -26,6 +28,30 @@ export async function POST(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting (L1.1)
+    const identifier = user.id;
+    const rateLimitResult = checkRateLimit(identifier, '/api/copilot/negotiate');
+    
+    if (!rateLimitResult.allowed) {
+      logger.warn(`Rate limit exceeded for user ${identifier}`);
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: 'Too many requests. Please try again later.',
+          resetAt: rateLimitResult.resetAt,
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': '10',
+            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+            'X-RateLimit-Reset': String(rateLimitResult.resetAt),
+            'Retry-After': String(Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000)),
+          },
+        }
+      );
     }
 
     const body = await request.json();
@@ -217,22 +243,29 @@ ${JSON.stringify(context, null, 2)}`;
 
     const analysis = parsed as CopilotAnalysis;
 
-    // Save to database (async, don't wait)
-    supabase
-      .from('pricewaze_copilot_analyses')
-      .insert({
-        offer_id,
-        analysis,
-        model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
-        confidence_level: analysis.confidence_level,
-      })
-      .then(() => {
-        // Log for metrics
-        console.log({
+    // Save to database (async, don't wait - fire and forget)
+    // Wrap in Promise.resolve to ensure proper Promise type
+    Promise.resolve(
+      supabase
+        .from('pricewaze_copilot_analyses')
+        .insert({
           offer_id,
+          analysis,
           model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
-          confidence: analysis.confidence_level,
-        });
+          confidence_level: analysis.confidence_level,
+        })
+    )
+      .then(({ error }) => {
+        if (!error) {
+          // Log for metrics
+          console.log({
+            offer_id,
+            model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+            confidence: analysis.confidence_level,
+          });
+        } else {
+          console.error('Error saving copilot analysis:', error);
+        }
       })
       .catch((err: unknown) => {
         console.error('Error saving copilot analysis:', err);

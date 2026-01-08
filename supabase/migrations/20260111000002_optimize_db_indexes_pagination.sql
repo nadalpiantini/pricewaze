@@ -141,3 +141,4 @@ COMMENT ON INDEX idx_reviews_property_created IS 'Optimizes review pagination by
 COMMENT ON INDEX idx_offers_buyer_status_created IS 'Optimizes user offer listings with status filtering';
 COMMENT ON INDEX idx_notifications_user_read_created IS 'Optimizes notification pagination and unread queries';
 
+

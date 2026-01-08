@@ -175,6 +175,12 @@ export function PropertyMapWithSignals({
 
     map.current.on('load', () => {
       setMapLoaded(true);
+      // Track map viewed event (L1.2)
+      if (typeof window !== 'undefined') {
+        import('@/lib/analytics').then(({ analytics }) => {
+          analytics.track('map_viewed');
+        });
+      }
     });
 
     if (onMapClick) {

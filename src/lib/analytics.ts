@@ -18,7 +18,25 @@ type EventName =
   | 'visit_verified'
   | 'navigation_opened'
   | 'route_exported'
-  | 'route_shared';
+  | 'route_shared'
+  | 'demo_started'
+  | 'demo_property_clicked'
+  | 'demo_follow_clicked'
+  | 'demo_copilot_opened'
+  | 'signup_from_demo'
+  | 'onboarding_started'
+  | 'onboarding_property_clicked'
+  | 'onboarding_follow_clicked'
+  | 'onboarding_copilot_opened'
+  | 'signup_from_onboarding'
+  // Soft launch events (L1.2)
+  | 'map_viewed'
+  | 'property_followed'
+  | 'signal_alert_received'
+  | 'copilot_opened'
+  | 'copilot_paywall_shown'
+  | 'pro_paywall_shown'
+  | 'pro_activated';
 
 interface EventProperties {
   [key: string]: string | number | boolean | null | undefined;
@@ -29,7 +47,8 @@ class Analytics {
   private provider: 'posthog' | 'mixpanel' | 'none';
 
   constructor() {
-    this.enabled = typeof window !== 'undefined' && process.env.NODE_ENV === 'production';
+    // Enable analytics in both development and production
+    this.enabled = typeof window !== 'undefined';
     // TODO: Configure provider based on env var
     this.provider = 'none'; // Default to none until configured
   }
@@ -38,12 +57,11 @@ class Analytics {
    * Track an event
    */
   track(eventName: EventName, properties?: EventProperties) {
-    if (!this.enabled) {
-      // Log in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Analytics]', eventName, properties);
-      }
-      return;
+    if (!this.enabled) return;
+
+    // Always log in development for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Analytics]', eventName, properties);
     }
 
     switch (this.provider) {
@@ -54,7 +72,10 @@ class Analytics {
         this.trackMixpanel(eventName, properties);
         break;
       default:
-        // No-op
+        // Log in production even without provider (for debugging)
+        if (process.env.NODE_ENV === 'production') {
+          console.log('[Analytics]', eventName, properties);
+        }
         break;
     }
   }

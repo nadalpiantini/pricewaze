@@ -14,8 +14,15 @@ import { loginTestUser } from './helpers/auth';
 
 test.describe('Smart Visit Planner', () => {
   test.beforeEach(async ({ page }) => {
-    // Login as test user
-    await loginTestUser(page, 'maria@test.com', 'Test123!');
+    // Create and login as test user
+    const timestamp = Date.now();
+    const testEmail = `test-routes-${timestamp}@example.com`;
+    const testPassword = 'Test123!';
+    
+    const { createTestUser } = await import('./helpers/auth');
+    await createTestUser(page, testEmail, testPassword);
+    await page.waitForTimeout(2000);
+    await loginTestUser(page, testEmail, testPassword, '/routes');
   });
 
   test('should create route and add properties', async ({ page }) => {
@@ -57,7 +64,7 @@ test.describe('Smart Visit Planner', () => {
       // Select route from dropdown if dialog appears
       const routeSelect = page.locator('[data-testid="route-select"]');
       if (await routeSelect.count() > 0) {
-        await routeSelect.selectOption({ label: /Test Route E2E/ });
+        await routeSelect.selectOption({ label: 'Test Route E2E' });
         await page.click('text=/Add|Confirm/i');
         await page.waitForTimeout(2000);
       }
@@ -266,8 +273,12 @@ test.describe('Smart Visit Planner', () => {
         
         if (download) {
           expect(download.suggestedFilename()).toContain('.txt');
-          const content = await download.text();
-          expect(content.length).toBeGreaterThan(0);
+          const path = await download.path();
+          if (path) {
+            const fs = await import('fs');
+            const content = fs.readFileSync(path, 'utf-8');
+            expect(content.length).toBeGreaterThan(0);
+          }
         }
       } else {
         // Export feature not yet implemented in UI

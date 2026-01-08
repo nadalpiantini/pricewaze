@@ -37,7 +37,16 @@ export function getSignalIcon(signalType: string): string {
 }
 
 export function getSignalLabel(signalType: string): string {
-  return SIGNALS[signalType as SimpleSignalType]?.label || signalType;
+  // System signals labels
+  const systemLabels: Record<string, string> = {
+    high_activity: 'Alta actividad',
+    many_visits: 'Muchas visitas',
+    competing_offers: 'Ofertas competidoras',
+    long_time_on_market: 'Tiempo en mercado',
+    recent_price_change: 'Cambio de precio',
+  };
+  
+  return SIGNALS[signalType as SimpleSignalType]?.label || systemLabels[signalType] || signalType;
 }
 
 export function getSignalDescription(signalType: string): string {

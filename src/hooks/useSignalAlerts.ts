@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { getSignalIcon, getSignalLabel, isPositiveSignal } from '@/lib/signals';
 import type { PropertySignalTypeState } from '@/types/database';
 import { useAuthStore } from '@/stores/auth-store';
+import { analytics } from '@/lib/analytics';
 
 /**
  * Hook to listen for signal confirmation alerts (Waze-style)
@@ -122,6 +123,12 @@ export function useSignalAlerts() {
 
           // Only alert if the property is followed
           if (!followedProperties.current.has(propertyId)) return;
+
+          // Track signal_alert_received event (L1.2)
+          analytics.track('signal_alert_received', {
+            property_id: propertyId,
+            signal_type: newState.signal_type,
+          });
 
           showSignalToast(propertyId, newState.signal_type);
         }

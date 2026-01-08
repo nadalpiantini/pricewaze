@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { validateInvitationTokenServer, INVITATIONS_ENABLED } from '@/lib/invitations';
 
 // Routes that require authentication
 const protectedRoutes = [
@@ -54,6 +55,38 @@ export async function middleware(request: NextRequest) {
 
   // Refresh session if it exists
   const { data: { user } } = await supabase.auth.getUser();
+
+  // L2: Check invitation for soft launch (only if not authenticated and invitations enabled)
+  if (!user && INVITATIONS_ENABLED) {
+    const inviteToken = 
+      request.nextUrl.searchParams.get('invite') || 
+      request.nextUrl.searchParams.get('token') ||
+      request.cookies.get('pricewaze_invitation_token')?.value;
+
+    if (inviteToken) {
+      // Validate token
+      if (validateInvitationTokenServer(inviteToken)) {
+        // Store token in cookie for later use
+        response.cookies.set('pricewaze_invitation_token', inviteToken, {
+          httpOnly: false,
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+        });
+      } else {
+        // Invalid token
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('error', 'invalid_invitation');
+        loginUrl.searchParams.set('redirect', pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+    } else {
+      // No token provided
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('error', 'invitation_required');
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
 
   // Check if route is protected
   const isProtectedRoute = protectedRoutes.some((route) =>
