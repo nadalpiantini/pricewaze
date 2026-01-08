@@ -12,6 +12,56 @@ interface MarketContext {
 }
 
 /**
+ * Calculate market velocity state from signal trends
+ */
+async function calculateVelocityState(
+  supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never,
+  propertyId: string
+): Promise<VelocityState> {
+  try {
+    // Get signal history for the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data: signalHistory } = await supabase
+      .from('pricewaze_property_signals_raw')
+      .select('signal_type, created_at')
+      .eq('property_id', propertyId)
+      .gte('created_at', thirtyDaysAgo.toISOString())
+      .order('created_at', { ascending: true });
+
+    if (!signalHistory || signalHistory.length < 3) {
+      return 'stable';
+    }
+
+    // Split signals into two halves to detect trend
+    const mid = Math.floor(signalHistory.length / 2);
+    const firstHalf = signalHistory.slice(0, mid);
+    const secondHalf = signalHistory.slice(mid);
+
+    // Count high-activity signals in each half
+    const highActivityTypes = ['high_activity', 'many_visits', 'competing_offers', 'price_reduction'];
+
+    const firstHalfActivity = firstHalf.filter(s => highActivityTypes.includes(s.signal_type)).length;
+    const secondHalfActivity = secondHalf.filter(s => highActivityTypes.includes(s.signal_type)).length;
+
+    // Determine velocity based on activity trend
+    const activityRatio = secondHalfActivity / Math.max(1, firstHalfActivity);
+
+    if (activityRatio > 1.5) {
+      return 'accelerating';
+    } else if (activityRatio < 0.5) {
+      return 'decelerating';
+    }
+
+    return 'stable';
+  } catch (error) {
+    console.warn('Error calculating velocity state:', error);
+    return 'stable';
+  }
+}
+
+/**
  * POST /api/negotiation/coherence/calculate
  * Worker endpoint to calculate NCE state for pending jobs
  * Called by cron or manually
@@ -143,7 +193,11 @@ export async function POST(request: NextRequest) {
         const signal_pressure: MarketContext['signal_pressure'] =
           signalStates && signalStates.length > 3 ? 'high' : signalStates && signalStates.length > 1 ? 'medium' : 'low';
 
-        const velocity_state: MarketContext['velocity_state'] = 'stable'; // TODO: Calculate from signal trends
+        // Calculate velocity state from signal trends
+        const velocity_state: MarketContext['velocity_state'] = await calculateVelocityState(
+          supabase,
+          offer.property_id
+        );
 
         const marketContext: MarketContext = {
           visit_activity,

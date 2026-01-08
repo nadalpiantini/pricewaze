@@ -67,33 +67,6 @@ rules.filter((r: any) => r.active)
 
 ---
 
-### TD-003: Inconsistent Error Handling
-
-| Atributo | Valor |
-|----------|-------|
-| **Prioridad** | P1 |
-| **Categoria** | Reliability |
-| **Archivos** | API routes |
-| **Esfuerzo** | 8-10 horas |
-
-**Descripcion**: API routes manejan errores de formas diferentes.
-
-**Ejemplo actual**:
-```typescript
-// Inconsistente
-return NextResponse.json({ error: 'Failed' }, { status: 500 });
-return new Response('Error', { status: 500 });
-throw new Error('...');
-```
-
-**Solucion**:
-1. Ver `docs/standards/error-handling.md`
-2. Implementar `apiError()` helper
-3. Refactorizar rutas existentes
-4. Agregar ErrorBoundary en frontend
-
----
-
 ### TD-004: Database Query N+1
 
 | Atributo | Valor |
@@ -118,29 +91,6 @@ for (const p of properties) {
 1. Usar JOINs: `.select('*, zones(*)')`
 2. Batch queries donde no sea posible JOIN
 3. Implementar DataLoader pattern si necesario
-
----
-
-### TD-005: Missing Input Validation
-
-| Atributo | Valor |
-|----------|-------|
-| **Prioridad** | P0 |
-| **Categoria** | Security |
-| **Archivos** | 5 API routes |
-| **Esfuerzo** | 3-4 horas |
-
-**Descripcion**: Algunas rutas API no validan inputs con Zod.
-
-**Rutas afectadas**:
-- `/api/signals/report`
-- `/api/notifications`
-- `/api/favorites`
-
-**Solucion**:
-1. Crear schemas Zod para cada ruta
-2. Validar en inicio de handler
-3. Retornar errores estructurados
 
 ---
 
@@ -256,6 +206,8 @@ Ver `docs/standards/testing-strategy.md`
 
 | ID | Descripcion | Resolucion | Fecha |
 |----|-------------|------------|-------|
+| TD-003 | Inconsistent Error Handling en API routes | Creado `src/lib/api/errors.ts` con `apiError()`, `Errors`, `ErrorCodes`. Refactorizadas rutas criticas: offers, visits, copilot/chat, offers/[id] | 2026-01-08 |
+| TD-005 | Missing Input Validation en API routes criticas | Zod schemas agregados a copilot/chat, offers, visits | 2026-01-08 |
 | TD-011 | Paginas duplicadas alerts/market-alerts | ADR-005 consolidation | 2026-01-08 |
 | TD-012 | Sin ADR Log centralizado | docs/adr/ADR-LOG.md | 2026-01-08 |
 
@@ -265,9 +217,9 @@ Ver `docs/standards/testing-strategy.md`
 
 | Metrica | Actual | Target |
 |---------|--------|--------|
-| P0 Items | 1 | 0 |
-| P1 Items | 3 | <2 |
-| Total Items | 10 | <15 |
+| P0 Items | 0 | 0 |
+| P1 Items | 2 | <2 |
+| Total Items | 8 | <15 |
 | Lint Errors | 165 | <50 |
 | Lint Warnings | 199 | <100 |
 

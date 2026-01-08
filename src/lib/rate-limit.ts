@@ -1,7 +1,6 @@
 /**
  * Rate Limiting Utility
- * Simple in-memory rate limiting for API routes
- * For production, consider using Redis or Upstash
+ * Supports both in-memory (dev) and Redis/Upstash (production) backends
  */
 
 interface RateLimitStore {
@@ -11,9 +10,100 @@ interface RateLimitStore {
   };
 }
 
-// In-memory store (resets on server restart)
-// TODO: Use Redis/Upstash for production
-const store: RateLimitStore = {};
+// In-memory store (fallback for development)
+const memoryStore: RateLimitStore = {};
+
+// Redis/Upstash configuration
+const UPSTASH_REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const USE_REDIS = !!(UPSTASH_REDIS_URL && UPSTASH_REDIS_TOKEN);
+
+/**
+ * Redis-based rate limit check using Upstash REST API
+ */
+async function checkRateLimitRedis(
+  key: string,
+  maxRequests: number,
+  windowMs: number
+): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+  const now = Date.now();
+  const windowKey = `ratelimit:${key}:${Math.floor(now / windowMs)}`;
+  const resetAt = (Math.floor(now / windowMs) + 1) * windowMs;
+
+  try {
+    // Increment counter with expiry
+    const response = await fetch(`${UPSTASH_REDIS_URL}/pipeline`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${UPSTASH_REDIS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([
+        ['INCR', windowKey],
+        ['PEXPIRE', windowKey, String(windowMs)],
+      ]),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Redis error: ${response.status}`);
+    }
+
+    const results = await response.json();
+    const count = results[0]?.result || 1;
+    const allowed = count <= maxRequests;
+
+    return {
+      allowed,
+      remaining: Math.max(0, maxRequests - count),
+      resetAt,
+    };
+  } catch (error) {
+    console.warn('[RateLimit] Redis unavailable, falling back to memory:', error);
+    return checkRateLimitMemory(key, maxRequests, windowMs);
+  }
+}
+
+/**
+ * In-memory rate limit check (fallback)
+ */
+function checkRateLimitMemory(
+  key: string,
+  maxRequests: number,
+  windowMs: number
+): { allowed: boolean; remaining: number; resetAt: number } {
+  const now = Date.now();
+
+  let entry = memoryStore[key];
+
+  if (!entry || entry.resetAt < now) {
+    entry = {
+      count: 0,
+      resetAt: now + windowMs,
+    };
+    memoryStore[key] = entry;
+  }
+
+  const allowed = entry.count < maxRequests;
+
+  if (allowed) {
+    entry.count++;
+  }
+
+  // Cleanup old entries (1% chance per request)
+  if (Math.random() < 0.01) {
+    Object.keys(memoryStore).forEach((k) => {
+      if (memoryStore[k].resetAt < now) {
+        delete memoryStore[k];
+      }
+    });
+  }
+
+  return {
+    allowed,
+    remaining: Math.max(0, maxRequests - entry.count),
+    resetAt: entry.resetAt,
+  };
+}
 
 /**
  * Rate limit configuration
@@ -47,48 +137,30 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
  * @param endpoint - API endpoint path
  * @returns Object with allowed status and remaining requests
  */
-export function checkRateLimit(
+export async function checkRateLimit(
+  identifier: string,
+  endpoint: string
+): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+  const config = RATE_LIMITS[endpoint] || RATE_LIMITS.default;
+  const key = `${identifier}:${endpoint}`;
+
+  if (USE_REDIS) {
+    return checkRateLimitRedis(key, config.maxRequests, config.windowMs);
+  }
+
+  return checkRateLimitMemory(key, config.maxRequests, config.windowMs);
+}
+
+/**
+ * Synchronous rate limit check (for backwards compatibility, uses memory only)
+ */
+export function checkRateLimitSync(
   identifier: string,
   endpoint: string
 ): { allowed: boolean; remaining: number; resetAt: number } {
   const config = RATE_LIMITS[endpoint] || RATE_LIMITS.default;
   const key = `${identifier}:${endpoint}`;
-  const now = Date.now();
-
-  // Get or create entry
-  let entry = store[key];
-
-  // Reset if window expired
-  if (!entry || entry.resetAt < now) {
-    entry = {
-      count: 0,
-      resetAt: now + config.windowMs,
-    };
-    store[key] = entry;
-  }
-
-  // Check limit
-  const allowed = entry.count < config.maxRequests;
-  
-  if (allowed) {
-    entry.count++;
-  }
-
-  // Clean up old entries periodically (simple cleanup)
-  if (Math.random() < 0.01) {
-    // 1% chance to clean up on each request
-    Object.keys(store).forEach((k) => {
-      if (store[k].resetAt < now) {
-        delete store[k];
-      }
-    });
-  }
-
-  return {
-    allowed,
-    remaining: Math.max(0, config.maxRequests - entry.count),
-    resetAt: entry.resetAt,
-  };
+  return checkRateLimitMemory(key, config.maxRequests, config.windowMs);
 }
 
 /**
@@ -100,11 +172,11 @@ export function withRateLimit(
 ) {
   return async (request: Request): Promise<Response> => {
     // Get identifier (user ID from auth or IP address)
-    const identifier = request.headers.get('x-user-id') || 
-                      request.headers.get('x-forwarded-for')?.split(',')[0] || 
+    const identifier = request.headers.get('x-user-id') ||
+                      request.headers.get('x-forwarded-for')?.split(',')[0] ||
                       'anonymous';
 
-    const result = checkRateLimit(identifier, endpoint);
+    const result = await checkRateLimit(identifier, endpoint);
 
     if (!result.allowed) {
       return new Response(

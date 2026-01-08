@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createNotification } from '@/lib/notifications';
+import { z } from 'zod';
+import { Errors, ErrorCodes, apiError } from '@/lib/api/errors';
+
+// Zod schema for creating offers - critical for financial data integrity
+const createOfferSchema = z.object({
+  property_id: z.string().uuid('Invalid property ID format'),
+  amount: z.number()
+    .positive('Offer amount must be positive')
+    .max(1_000_000_000, 'Offer amount exceeds maximum allowed'),
+  message: z.string().max(2000, 'Message must be less than 2000 characters').optional(),
+});
 
 // GET /api/offers - List user's offers (as buyer or seller)
 export async function GET(request: NextRequest) {
@@ -9,7 +20,7 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return Errors.unauthorized();
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -50,13 +61,13 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching offers:', error);
-      return NextResponse.json({ error: 'Failed to fetch offers' }, { status: 500 });
+      return apiError('Failed to fetch offers', ErrorCodes.SYS_002, 500);
     }
 
     return NextResponse.json(offers || []);
   } catch (error) {
     console.error('Offers GET error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return Errors.serverError();
   }
 }
 
@@ -67,25 +78,18 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return Errors.unauthorized();
     }
 
     const body = await request.json();
-    const { property_id, amount, message } = body;
 
-    if (!property_id || !amount) {
-      return NextResponse.json(
-        { error: 'Property ID and offer amount are required' },
-        { status: 400 }
-      );
+    // Validate input with Zod - critical for financial transactions
+    const parseResult = createOfferSchema.safeParse(body);
+    if (!parseResult.success) {
+      return Errors.validationFailed(parseResult.error.flatten().fieldErrors as Record<string, unknown>);
     }
 
-    if (amount <= 0) {
-      return NextResponse.json(
-        { error: 'Offer amount must be positive' },
-        { status: 400 }
-      );
-    }
+    const { property_id, amount, message } = parseResult.data;
 
     // Get the property to find the owner and validate
     const { data: property, error: propertyError } = await supabase
@@ -95,23 +99,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (propertyError || !property) {
-      return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+      return Errors.notFound('Property');
     }
 
     // Cannot make offer on own property
     if (property.owner_id === user.id) {
-      return NextResponse.json(
-        { error: 'Cannot make an offer on your own property' },
-        { status: 400 }
-      );
+      return apiError('Cannot make an offer on your own property', ErrorCodes.OFFER_005, 400);
     }
 
     // Property must be active
     if (property.status !== 'active') {
-      return NextResponse.json(
-        { error: 'Property is not available for offers' },
-        { status: 400 }
-      );
+      return apiError('Property is not available for offers', ErrorCodes.OFFER_001, 400);
     }
 
     // Check for existing pending offer from this buyer
@@ -125,10 +123,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingOffer) {
-      return NextResponse.json(
-        { error: 'You already have a pending offer on this property. Withdraw it first to make a new offer.' },
-        { status: 400 }
-      );
+      return Errors.conflict('You already have a pending offer on this property. Withdraw it first to make a new offer.');
     }
 
     // H.1: Set expires_at to 72 hours from now
@@ -157,7 +152,7 @@ export async function POST(request: NextRequest) {
 
     if (createError) {
       console.error('Error creating offer:', createError);
-      return NextResponse.json({ error: 'Failed to create offer' }, { status: 500 });
+      return apiError('Failed to create offer', ErrorCodes.SYS_002, 500);
     }
 
     // Create automatic signal for competing offers
@@ -218,6 +213,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(offer, { status: 201 });
   } catch (error) {
     console.error('Offers POST error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return Errors.serverError();
   }
 }

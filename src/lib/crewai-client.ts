@@ -2,10 +2,42 @@
  * CrewAI Client - Integration with PriceWaze CrewAI backend
  *
  * This client provides typed access to the multi-agent AI analysis system.
+ * Includes robust error handling, timeouts, and graceful degradation.
  */
+
+import { logger } from '@/lib/logger';
 
 // Configuration
 const CREWAI_BASE_URL = process.env.CREWAI_API_URL || 'http://localhost:8000';
+const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1000;
+
+// ============================================================================
+// ERROR TYPES
+// ============================================================================
+
+export class CrewAIError extends Error {
+  constructor(
+    message: string,
+    public readonly code: CrewAIErrorCode,
+    public readonly statusCode?: number,
+    public readonly details?: unknown
+  ) {
+    super(message);
+    this.name = 'CrewAIError';
+  }
+}
+
+export enum CrewAIErrorCode {
+  CONNECTION_FAILED = 'CONNECTION_FAILED',
+  TIMEOUT = 'TIMEOUT',
+  SERVER_ERROR = 'SERVER_ERROR',
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  NOT_FOUND = 'NOT_FOUND',
+  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
+  UNKNOWN = 'UNKNOWN',
+}
 
 // Types
 export interface PricingAnalysisRequest {
@@ -162,31 +194,152 @@ export interface OfferSuggestions {
 // API Client class
 class CrewAIClient {
   private baseUrl: string;
+  private isAvailable: boolean | null = null;
+  private lastHealthCheck: number = 0;
+  private readonly healthCheckInterval = 60000; // 1 minute
 
   constructor(baseUrl: string = CREWAI_BASE_URL) {
     this.baseUrl = baseUrl;
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new Error(error.detail || `API error: ${response.status}`);
+  /**
+   * Check if CrewAI service is available
+   */
+  async checkAvailability(): Promise<boolean> {
+    const now = Date.now();
+    if (this.isAvailable !== null && now - this.lastHealthCheck < this.healthCheckInterval) {
+      return this.isAvailable;
     }
 
-    return response.json();
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(`${this.baseUrl}/health`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      this.isAvailable = response.ok;
+      this.lastHealthCheck = now;
+      return this.isAvailable;
+    } catch {
+      this.isAvailable = false;
+      this.lastHealthCheck = now;
+      return false;
+    }
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    config: { timeoutMs?: number; retries?: number } = {}
+  ): Promise<T> {
+    const { timeoutMs = DEFAULT_TIMEOUT_MS, retries = MAX_RETRIES } = config;
+    const url = `${this.baseUrl}${endpoint}`;
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        // Create abort controller for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers,
+          },
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({ detail: 'Unknown error' }));
+          const errorMessage = errorBody.detail || `API error: ${response.status}`;
+
+          // Determine error code based on status
+          let code = CrewAIErrorCode.UNKNOWN;
+          if (response.status === 404) code = CrewAIErrorCode.NOT_FOUND;
+          else if (response.status === 400 || response.status === 422) code = CrewAIErrorCode.VALIDATION_ERROR;
+          else if (response.status === 503) code = CrewAIErrorCode.SERVICE_UNAVAILABLE;
+          else if (response.status >= 500) code = CrewAIErrorCode.SERVER_ERROR;
+
+          // Don't retry client errors (4xx except 429)
+          if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+            throw new CrewAIError(errorMessage, code, response.status, errorBody);
+          }
+
+          lastError = new CrewAIError(errorMessage, code, response.status, errorBody);
+        } else {
+          // Mark service as available on success
+          this.isAvailable = true;
+          this.lastHealthCheck = Date.now();
+          return response.json();
+        }
+      } catch (error) {
+        if (error instanceof CrewAIError) {
+          throw error;
+        }
+
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            lastError = new CrewAIError(
+              `Request timed out after ${timeoutMs}ms`,
+              CrewAIErrorCode.TIMEOUT
+            );
+          } else if (error.message.includes('fetch') || error.message.includes('network')) {
+            this.isAvailable = false;
+            lastError = new CrewAIError(
+              `Failed to connect to CrewAI service at ${this.baseUrl}`,
+              CrewAIErrorCode.CONNECTION_FAILED,
+              undefined,
+              { originalError: error.message }
+            );
+          } else {
+            lastError = new CrewAIError(
+              error.message,
+              CrewAIErrorCode.UNKNOWN,
+              undefined,
+              { originalError: error.message }
+            );
+          }
+        }
+      }
+
+      // Wait before retry (except on last attempt)
+      if (attempt < retries) {
+        const delay = RETRY_DELAY_MS * Math.pow(2, attempt); // Exponential backoff
+        logger.warn(`CrewAI request failed, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    // All retries exhausted
+    throw lastError || new CrewAIError('Request failed after retries', CrewAIErrorCode.UNKNOWN);
+  }
+
+  /**
+   * Safe request wrapper that returns null on failure instead of throwing
+   */
+  private async safeRequest<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    config: { timeoutMs?: number; retries?: number } = {}
+  ): Promise<T | null> {
+    try {
+      return await this.request<T>(endpoint, options, config);
+    } catch (error) {
+      if (error instanceof CrewAIError) {
+        logger.warn(`CrewAI ${endpoint} failed: ${error.message} (${error.code})`);
+      } else {
+        logger.warn(`CrewAI ${endpoint} failed:`, error);
+      }
+      return null;
+    }
   }
 
   // Health check

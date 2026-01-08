@@ -132,6 +132,12 @@ export async function GET(request: NextRequest) {
       .not('verified_at', 'is', null) // Only verified visits
       .gte('scheduled_at', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString());
 
+    // Fetch property views count
+    const { count: viewsCount } = await supabase
+      .from('pricewaze_property_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('property_id', propertyId);
+
     // Build DIE inputs
     const dieInputs: DIEInputs = {
       property: {
@@ -157,7 +163,7 @@ export async function GET(request: NextRequest) {
       competition: {
         activeOffers: activeOffersCount || 0,
         recentVisits: recentVisitsCount || 0,
-        views: 0, // TODO: Add views_count from property if needed
+        views: viewsCount || 0,
       },
       ...(userProfile ? { userProfile } : {}), // DIE-3 personalization
     };

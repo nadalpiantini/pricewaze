@@ -13,6 +13,12 @@ interface SaveAVMResultOptions {
   priceAssessment: PriceAssessment;
   comparableCount?: number;
   expiresInDays?: number; // Default: 7 days
+  propertyData?: {
+    price?: number;
+    area_m2?: number;
+    zone_avg_price_m2?: number;
+    days_on_market?: number;
+  };
 }
 
 /**
@@ -21,7 +27,7 @@ interface SaveAVMResultOptions {
 export async function saveAVMResult(
   options: SaveAVMResultOptions
 ): Promise<void> {
-  const { propertyId, priceAssessment, comparableCount = 0, expiresInDays = 7 } = options;
+  const { propertyId, priceAssessment, comparableCount = 0, expiresInDays = 7, propertyData } = options;
 
   const supabase = await createClient();
 
@@ -36,6 +42,45 @@ export async function saveAVMResult(
   };
   const confidence = confidenceMap[priceAssessment.uncertainty] || 0.75;
 
+  // Build factors from available property data
+  const topFactors: Record<string, number> = {};
+
+  if (propertyData) {
+    // Location factor based on zone average
+    if (propertyData.zone_avg_price_m2 && propertyData.price && propertyData.area_m2) {
+      const expectedPrice = propertyData.zone_avg_price_m2 * propertyData.area_m2;
+      const priceRatio = propertyData.price / expectedPrice;
+      // Positive if below zone average (good deal), negative if above
+      topFactors.location = Number(((1 - priceRatio) * 0.2).toFixed(3));
+    }
+
+    // Size factor
+    if (propertyData.area_m2) {
+      // Larger properties often have diminishing returns
+      const sizeFactor = propertyData.area_m2 > 200 ? -0.05 : propertyData.area_m2 > 100 ? 0.02 : 0.05;
+      topFactors.size = sizeFactor;
+    }
+
+    // Days on market factor
+    if (propertyData.days_on_market !== undefined) {
+      if (propertyData.days_on_market > 90) {
+        topFactors.market_duration = -0.08; // Long time = possible issues
+      } else if (propertyData.days_on_market < 14) {
+        topFactors.market_duration = 0.05; // New listing premium
+      }
+    }
+
+    // Price per sqm vs median factor
+    if (propertyData.price && propertyData.area_m2) {
+      const pricePerM2 = propertyData.price / propertyData.area_m2;
+      if (priceAssessment.priceRange.median && propertyData.area_m2) {
+        const medianPerM2 = priceAssessment.priceRange.median / propertyData.area_m2;
+        const deviation = (pricePerM2 - medianPerM2) / medianPerM2;
+        topFactors.price_efficiency = Number((-deviation * 0.15).toFixed(3));
+      }
+    }
+  }
+
   const { error } = await supabase
     .from('pricewaze_avm_results')
     .insert({
@@ -46,7 +91,7 @@ export async function saveAVMResult(
       high_estimate: priceAssessment.priceRange.max,
       confidence,
       uncertainty_level: priceAssessment.uncertainty,
-      top_factors: {}, // TODO: Add factors if available
+      top_factors: topFactors,
       comparable_count: comparableCount,
       expires_at: expiresAt.toISOString(),
     });

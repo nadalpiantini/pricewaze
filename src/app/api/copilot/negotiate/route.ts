@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Rate limiting (L1.1)
     const identifier = user.id;
-    const rateLimitResult = checkRateLimit(identifier, '/api/copilot/negotiate');
+    const rateLimitResult = await checkRateLimit(identifier, '/api/copilot/negotiate');
     
     if (!rateLimitResult.allowed) {
       logger.warn(`Rate limit exceeded for user ${identifier}`);

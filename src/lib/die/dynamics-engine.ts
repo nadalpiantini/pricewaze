@@ -61,7 +61,7 @@ export function analyzeMarketDynamics(
   // Calculate trends
   const priceTrend = determinePriceTrend(avgPrice30, avgPrice60, avgPrice90);
   const inventoryTrend = determineInventoryTrend(inventory30, inventory60, inventory90);
-  const daysOnMarketTrend = 'stable'; // TODO: Calculate from property data if available
+  const daysOnMarketTrend = determineDaysOnMarketTrend(zone.properties);
 
   // Calculate trend score (-1 to 1)
   // Positive = accelerating, Negative = decelerating
@@ -263,6 +263,56 @@ function determineInventoryTrend(
   // Falling: inventory decreasing
   if (inventory30 < inventory60 * 0.8) {
     return 'falling';
+  }
+
+  return 'stable';
+}
+
+/**
+ * Determine days on market trend from property data
+ */
+function determineDaysOnMarketTrend(
+  properties: Array<{ created_at: string; status?: string }>
+): 'rising' | 'stable' | 'falling' {
+  if (!properties || properties.length < 5) {
+    return 'stable';
+  }
+
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  // Calculate average days on market for recent vs older properties
+  const soldProperties = properties.filter(p => p.status === 'sold' || p.status === 'pending');
+
+  if (soldProperties.length < 4) {
+    return 'stable';
+  }
+
+  // Split into halves based on created_at
+  const sorted = [...soldProperties].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  const mid = Math.floor(sorted.length / 2);
+  const recentHalf = sorted.slice(0, mid);
+  const olderHalf = sorted.slice(mid);
+
+  const avgDOMRecent = recentHalf.reduce((sum, p) => {
+    return sum + Math.floor((now - new Date(p.created_at).getTime()) / dayMs);
+  }, 0) / recentHalf.length;
+
+  const avgDOMOlder = olderHalf.reduce((sum, p) => {
+    return sum + Math.floor((now - new Date(p.created_at).getTime()) / dayMs);
+  }, 0) / olderHalf.length;
+
+  // Compare: if recent properties are selling faster (lower DOM), trend is falling
+  const changeRatio = avgDOMRecent / avgDOMOlder;
+
+  if (changeRatio < 0.8) {
+    return 'falling'; // Properties selling faster
+  }
+  if (changeRatio > 1.2) {
+    return 'rising'; // Properties taking longer to sell
   }
 
   return 'stable';

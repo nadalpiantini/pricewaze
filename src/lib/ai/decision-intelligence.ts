@@ -20,6 +20,91 @@ import { logger } from '@/lib/logger';
 import { fireAndForget } from '@/lib/errors';
 
 // ============================================================================
+// DATABASE ROW TYPES (for type-safe mapping from Supabase)
+// ============================================================================
+
+interface AVMResultRow {
+  id: string;
+  property_id: string;
+  model_version: string;
+  estimate: number | string;
+  low_estimate: number | string;
+  high_estimate: number | string;
+  confidence: number | string;
+  uncertainty_level: 'low' | 'medium' | 'high';
+  top_factors: Record<string, number> | null;
+  comparable_count: number | null;
+  generated_at: string;
+  expires_at?: string | null;
+}
+
+interface MarketPressureRow {
+  id: string;
+  property_id: string;
+  pressure_level: 'low' | 'medium' | 'high' | 'critical';
+  direction: 'upward' | 'downward' | 'neutral';
+  velocity: 'slow' | 'moderate' | 'fast';
+  signals: Record<string, number | string> | null;
+  pressure_score: number | string;
+  created_at: string;
+}
+
+interface MarketDynamicsRow {
+  id: string;
+  property_id: string;
+  zone_id?: string | null;
+  market_velocity: 'accelerating' | 'stable' | 'decelerating';
+  velocity_score: number | string;
+  regime_change_detected: boolean;
+  regime_change_date?: string | null;
+  regime_change_type?: 'acceleration' | 'deceleration' | 'stabilization' | null;
+  price_trend_30d?: 'rising' | 'stable' | 'falling' | null;
+  inventory_trend_30d?: 'increasing' | 'stable' | 'decreasing' | null;
+  activity_trend_30d?: 'increasing' | 'stable' | 'decreasing' | null;
+  analysis_data?: Record<string, unknown> | null;
+  calculated_at: string;
+  valid_until?: string | null;
+}
+
+interface DecisionRiskRow {
+  id: string;
+  property_id: string;
+  user_id?: string | null;
+  wait_risk_level: 'low' | 'medium' | 'high' | 'critical';
+  wait_risk_score: number | string;
+  act_now_risk_level: 'low' | 'medium' | 'high' | 'critical';
+  act_now_risk_score: number | string;
+  recommendation: 'wait' | 'act_now' | 'negotiate' | 'monitor';
+  recommendation_confidence: number | string;
+  scenarios?: DecisionScenario[] | null;
+  risk_factors?: Record<string, boolean> | null;
+  calculated_at: string;
+  expires_at?: string | null;
+}
+
+// Lightweight partial types for context functions (used in determineRecommendation, etc.)
+interface PressureContext {
+  pressure_level?: 'low' | 'medium' | 'high' | 'critical';
+  signals?: Record<string, number | string>;
+}
+
+interface DynamicsContext {
+  market_velocity?: 'accelerating' | 'stable' | 'decelerating';
+  analysis_data?: Record<string, unknown>;
+}
+
+interface AVMContext {
+  estimate?: number;
+  low_estimate?: number;
+  high_estimate?: number;
+}
+
+interface PropertyContext {
+  price: number;
+  created_at?: string;
+}
+
+// ============================================================================
 // AVM CALCULATION (Automated Valuation Model)
 // ============================================================================
 
@@ -134,7 +219,7 @@ function calculateConfidence(property: PropertyData, zone?: ZoneData): number {
   return Math.max(0.3, Math.min(0.95, confidence));
 }
 
-function mapAVMResultFromDB(row: any): AVMResult {
+function mapAVMResultFromDB(row: AVMResultRow): AVMResult {
   return {
     id: row.id,
     propertyId: row.property_id,
@@ -147,7 +232,7 @@ function mapAVMResultFromDB(row: any): AVMResult {
     topFactors: row.top_factors || {},
     comparableCount: row.comparable_count || 0,
     generatedAt: row.generated_at,
-    expiresAt: row.expires_at,
+    expiresAt: row.expires_at ?? undefined,
   };
 }
 
@@ -297,7 +382,7 @@ export async function calculateMarketPressure(
   }
 }
 
-function mapMarketPressureFromDB(row: any): MarketPressure {
+function mapMarketPressureFromDB(row: MarketPressureRow): MarketPressure {
   return {
     id: row.id,
     propertyId: row.property_id,
@@ -503,22 +588,22 @@ function detectRegimeChange(
   };
 }
 
-function mapMarketDynamicsFromDB(row: any): MarketDynamics {
+function mapMarketDynamicsFromDB(row: MarketDynamicsRow): MarketDynamics {
   return {
     id: row.id,
     propertyId: row.property_id,
-    zoneId: row.zone_id,
+    zoneId: row.zone_id ?? undefined,
     marketVelocity: row.market_velocity,
     velocityScore: Number(row.velocity_score),
     regimeChangeDetected: row.regime_change_detected,
-    regimeChangeDate: row.regime_change_date,
-    regimeChangeType: row.regime_change_type,
-    priceTrend30d: row.price_trend_30d,
-    inventoryTrend30d: row.inventory_trend_30d,
-    activityTrend30d: row.activity_trend_30d,
+    regimeChangeDate: row.regime_change_date ?? undefined,
+    regimeChangeType: row.regime_change_type ?? undefined,
+    priceTrend30d: row.price_trend_30d ?? undefined,
+    inventoryTrend30d: row.inventory_trend_30d ?? undefined,
+    activityTrend30d: row.activity_trend_30d ?? undefined,
     analysisData: row.analysis_data || {},
     calculatedAt: row.calculated_at,
-    validUntil: row.valid_until,
+    validUntil: row.valid_until ?? undefined,
   };
 }
 
@@ -674,8 +759,8 @@ export async function calculateDecisionRisk(
 function determineRecommendation(
   waitRisk: number,
   actNowRisk: number,
-  pressure?: any,
-  dynamics?: any
+  pressure?: PressureContext,
+  dynamics?: DynamicsContext
 ): 'wait' | 'act_now' | 'negotiate' | 'monitor' {
   // Si riesgo de espera es muy alto, actuar
   if (waitRisk >= 70) {
@@ -701,7 +786,7 @@ function determineRecommendation(
   return 'negotiate';
 }
 
-function calculateRecommendationConfidence(avm?: any, pressure?: any, dynamics?: any): number {
+function calculateRecommendationConfidence(avm?: AVMContext, pressure?: PressureContext, dynamics?: DynamicsContext): number {
   let confidence = 50;
 
   if (avm) confidence += 20;
@@ -712,10 +797,10 @@ function calculateRecommendationConfidence(avm?: any, pressure?: any, dynamics?:
 }
 
 function generateScenarios(
-  property: any,
-  avm?: any,
-  pressure?: any,
-  dynamics?: any,
+  property: PropertyContext,
+  avm?: AVMContext,
+  pressure?: PressureContext,
+  dynamics?: DynamicsContext,
   offerAmount?: number
 ): DecisionScenario[] {
   const scenarios: DecisionScenario[] = [];
@@ -732,25 +817,27 @@ function generateScenarios(
   });
 
   // Escenario: Actuar ahora
+  const lowEst = avm?.low_estimate ?? 0;
+  const highEst = avm?.high_estimate ?? Infinity;
   scenarios.push({
     action: 'act_now',
     probabilitySuccess: offerAmount && avm
-      ? offerAmount >= avm.low_estimate && offerAmount <= avm.high_estimate ? 0.65 : 0.45
+      ? (offerAmount >= lowEst && offerAmount <= highEst ? 0.65 : 0.45)
       : 0.50,
     expectedPrice: offerAmount || property.price,
     riskFactors: [
-      ...(offerAmount && avm && offerAmount > avm.high_estimate ? ['price_above_estimate'] : []),
+      ...(offerAmount && avm?.high_estimate && offerAmount > avm.high_estimate ? ['price_above_estimate'] : []),
     ],
   });
 
   return scenarios;
 }
 
-function mapDecisionRiskFromDB(row: any): DecisionRisk {
+function mapDecisionRiskFromDB(row: DecisionRiskRow): DecisionRisk {
   return {
     id: row.id,
     propertyId: row.property_id,
-    userId: row.user_id,
+    userId: row.user_id ?? undefined,
     waitRiskLevel: row.wait_risk_level,
     waitRiskScore: Number(row.wait_risk_score),
     actNowRiskLevel: row.act_now_risk_level,
@@ -760,7 +847,7 @@ function mapDecisionRiskFromDB(row: any): DecisionRisk {
     scenarios: row.scenarios || [],
     riskFactors: row.risk_factors || {},
     calculatedAt: row.calculated_at,
-    expiresAt: row.expires_at,
+    expiresAt: row.expires_at ?? undefined,
   };
 }
 

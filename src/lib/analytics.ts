@@ -42,15 +42,43 @@ interface EventProperties {
   [key: string]: string | number | boolean | null | undefined;
 }
 
+// Typed window extension for analytics providers
+declare global {
+  interface Window {
+    posthog?: {
+      capture: (event: string, properties?: EventProperties) => void;
+      identify: (userId: string, traits?: EventProperties) => void;
+    };
+    mixpanel?: {
+      track: (event: string, properties?: EventProperties) => void;
+      identify: (userId: string) => void;
+      people: {
+        set: (traits: EventProperties) => void;
+      };
+    };
+  }
+}
+
+type AnalyticsProvider = 'posthog' | 'mixpanel' | 'none';
+
 class Analytics {
   private enabled: boolean;
-  private provider: 'posthog' | 'mixpanel' | 'none';
+  private provider: AnalyticsProvider;
 
   constructor() {
-    // Enable analytics in both development and production
     this.enabled = typeof window !== 'undefined';
-    // TODO: Configure provider based on env var
-    this.provider = 'none'; // Default to none until configured
+    // Configure provider based on env var (prevents duplication)
+    const configuredProvider = process.env.NEXT_PUBLIC_ANALYTICS_PROVIDER as AnalyticsProvider | undefined;
+    this.provider = configuredProvider && ['posthog', 'mixpanel'].includes(configuredProvider)
+      ? configuredProvider
+      : 'none';
+  }
+
+  /**
+   * Set analytics provider at runtime
+   */
+  setProvider(provider: AnalyticsProvider) {
+    this.provider = provider;
   }
 
   /**
@@ -88,15 +116,15 @@ class Analytics {
 
     switch (this.provider) {
       case 'posthog':
-        if (typeof window !== 'undefined' && (window as any).posthog) {
-          (window as any).posthog.identify(userId, traits);
+        if (typeof window !== 'undefined' && window.posthog) {
+          window.posthog.identify(userId, traits);
         }
         break;
       case 'mixpanel':
-        if (typeof window !== 'undefined' && (window as any).mixpanel) {
-          (window as any).mixpanel.identify(userId);
+        if (typeof window !== 'undefined' && window.mixpanel) {
+          window.mixpanel.identify(userId);
           if (traits) {
-            (window as any).mixpanel.people.set(traits);
+            window.mixpanel.people.set(traits);
           }
         }
         break;
@@ -113,14 +141,14 @@ class Analytics {
   }
 
   private trackPostHog(eventName: EventName, properties?: EventProperties) {
-    if (typeof window !== 'undefined' && (window as any).posthog) {
-      (window as any).posthog.capture(eventName, properties);
+    if (typeof window !== 'undefined' && window.posthog) {
+      window.posthog.capture(eventName, properties);
     }
   }
 
   private trackMixpanel(eventName: EventName, properties?: EventProperties) {
-    if (typeof window !== 'undefined' && (window as any).mixpanel) {
-      (window as any).mixpanel.track(eventName, properties);
+    if (typeof window !== 'undefined' && window.mixpanel) {
+      window.mixpanel.track(eventName, properties);
     }
   }
 }

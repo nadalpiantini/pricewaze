@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
+import { z } from 'zod';
 import { buildCopilotChatV2SystemPrompt } from '@/prompts/copilot/CopilotChat.v2';
+import { Errors, ErrorCodes, apiError } from '@/lib/api/errors';
+
+// Zod schema for input validation
+const copilotChatSchema = z.object({
+  question: z.string()
+    .min(1, 'Question is required')
+    .max(2000, 'Question must be less than 2000 characters'),
+  property_id: z.string().uuid('Invalid property ID format').optional(),
+  offer_id: z.string().uuid('Invalid offer ID format').optional(),
+});
 
 // Lazy-load client
 let deepseek: OpenAI | null = null;
@@ -36,18 +47,18 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return Errors.unauthorized();
     }
 
     const body = await request.json();
-    const { question, property_id, offer_id } = body;
 
-    if (!question || typeof question !== 'string') {
-      return NextResponse.json(
-        { error: 'question is required' },
-        { status: 400 }
-      );
+    // Validate input with Zod
+    const parseResult = copilotChatSchema.safeParse(body);
+    if (!parseResult.success) {
+      return Errors.validationFailed(parseResult.error.flatten().fieldErrors as Record<string, unknown>);
     }
+
+    const { question, property_id, offer_id } = parseResult.data;
 
     // Obtener contexto de la propiedad si existe
     let propertyContext = null;
@@ -101,7 +112,8 @@ export async function POST(request: NextRequest) {
 
     const userPrompt = question;
 
-    // Llamar a DeepSeek
+    // Llamar a DeepSeek with latency tracking
+    const startTime = performance.now();
     const response = await getClient().chat.completions.create({
       model: MODEL,
       messages: [
@@ -111,20 +123,23 @@ export async function POST(request: NextRequest) {
       temperature: 0.7,
       max_tokens: 1000,
     });
+    const endTime = performance.now();
+    const latencyMs = Math.round(endTime - startTime);
 
     const answer = response.choices[0]?.message?.content || 'No pude generar una respuesta.';
 
-    // Log de la interacción (opcional, para analytics)
+    // Log de la interacción with real latency
     await supabase.from('pricewaze_ai_logs').insert({
       user_id: user.id,
       context: 'copilot_chat',
       input_text: question,
       output_text: answer,
-      latency_ms: response.usage?.total_tokens ? 0 : 0, // TODO: calcular latency real
+      latency_ms: latencyMs,
       metadata: {
         property_id: property_id || null,
         offer_id: offer_id || null,
         model: MODEL,
+        tokens_used: response.usage?.total_tokens || null,
       },
     });
 
@@ -138,9 +153,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Copilot chat POST error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+    return apiError(
+      error instanceof Error ? error.message : 'AI service error',
+      ErrorCodes.AI_001,
+      500
     );
   }
 }

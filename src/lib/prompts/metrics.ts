@@ -46,15 +46,10 @@ export function calculateDAS(action: UserAction): number {
 }
 
 /**
- * Log prompt metrics
- * 
- * This would integrate with your analytics system
+ * Log prompt metrics to Supabase
  */
 export async function logPromptMetrics(metrics: PromptMetrics): Promise<void> {
-  // In production, this would send to your analytics backend
-  // For now, we'll log to console and could store in Supabase
-  
-  const das = metrics.decision_alignment_score ?? 
+  const das = metrics.decision_alignment_score ??
     (metrics.user_action ? calculateDAS(metrics.user_action) : undefined);
 
   const logEntry = {
@@ -62,11 +57,33 @@ export async function logPromptMetrics(metrics: PromptMetrics): Promise<void> {
     decision_alignment_score: das,
   };
 
-  // Log to console (in production, send to analytics)
-  console.log('[Prompt Metrics]', JSON.stringify(logEntry, null, 2));
+  // Log to console in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Prompt Metrics]', JSON.stringify(logEntry, null, 2));
+  }
 
-  // TODO: Send to Supabase table `pricewaze_prompt_metrics`
-  // await supabase.from('pricewaze_prompt_metrics').insert(logEntry);
+  // Send to Supabase table `pricewaze_prompt_metrics`
+  try {
+    const { createClient } = await import('@/lib/supabase/server');
+    const supabase = await createClient();
+
+    await supabase.from('pricewaze_prompt_metrics').insert({
+      prompt_name: logEntry.prompt_name,
+      prompt_version: logEntry.prompt_version,
+      user_id: logEntry.user_id,
+      confidence_level: logEntry.confidence_level || null,
+      latency_ms: logEntry.latency_ms,
+      null_fields: logEntry.null_fields || null,
+      json_parse_error: logEntry.json_parse_error || false,
+      user_action: logEntry.user_action || null,
+      decision_alignment_score: logEntry.decision_alignment_score ?? null,
+      context: logEntry.context || null,
+      created_at: logEntry.timestamp,
+    });
+  } catch (error) {
+    // Non-blocking - log and continue
+    console.warn('[Prompt Metrics] Failed to persist metrics:', error);
+  }
 }
 
 /**

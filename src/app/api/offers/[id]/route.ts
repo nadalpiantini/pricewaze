@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createNotification } from '@/lib/notifications';
+import { Errors, ErrorCodes, apiError } from '@/lib/api/errors';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return Errors.unauthorized();
     }
 
     // Get the offer
@@ -32,12 +33,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
+      return Errors.notFound('Offer');
     }
 
     // Only buyer or seller can view
     if (offer.buyer_id !== user.id && offer.seller_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return Errors.forbidden();
     }
 
     // Get the full negotiation thread (all related offers)
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     });
   } catch (error) {
     console.error('Offer GET error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return Errors.serverError();
   }
 }
 
@@ -69,7 +70,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return Errors.unauthorized();
     }
 
     // Get current offer
@@ -80,12 +81,12 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       .single();
 
     if (fetchError || !offer) {
-      return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
+      return Errors.notFound('Offer');
     }
 
     // Only buyer or seller can update
     if (offer.buyer_id !== user.id && offer.seller_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return Errors.forbidden();
     }
 
     const body = await request.json();
@@ -94,18 +95,12 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     // Validate action
     const validActions = ['accept', 'reject', 'counter', 'withdraw'];
     if (!action || !validActions.includes(action)) {
-      return NextResponse.json(
-        { error: 'Invalid action. Must be: accept, reject, counter, or withdraw' },
-        { status: 400 }
-      );
+      return Errors.badRequest('Invalid action. Must be: accept, reject, counter, or withdraw');
     }
 
     // Check if offer can be modified
     if (offer.status !== 'pending') {
-      return NextResponse.json(
-        { error: `Cannot ${action} an offer that is ${offer.status}` },
-        { status: 400 }
-      );
+      return apiError(`Cannot ${action} an offer that is ${offer.status}`, ErrorCodes.OFFER_004, 400);
     }
 
     // Check expiration
@@ -115,10 +110,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         .update({ status: 'expired' })
         .eq('id', id);
 
-      return NextResponse.json(
-        { error: 'This offer has expired' },
-        { status: 400 }
-      );
+      return apiError('This offer has expired', ErrorCodes.OFFER_004, 400);
     }
 
     // Handle different actions
@@ -128,10 +120,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         // Or buyer can accept seller's counter-offer
         const isBuyerOffer = offer.buyer_id !== user.id;
         if (!isBuyerOffer && offer.seller_id !== user.id) {
-          return NextResponse.json(
-            { error: 'You cannot accept your own offer' },
-            { status: 403 }
-          );
+          return Errors.forbidden('You cannot accept your own offer');
         }
 
         // Update offer status
@@ -216,7 +205,39 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           },
         });
 
-        // TODO: Create agreement record (can be done via AI contract generation)
+        // Create agreement record for the accepted offer
+        try {
+          const { data: agreement, error: agreementError } = await supabase
+            .from('pricewaze_agreements')
+            .insert({
+              offer_id: id,
+              property_id: offer.property_id,
+              buyer_id: offer.buyer_id,
+              seller_id: offer.seller_id,
+              agreed_price: offer.amount,
+              status: 'pending_contract',
+              terms: {
+                offer_message: offer.message || null,
+                accepted_at: new Date().toISOString(),
+                property_title: offer.property?.title || null,
+              },
+            })
+            .select()
+            .single();
+
+          if (agreementError) {
+            console.error('Error creating agreement:', agreementError);
+          } else {
+            // Update the offer with agreement reference
+            await supabase
+              .from('pricewaze_offers')
+              .update({ agreement_id: agreement.id })
+              .eq('id', id);
+          }
+        } catch (agreementError) {
+          console.error('Error in agreement creation:', agreementError);
+          // Non-blocking - offer was already accepted
+        }
 
         return NextResponse.json({
           message: 'Offer accepted!',
@@ -248,17 +269,11 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           (offer.seller_id === user.id && !offer.parent_offer_id);
 
         if (!isRecipient && offer.seller_id !== user.id) {
-          return NextResponse.json(
-            { error: 'You cannot counter your own offer' },
-            { status: 403 }
-          );
+          return Errors.forbidden('You cannot counter your own offer');
         }
 
         if (!counter_amount || counter_amount <= 0) {
-          return NextResponse.json(
-            { error: 'Counter offer amount is required' },
-            { status: 400 }
-          );
+          return apiError('Counter offer amount is required', ErrorCodes.OFFER_002, 400);
         }
 
         // Mark current offer as countered
@@ -307,10 +322,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           (offer.seller_id === user.id && offer.parent_offer_id);
 
         if (!canWithdraw) {
-          return NextResponse.json(
-            { error: 'You can only withdraw offers you made' },
-            { status: 403 }
-          );
+          return Errors.forbidden('You can only withdraw offers you made');
         }
 
         const { data: withdrawnOffer, error: updateError } = await supabase
@@ -329,10 +341,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       }
 
       default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+        return Errors.badRequest('Invalid action');
     }
   } catch (error) {
     console.error('Offer PUT error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return Errors.serverError();
   }
 }
