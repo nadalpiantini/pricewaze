@@ -39,18 +39,46 @@ if (!supabaseUrl) {
 }
 
 /**
+ * Validate URL format
+ */
+function isValidUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return ['http:', 'https:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Supabase admin client (server-side only)
  * Bypasses RLS policies - use with caution
- * Only create if both URL and service key are valid
+ * Only created if URL and service key are valid to avoid build-time errors
  */
-export const supabaseAdmin = (supabaseUrl && supabaseServiceRoleKey)
-  ? createSupabaseClient(supabaseUrl, supabaseServiceRoleKey, {
+export const supabaseAdmin = (() => {
+  // Don't create client if URL or key are missing
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return null;
+  }
+  
+  // Validate URL format before creating client
+  if (!isValidUrl(supabaseUrl)) {
+    logger.error('[Supabase Server] Invalid NEXT_PUBLIC_SUPABASE_URL format:', supabaseUrl.substring(0, 50));
+    return null;
+  }
+  
+  try {
+    return createSupabaseClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
       },
-    })
-  : null;
+    });
+  } catch (error) {
+    logger.error('[Supabase Server] Failed to create admin client:', error);
+    return null;
+  }
+})();
 
 /**
  * Create a Supabase server client with cookie handling
