@@ -8,8 +8,28 @@ import { logger } from '@/lib/logger';
  */
 function cleanApiKey(key: string | undefined): string {
   if (!key) return '';
+  
+  // Store original for comparison
+  const original = key;
+  
   // Remove all newlines (\n), carriage returns (\r), and trim whitespace
-  return key.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
+  const cleaned = key.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
+  
+  // Log warning in development if we found and removed newlines
+  if (process.env.NODE_ENV === 'development' && original !== cleaned) {
+    console.warn('[Supabase] API key had hidden newlines/whitespace that were removed');
+    console.warn('[Supabase] Original length:', original.length, 'Cleaned length:', cleaned.length);
+  }
+  
+  // Additional safety: remove any remaining non-printable characters except base64 chars
+  // Base64 chars: A-Z, a-z, 0-9, +, /, = (and - and _ for URL-safe)
+  const base64Safe = cleaned.replace(/[^A-Za-z0-9+\/=\-_]/g, '');
+  
+  if (base64Safe !== cleaned && process.env.NODE_ENV === 'development') {
+    console.warn('[Supabase] Removed non-base64 characters from API key');
+  }
+  
+  return base64Safe;
 }
 
 export function createClient() {
@@ -20,6 +40,17 @@ export function createClient() {
   
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Missing Supabase environment variables');
+  }
+  
+  // Final verification: check if cleaned key still has %0A (URL-encoded newline)
+  // This would indicate the variable in Vercel still has the newline
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    const testUrl = `wss://test.supabase.co/realtime/v1/websocket?apikey=${supabaseAnonKey}`;
+    if (testUrl.includes('%0A')) {
+      console.error('[Supabase] ⚠️ CRITICAL: API key still contains %0A after cleaning!');
+      console.error('[Supabase] This means the variable in Vercel has a newline.');
+      console.error('[Supabase] Solution: Edit the variable in Vercel Dashboard and remove any newlines.');
+    }
   }
 
   return createBrowserClient(
