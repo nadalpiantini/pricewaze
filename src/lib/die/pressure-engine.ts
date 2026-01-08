@@ -45,7 +45,7 @@ export function calculatePressure(
   // Competition contributions
   pressureScore += Math.min(20, competitionData.activeOffers * 10); // Max 20 from offers
   pressureScore += Math.min(15, competitionData.recentVisits * 5); // Max 15 from visits
-  pressureScore += Math.min(10, competitionData.views / 10); // Max 10 from views (if available)
+  pressureScore += Math.min(10, (competitionData.views ?? 0) / 10); // Max 10 from views (if available)
 
   // Clamp to 0-100
   pressureScore = Math.max(0, Math.min(100, pressureScore));
