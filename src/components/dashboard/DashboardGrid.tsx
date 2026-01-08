@@ -92,25 +92,10 @@ export function DashboardGrid() {
 
   // Handle layout change
   const handleLayoutChange = useCallback(
-    (newLayout: Layout) => {
+    (newLayout: Layout): void => {
       if (isEditing) {
-        // Layout from react-grid-layout is an array-like type
-        // Cast to array and convert to GridLayoutItem[]
-        const layoutArray = newLayout as unknown as Array<{
-          i: string;
-          x: number;
-          y: number;
-          w: number;
-          h: number;
-          minW?: number;
-          minH?: number;
-          maxW?: number;
-          maxH?: number;
-          static?: boolean;
-          isDraggable?: boolean;
-          isResizable?: boolean;
-        }>;
-        const mutableLayout: GridLayoutItem[] = layoutArray.map((item) => ({
+        // Layout from react-grid-layout is readonly, convert to mutable GridLayoutItem[]
+        const mutableLayout: GridLayoutItem[] = [...newLayout].map((item) => ({
           i: item.i,
           x: item.x,
           y: item.y,
