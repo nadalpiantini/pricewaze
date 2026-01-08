@@ -37,7 +37,13 @@ export async function middleware(request: NextRequest) {
    */
   function cleanApiKey(key: string | undefined): string {
     if (!key) return '';
-    return key.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
+    
+    // Remove all newlines (\n), carriage returns (\r), and trim whitespace
+    const cleaned = key.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
+    
+    // Additional safety: remove any remaining non-printable characters except base64 chars
+    // Base64 chars: A-Z, a-z, 0-9, +, /, = (and - and _ for URL-safe)
+    return cleaned.replace(/[^A-Za-z0-9+\/=\-_]/g, '');
   }
 
   // Clean API keys aggressively to remove any hidden newlines/whitespace that break WebSockets

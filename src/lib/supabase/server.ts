@@ -5,10 +5,18 @@ import { logger } from '@/lib/logger';
 
 /**
  * Clean API key by removing all newlines, carriage returns, and whitespace
+ * This is critical because Next.js injects NEXT_PUBLIC_* vars at build time,
+ * and if .env.local had a newline, it gets baked into the bundle
  */
 function cleanApiKey(key: string | undefined): string {
   if (!key) return '';
-  return key.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
+  
+  // Remove all newlines (\n), carriage returns (\r), and trim whitespace
+  const cleaned = key.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
+  
+  // Additional safety: remove any remaining non-printable characters except base64 chars
+  // Base64 chars: A-Z, a-z, 0-9, +, /, = (and - and _ for URL-safe)
+  return cleaned.replace(/[^A-Za-z0-9+\/=\-_]/g, '');
 }
 
 // Clean API keys aggressively to remove any hidden newlines/whitespace that break WebSockets
