@@ -67,39 +67,49 @@ test.describe('Authentication', () => {
     expect(isOnboarding || isNotRegister).toBe(true);
   });
 
-  test('should login with valid credentials', async ({ page }) => {
-    // Create test user first
-    const timestamp = Date.now();
-    const testEmail = `test-login-${timestamp}@example.com`;
-    const testPassword = 'Test123!';
-    
-    await createTestUser(page, testEmail, testPassword);
-    await page.waitForTimeout(2000);
-    
-    // Now login
-    await loginTestUser(page, testEmail, testPassword, '/dashboard');
-    
+  test('should login with valid credentials', async ({ page, browserName }) => {
+    /**
+     * This test requires a confirmed user in the database.
+     *
+     * Set TEST_USER_EMAIL and TEST_USER_PASSWORD environment variables
+     * with credentials for a pre-seeded confirmed user.
+     *
+     * If not set, the test will be skipped.
+     */
+    const envEmail = process.env.TEST_USER_EMAIL;
+    const envPassword = process.env.TEST_USER_PASSWORD;
+
+    if (!envEmail || !envPassword) {
+      console.log('[Test] Skipping login test - TEST_USER_EMAIL and TEST_USER_PASSWORD not set');
+      console.log('[Test] To run this test, set these environment variables with confirmed user credentials');
+      test.skip();
+      return;
+    }
+
+    // Login with pre-configured test user
+    await loginTestUser(page, envEmail, envPassword, '/dashboard');
+
     // Navigate to dashboard if not already there
     const currentUrl = page.url();
     if (!currentUrl.includes('/dashboard')) {
       await page.goto('/dashboard');
       await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
     }
-    
+
     // Verify we're on dashboard (or at least not on login)
     const finalUrl = page.url();
     expect(finalUrl).not.toContain('/login');
-    
+
     // Verify user is logged in (check for user menu or dashboard content)
     const userMenu = page.locator('[data-testid="user-menu"]');
     const dashboardContent = page.locator('text=/Dashboard|Properties|Routes/i');
-    
+
     // Wait for either to appear
     await Promise.race([
       userMenu.waitFor({ timeout: 5000 }).catch(() => {}),
       dashboardContent.first().waitFor({ timeout: 5000 }).catch(() => {})
     ]);
-    
+
     // At least one should be visible
     const menuVisible = await userMenu.isVisible().catch(() => false);
     const contentVisible = await dashboardContent.first().isVisible().catch(() => false);
