@@ -15,6 +15,7 @@ import { calculateUncertainty } from './uncertainty-engine';
 import { analyzeMarketDynamics } from './dynamics-engine';
 import { calculatePressure } from './pressure-engine';
 import { calculateWaitRisk } from './wait-risk-engine';
+import { getUserDecisionProfile, personalizeDIE } from './personalization-layer';
 import { generateExplanations } from './copilot-explanations';
 import { saveAVMResult } from './save-avm-result';
 
@@ -47,6 +48,30 @@ export async function analyzeDIE(
     property: inputs.property,
   });
 
+  // Get user profile for personalization (DIE-3)
+  let userProfile = inputs.userProfile;
+  if (!userProfile && inputs.property.id) {
+    // Try to get from DB if userId available (would need to be passed in inputs)
+    // For now, use provided profile or null
+  }
+
+  // Build base analysis
+  let analysis: DIEAnalysis = {
+    propertyId: inputs.property.id,
+    requestedAt: new Date().toISOString(),
+    version: userProfile ? 'DIE-3' : 'DIE-2', // DIE-3 if personalized
+    priceAssessment,
+    marketDynamics,
+    currentPressure,
+    waitRisk, // DIE-2 feature
+    explanations,
+  };
+
+  // Personalize if profile available (DIE-3)
+  if (userProfile) {
+    analysis = personalizeDIE(analysis, userProfile);
+  }
+
   // Save AVM result to DB for future use (fire and forget)
   // This allows the fairness function to use these ranges
   saveAVMResult({
@@ -57,15 +82,6 @@ export async function analyzeDIE(
     console.error('Failed to save AVM result (non-critical):', err);
   });
 
-  return {
-    propertyId: inputs.property.id,
-    requestedAt: new Date().toISOString(),
-    version: 'DIE-2', // Updated to DIE-2 with wait-risk
-    priceAssessment,
-    marketDynamics,
-    currentPressure,
-    waitRisk, // DIE-2 feature
-    explanations,
-  };
+  return analysis;
 }
 
