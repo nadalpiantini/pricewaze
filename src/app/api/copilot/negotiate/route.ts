@@ -4,6 +4,9 @@ import { deepseekChatJSON } from '@/lib/deepseek';
 import { isValidAnalysis, safeJsonParse, fallbackAnalysis } from '@/lib/copilotValidator';
 import type { CopilotContext, CopilotAnalysis } from '@/types/copilot';
 import { getMarketConfig, formatPrice } from '@/config/market';
+import { buildCopilotNegotiateV2SystemPrompt, buildCopilotNegotiateV2UserPrompt } from '@/prompts/copilot/CopilotNegotiate.v2';
+import { validateCopilotNegotiate } from '@/lib/prompts/validator';
+import { trackPromptUsage } from '@/prompts/prompts-registry';
 import { isFeatureEnabled } from '@/lib/feature-flags';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
@@ -165,54 +168,13 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    // Build prompts
+    // Use v2 prompts
     const market = getMarketConfig();
-    const systemPrompt = `You are PriceWaze Negotiation Copilot for the ${market.ai.marketContext}.
-
-Rules:
-- Do NOT make decisions for the user.
-- Do NOT invent facts or numbers.
-- Only use the provided data.
-- Explain negotiation dynamics clearly.
-- If data is insufficient, say so explicitly.
-- Be neutral and analytical.
-- Always compare scenarios, don't recommend a single path.
-
-You MUST return valid JSON only. No markdown. No commentary. No extra text.
-
-JSON schema:
-{
-  "summary": string,
-  "key_factors": string[],
-  "risks": string[],
-  "scenarios": [
-    {
-      "option": string,
-      "rationale": string,
-      "pros": string[],
-      "cons": string[]
-    }
-  ],
-  "confidence_level": "low" | "medium" | "high"
-}`;
-
-    const userPrompt = `Analyze the following negotiation context.
-
-Explain the negotiation by comparing these scenarios:
-1. Increasing the offer.
-2. Keeping the current offer.
-3. Waiting without action.
-
-For each scenario:
-- Explain rationale.
-- List pros and cons.
-
-Base everything strictly on the provided data.
-
-Context:
-${JSON.stringify(context, null, 2)}`;
+    const systemPrompt = buildCopilotNegotiateV2SystemPrompt(market.ai.marketContext);
+    const userPrompt = buildCopilotNegotiateV2UserPrompt(context);
 
     // Call DeepSeek
+    const startTime = Date.now();
     let rawResponse: string;
     try {
       rawResponse = await deepseekChatJSON(
@@ -228,20 +190,54 @@ ${JSON.stringify(context, null, 2)}`;
       );
     } catch (error) {
       console.error('DeepSeek API error:', error);
+      const latency = Date.now() - startTime;
+      await trackPromptUsage('CopilotNegotiate', {
+        latency,
+        success: false,
+      });
       // Return fallback
       const fallback = fallbackAnalysis();
       return NextResponse.json(fallback);
     }
 
+    const latency = Date.now() - startTime;
+
     // Parse and validate response
     const parsed = safeJsonParse(rawResponse);
     if (!parsed || !isValidAnalysis(parsed)) {
       console.error('Invalid AI response structure:', rawResponse);
+      await trackPromptUsage('CopilotNegotiate', {
+        latency,
+        success: false,
+      });
       const fallback = fallbackAnalysis();
       return NextResponse.json(fallback);
     }
 
+    // Strict validation
+    const validation = validateCopilotNegotiate(parsed);
+    if (!validation.valid) {
+      console.error('[Prompt Validation] CopilotNegotiate errors:', validation.errors);
+      await trackPromptUsage('CopilotNegotiate', {
+        latency,
+        success: false,
+      });
+      const fallback = fallbackAnalysis();
+      return NextResponse.json(fallback);
+    }
+
+    if (validation.warnings.length > 0) {
+      console.warn('[Prompt Validation] CopilotNegotiate warnings:', validation.warnings);
+    }
+
     const analysis = parsed as CopilotAnalysis;
+
+    // Track successful usage
+    await trackPromptUsage('CopilotNegotiate', {
+      latency,
+      confidence: analysis.confidence_level,
+      success: true,
+    });
 
     // Save to database (async, don't wait - fire and forget)
     // Wrap in Promise.resolve to ensure proper Promise type

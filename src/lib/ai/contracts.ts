@@ -1,6 +1,9 @@
 import OpenAI from 'openai';
 import type { ContractDraft } from '@/types/pricing';
 import { getMarketConfig, formatPrice } from '@/config/market';
+import { buildGenerateContractDraftV2Prompt } from '@/prompts/contracts/generateContractDraft.v2';
+import { buildGenerateOfferLetterV2Prompt } from '@/prompts/contracts/generateOfferLetter.v2';
+import { logger } from '@/lib/logger';
 
 // Lazy-load client to avoid build-time errors
 let deepseek: OpenAI | null = null;
@@ -69,32 +72,14 @@ interface ContractInput {
 }
 
 export async function generateContractDraft(input: ContractInput): Promise<ContractDraft> {
-  const market = getMarketConfig();
-
-  const prompt = `You are a legal document assistant specializing in ${market.ai.marketContext}. Generate a DRAFT purchase agreement (Contrato de Compraventa) based on the following information.
-
-IMPORTANT: This is a NON-BINDING draft for reference only. Include clear language stating this is not a final legal document.
-
-TRANSACTION DETAILS:
-- Buyer: ${input.buyer.full_name}
-- Seller: ${input.seller.full_name}
-- Property: ${input.property.title}
-- Address: ${input.property.address}
-- Property Type: ${input.property.property_type}
-- Area: ${input.property.area_m2 ? `${input.property.area_m2} m²` : 'To be verified'}
-- Agreed Price: ${formatPrice(input.agreedPrice, market)}
-- Notes from negotiation: ${input.offerMessage || 'None'}
-
-Generate a bilingual (Spanish/English) draft contract that includes:
-1. Identification of parties (with placeholders for ID numbers)
-2. Property description (with placeholder for registry number)
-3. Agreed price and payment terms (standard 10% deposit, balance at closing)
-4. Standard conditions (clear title, no liens, property inspection)
-5. Closing timeline (suggest 30-45 days)
-6. Signatures section
-
-Write the contract in formal legal Spanish with English translations for key sections.
-Format it professionally with proper headings and numbered clauses.`;
+  // Use v2 prompt
+  const prompt = buildGenerateContractDraftV2Prompt({
+    buyer: input.buyer,
+    seller: input.seller,
+    property: input.property,
+    agreedPrice: input.agreedPrice,
+    offerMessage: input.offerMessage,
+  });
 
   try {
     const response = await getClient().chat.completions.create({
@@ -137,7 +122,7 @@ Format it professionally with proper headings and numbered clauses.`;
       disclaimer: getLegalDisclaimer(),
     };
   } catch (error) {
-    console.error('DeepSeek contract generation error:', error);
+    logger.error('DeepSeek contract generation error', error);
 
     // Return a template-based fallback
     const fallbackContent = generateFallbackContract(input);
@@ -298,24 +283,14 @@ export async function generateOfferLetter(
   offerAmount: number,
   message?: string
 ): Promise<string> {
-  const market = getMarketConfig();
-
-  const prompt = `Generate a brief, professional offer letter in Spanish for a real estate offer in ${market.name}.
-
-Buyer: ${buyer.full_name}
-Seller: ${seller.full_name}
-Property: ${property.title} at ${property.address}
-Asking Price: ${formatPrice(property.price, market)}
-Offer Amount: ${formatPrice(offerAmount, market)}
-Buyer's Message: ${message || 'No additional message'}
-
-Keep it concise (200-300 words), formal but friendly. Include:
-1. Introduction and interest in the property
-2. The offer amount and why it's reasonable
-3. Proposed terms (standard: 10% deposit, 30-day closing)
-4. Request for response
-
-Write only the letter content, no headers or JSON.`;
+  // Use v2 prompt
+  const prompt = buildGenerateOfferLetterV2Prompt({
+    buyer,
+    seller,
+    property,
+    offerAmount,
+    message,
+  });
 
   try {
     const response = await getClient().chat.completions.create({
@@ -327,14 +302,15 @@ Write only the letter content, no headers or JSON.`;
 
     return response.choices[0]?.message?.content || '';
   } catch (error) {
-    console.error('DeepSeek offer letter error:', error);
+    logger.error('DeepSeek offer letter error', error);
+    const market = getMarketConfig();
 
     return `
 Estimado/a ${seller.full_name},
 
-Por medio de la presente, deseo expresar mi interés en adquirir la propiedad ubicada en ${property.address}.
+Por medio de la presente, deseo expresar mi interes en adquirir la propiedad ubicada en ${property.address}.
 
-Después de considerar cuidadosamente el valor de la propiedad y las condiciones actuales del mercado, me permito presentar una oferta formal de ${formatPrice(offerAmount, market)}.
+Despues de considerar cuidadosamente el valor de la propiedad y las condiciones actuales del mercado, me permito presentar una oferta formal de ${formatPrice(offerAmount, market)}.
 
 ${message ? `${message}\n\n` : ''}
 

@@ -5,7 +5,7 @@ export interface PricingAnalysis {
   // Price Fairness
   fairnessScore: number; // 0-100
   fairnessLabel: 'underpriced' | 'fair' | 'overpriced' | 'significantly_overpriced';
-  estimatedFairValue: number;
+  estimatedFairValue: number | null; // v2: can be null if uncertainty is high
   pricePerM2: number;
 
   // Zone Comparison
@@ -26,15 +26,18 @@ export interface PricingAnalysis {
 
   // Suggested Offers
   suggestedOffers: {
-    aggressive: number; // Low-ball offer
-    balanced: number;   // Fair starting point
-    conservative: number; // Close to asking
+    aggressive: number | null; // Low-ball offer, null if uncertain
+    balanced: number | null;   // Fair starting point, null if uncertain
+    conservative: number | null; // Close to asking, null if uncertain
   };
 
   // AI Insights
   insights: string[];
   risks: string[];
   opportunities: string[];
+  
+  // v2: Confidence level
+  confidenceLevel?: 'low' | 'medium' | 'high';
 }
 
 export interface NegotiationFactor {
@@ -52,14 +55,17 @@ export interface OfferAdvice {
   recommendation: 'accept' | 'counter' | 'reject' | 'wait';
   confidence: number; // 0-100
 
-  suggestedCounterAmount?: number;
+  suggestedCounterAmount?: number | null; // v2: can be null
   reasoning: string[];
 
   marketContext: {
     daysOnMarket: number;
-    similarSales: number;
-    pricetrend: 'rising' | 'stable' | 'falling';
+    similarSales: number | null; // v2: can be null, renamed from similarSalesEstimate
+    pricetrend: 'rising' | 'stable' | 'falling'; // v2: renamed from priceTrend
   };
+  
+  // v2: Confidence level
+  confidenceLevel?: 'low' | 'medium' | 'high';
 }
 
 export interface ContractDraft {
@@ -110,8 +116,12 @@ export interface ZoneAnalysis {
   marketHealth: {
     score: number; // 0-100
     trend: 'hot' | 'warm' | 'cool' | 'cold';
-    avgDaysOnMarket: number;
+    avgDaysOnMarket: number | null; // v2: can be null if uncertain
+    liquidityLevel?: 'low' | 'medium' | 'high'; // v2: new field
   };
+  
+  // v2: Confidence level
+  confidenceLevel?: 'low' | 'medium' | 'high';
 
   demographics: {
     propertyCount: number;

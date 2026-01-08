@@ -12,6 +12,7 @@
 import OpenAI from 'openai';
 import type { PriceAssessment, MarketDynamics, CurrentPressure, WaitRisk, DIEExplanations } from '@/types/die';
 import { getMarketConfig } from '@/config/market';
+import { buildDIEExplanationsV2Prompt } from '@/prompts/die/DIE_Explanations.v2';
 
 let deepseek: OpenAI | null = null;
 
@@ -45,56 +46,14 @@ interface ExplanationContext {
 export async function generateExplanations(
   context: ExplanationContext
 ): Promise<DIEExplanations> {
-  const market = getMarketConfig();
-
-  const prompt = `You are a real estate decision advisor for the ${market.ai.marketContext}. 
-Your role is to EXPLAIN the outputs of a Decision Intelligence Engine (DIE), NOT to calculate prices.
-
-CONTEXT:
-- Property Type: ${context.property.property_type}
-- Asking Price: ${market.currency.symbol}${context.property.price.toLocaleString()}
-
-PRICE ASSESSMENT:
-- Price Range: ${market.currency.symbol}${context.priceAssessment.priceRange.min.toLocaleString()} - ${market.currency.symbol}${context.priceAssessment.priceRange.max.toLocaleString()}
-- Asking Price Status: ${context.priceAssessment.askingPriceStatus}
-- Uncertainty Level: ${context.priceAssessment.uncertainty}
-- Range Width: ${context.priceAssessment.uncertaintyMetrics.rangeWidthPercent.toFixed(1)}%
-
-MARKET DYNAMICS:
-- Velocity: ${context.marketDynamics.velocity}
-- Current Regime: ${context.marketDynamics.currentRegime}
-- Price Trend: ${context.marketDynamics.timeSeries.priceTrend}
-- Inventory Trend: ${context.marketDynamics.timeSeries.inventoryTrend}
-${context.marketDynamics.velocityMetrics.changePoints.length > 0
-    ? `- Change Points: ${context.marketDynamics.velocityMetrics.changePoints.map(cp => cp.description).join('; ')}`
-    : ''}
-
-CURRENT PRESSURE:
-- Level: ${context.currentPressure.level}
-- Active Offers: ${context.currentPressure.competition.activeOffers}
-- Recent Visits: ${context.currentPressure.competition.recentVisits}
-- Signals: ${context.currentPressure.signals.competingOffers ? 'Competing offers detected' : ''} ${context.currentPressure.signals.manyVisits ? 'High visit activity' : ''}
-
-${context.waitRisk ? `WAIT RISK:
-- Recommendation: ${context.waitRisk.recommendation}
-- 7-day risk: ${context.waitRisk.riskByDays.find(r => r.days === 7)?.riskLevel || 'unknown'} (${Math.round((context.waitRisk.riskByDays.find(r => r.days === 7)?.probabilityOfLoss || 0) * 100)}% probability of loss)
-- 30-day risk: ${context.waitRisk.riskByDays.find(r => r.days === 30)?.riskLevel || 'unknown'} (${Math.round((context.waitRisk.riskByDays.find(r => r.days === 30)?.probabilityOfLoss || 0) * 100)}% probability of loss)
-- Trade-offs: ${context.waitRisk.tradeoffs.discipline} ${context.waitRisk.tradeoffs.probability}` : ''}
-
-Provide a JSON response with:
-1. uncertaintyExplanation: Explain why uncertainty is ${context.priceAssessment.uncertainty} (mention range width, sample size, zone variability)
-2. velocityExplanation: Explain what ${context.marketDynamics.velocity} velocity means and what it indicates for timing
-3. timingExplanation: ${context.waitRisk ? `Explain what waiting vs acting now implies. Reference the wait risk analysis: ${context.waitRisk.recommendation} recommendation, ${context.waitRisk.tradeoffs.discipline} ${context.waitRisk.tradeoffs.probability}` : 'Explain what waiting vs acting now implies given the current pressure and velocity'}
-4. decisionContext: Overall decision context (2-3 sentences summarizing key factors${context.waitRisk ? `, including wait risk recommendation: ${context.waitRisk.recommendation}` : ''})
-
-CRITICAL RULES:
-- DO NOT recommend specific prices or amounts
-- DO NOT calculate valuations
-- DO explain what the data means
-- DO explain trade-offs and implications
-- Use clear, actionable language
-
-Respond ONLY with valid JSON, no markdown or explanation.`;
+  // Use v2 prompt
+  const prompt = buildDIEExplanationsV2Prompt({
+    property: context.property,
+    priceAssessment: context.priceAssessment,
+    marketDynamics: context.marketDynamics,
+    currentPressure: context.currentPressure,
+    waitRisk: context.waitRisk,
+  });
 
   try {
     const response = await getClient().chat.completions.create({

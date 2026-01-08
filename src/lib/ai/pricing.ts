@@ -1,6 +1,12 @@
 import OpenAI from 'openai';
 import type { PricingAnalysis, NegotiationFactor, OfferAdvice, ZoneAnalysis } from '@/types/pricing';
 import { getMarketConfig, formatPrice } from '@/config/market';
+import { buildAnalyzePricingV2Prompt } from '@/prompts/pricing/analyzePricing.v2';
+import { buildGetOfferAdviceV2Prompt } from '@/prompts/pricing/getOfferAdvice.v2';
+import { buildAnalyzeZoneV2Prompt } from '@/prompts/pricing/analyzeZone.v2';
+import { validatePricingAnalysis, validateOfferAdvice } from '@/lib/prompts/validator';
+import { trackPromptUsage } from '@/prompts/prompts-registry';
+import { logger } from '@/lib/logger';
 
 // Lazy-load client to avoid build-time errors
 let deepseek: OpenAI | null = null;
@@ -67,39 +73,29 @@ export async function analyzePricing(
     (Date.now() - new Date(property.created_at).getTime()) / (1000 * 60 * 60 * 24)
   );
 
-  const market = getMarketConfig();
+  // Use v2 prompt
+  const prompt = buildAnalyzePricingV2Prompt({
+    property: {
+      title: property.title,
+      address: property.address,
+      price: property.price,
+      area_m2: property.area_m2,
+      property_type: property.property_type,
+      daysOnMarket,
+      description: property.description,
+    },
+    zoneContext: {
+      name: zoneContext.name,
+      avgPricePerM2: zoneStats.avgPricePerM2,
+      medianPricePerM2: zoneStats.medianPricePerM2,
+      minPricePerM2: zoneStats.minPricePerM2,
+      maxPricePerM2: zoneStats.maxPricePerM2,
+      propertyCount: zoneStats.propertyCount,
+    },
+  });
 
-  const prompt = `You are a real estate pricing analyst for the ${market.ai.marketContext}. Analyze this property and provide pricing intelligence.
-
-PROPERTY DATA:
-- Title: ${property.title}
-- Address: ${property.address}
-- Asking Price: ${formatPrice(property.price, market)}
-- Area: ${property.area_m2 ? `${property.area_m2} m²` : 'Not specified'}
-- Price per m²: ${pricePerM2 ? `${market.currency.symbol}${pricePerM2.toFixed(2)}/m²` : 'N/A'}
-- Type: ${property.property_type}
-- Days on Market: ${daysOnMarket}
-- Description: ${property.description || 'Not provided'}
-
-ZONE CONTEXT (${zoneContext.name}):
-- Active Listings: ${zoneStats.propertyCount}
-- Average Price/m²: ${market.currency.symbol}${zoneStats.avgPricePerM2.toFixed(2)}
-- Median Price/m²: ${market.currency.symbol}${zoneStats.medianPricePerM2.toFixed(2)}
-- Range: ${market.currency.symbol}${zoneStats.minPricePerM2.toFixed(2)} - ${market.currency.symbol}${zoneStats.maxPricePerM2.toFixed(2)}/m²
-
-Provide a JSON response with:
-1. fairnessScore (0-100, where 50 is perfectly fair priced)
-2. fairnessLabel: "underpriced", "fair", "overpriced", or "significantly_overpriced"
-3. estimatedFairValue (your estimate of fair market value in USD)
-4. negotiationPowerScore (0-100, higher = more buyer leverage)
-5. negotiationFactors (array of factors affecting negotiation position)
-6. suggestedOffers: { aggressive, balanced, conservative } (in USD)
-7. insights (array of 2-3 key insights about this property)
-8. risks (array of 1-2 potential risks for buyers)
-9. opportunities (array of 1-2 opportunities for buyers)
-
-Respond ONLY with valid JSON, no markdown or explanation.`;
-
+  const startTime = Date.now();
+  
   try {
     const response = await getClient().chat.completions.create({
       model: MODEL,
@@ -108,8 +104,32 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
       max_tokens: 1500,
     });
 
+    const latency = Date.now() - startTime;
     const content = response.choices[0]?.message?.content || '{}';
     const aiAnalysis = JSON.parse(content.replace(/```json\n?|\n?```/g, ''));
+
+    // Validate output
+    const validation = validatePricingAnalysis(aiAnalysis);
+    if (!validation.valid) {
+      console.error('[Prompt Validation] analyzePricing errors:', validation.errors);
+      // Track validation failure
+      await trackPromptUsage('analyzePricing', {
+        latency,
+        success: false,
+      });
+      throw new Error(`Invalid output: ${validation.errors.join(', ')}`);
+    }
+
+    if (validation.warnings.length > 0) {
+      console.warn('[Prompt Validation] analyzePricing warnings:', validation.warnings);
+    }
+
+    // Track successful usage
+    await trackPromptUsage('analyzePricing', {
+      latency,
+      confidence: aiAnalysis.confidenceLevel,
+      success: true,
+    });
 
     const negotiationFactors: NegotiationFactor[] = (aiAnalysis.negotiationFactors || []).map(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,7 +146,7 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
       requestedAt: new Date().toISOString(),
       fairnessScore: aiAnalysis.fairnessScore || 50,
       fairnessLabel: aiAnalysis.fairnessLabel || 'fair',
-      estimatedFairValue: aiAnalysis.estimatedFairValue || property.price,
+      estimatedFairValue: aiAnalysis.estimatedFairValue ?? null, // v2: can be null
       pricePerM2,
       zoneStats,
       negotiationPower: {
@@ -134,16 +154,17 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
         factors: negotiationFactors,
       },
       suggestedOffers: {
-        aggressive: aiAnalysis.suggestedOffers?.aggressive || property.price * 0.85,
-        balanced: aiAnalysis.suggestedOffers?.balanced || property.price * 0.93,
-        conservative: aiAnalysis.suggestedOffers?.conservative || property.price * 0.97,
+        aggressive: aiAnalysis.suggestedOffers?.aggressive ?? null, // v2: can be null
+        balanced: aiAnalysis.suggestedOffers?.balanced ?? null,
+        conservative: aiAnalysis.suggestedOffers?.conservative ?? null,
       },
       insights: aiAnalysis.insights || [],
       risks: aiAnalysis.risks || [],
       opportunities: aiAnalysis.opportunities || [],
+      confidenceLevel: aiAnalysis.confidenceLevel || 'medium', // v2: new field
     };
   } catch (error) {
-    console.error('DeepSeek pricing analysis error:', error);
+    logger.error('DeepSeek pricing analysis error', error);
 
     // Return fallback analysis based on zone data
     const zoneAvg = zoneStats.avgPricePerM2;
@@ -201,36 +222,23 @@ export async function getOfferAdvice(
     (Date.now() - new Date(property.created_at).getTime()) / (1000 * 60 * 60 * 24)
   );
 
-  const market = getMarketConfig();
+  // Use v2 prompt
+  const prompt = buildGetOfferAdviceV2Prompt({
+    offer: {
+      amount: offer.amount,
+      message: offer.message,
+      status: offer.status,
+    },
+    property: {
+      price: property.price,
+      property_type: property.property_type,
+      daysOnMarket,
+    },
+    negotiationHistory,
+  });
 
-  const prompt = `You are a real estate negotiation advisor for the ${market.ai.marketContext}. Analyze this offer and provide advice.
-
-CURRENT OFFER:
-- Amount: ${formatPrice(offer.amount, market)}
-- Message: ${offer.message || 'No message'}
-- Status: ${offer.status}
-
-PROPERTY:
-- Asking Price: ${formatPrice(property.price, market)}
-- Type: ${property.property_type}
-- Days on Market: ${daysOnMarket}
-
-NEGOTIATION HISTORY:
-${
-  negotiationHistory.length > 0
-    ? negotiationHistory.map((h, i) => `Round ${i + 1}: $${h.amount.toLocaleString()} (${h.status})`).join('\n')
-    : 'No previous offers'
-}
-
-As the SELLER, provide a JSON response with:
-1. recommendation: "accept", "counter", "reject", or "wait"
-2. confidence (0-100)
-3. suggestedCounterAmount (if recommending counter, in USD)
-4. reasoning (array of 2-3 reasons for your recommendation)
-5. marketContext: { daysOnMarket, similarSales (estimate), pricetrend: "rising"|"stable"|"falling" }
-
-Respond ONLY with valid JSON, no markdown or explanation.`;
-
+  const startTime = Date.now();
+  
   try {
     const response = await getClient().chat.completions.create({
       model: MODEL,
@@ -239,8 +247,31 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
       max_tokens: 800,
     });
 
+    const latency = Date.now() - startTime;
     const content = response.choices[0]?.message?.content || '{}';
     const aiAdvice = JSON.parse(content.replace(/```json\n?|\n?```/g, ''));
+
+    // Validate output
+    const validation = validateOfferAdvice(aiAdvice);
+    if (!validation.valid) {
+      console.error('[Prompt Validation] getOfferAdvice errors:', validation.errors);
+      await trackPromptUsage('getOfferAdvice', {
+        latency,
+        success: false,
+      });
+      throw new Error(`Invalid output: ${validation.errors.join(', ')}`);
+    }
+
+    if (validation.warnings.length > 0) {
+      console.warn('[Prompt Validation] getOfferAdvice warnings:', validation.warnings);
+    }
+
+    // Track successful usage
+    await trackPromptUsage('getOfferAdvice', {
+      latency,
+      confidence: aiAdvice.confidenceLevel,
+      success: true,
+    });
 
     return {
       offerId: offer.id,
@@ -248,16 +279,17 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
       propertyPrice: property.price,
       recommendation: aiAdvice.recommendation || 'wait',
       confidence: aiAdvice.confidence || 50,
-      suggestedCounterAmount: aiAdvice.suggestedCounterAmount,
+      suggestedCounterAmount: aiAdvice.suggestedCounterAmount ?? null, // v2: can be null
       reasoning: aiAdvice.reasoning || [],
       marketContext: {
         daysOnMarket,
-        similarSales: aiAdvice.marketContext?.similarSales || 0,
-        pricetrend: aiAdvice.marketContext?.pricetrend || 'stable',
+        similarSales: aiAdvice.marketContext?.similarSalesEstimate ?? null, // v2: renamed
+        pricetrend: aiAdvice.marketContext?.priceTrend || 'stable', // v2: renamed
       },
+      confidenceLevel: aiAdvice.confidenceLevel || 'medium', // v2: new field
     };
   } catch (error) {
-    console.error('DeepSeek offer advice error:', error);
+    logger.error('DeepSeek offer advice error', error);
 
     const offerPercent = (offer.amount / property.price) * 100;
 
@@ -313,34 +345,15 @@ export async function analyzeZone(
     ? prices.sort((a, b) => a - b)[Math.floor(prices.length / 2)]
     : 0;
 
-  const market = getMarketConfig();
-
-  const prompt = `Analyze this real estate zone in the ${market.ai.marketContext} and provide market insights.
-
-ZONE: ${zoneName}
-- Active Listings: ${activeProperties.length}
-- Recent Sales (90 days): ${recentSales.length}
-- Average Price: ${formatPrice(avgPrice, market)}
-- Average Price/m²: ${market.currency.symbol}${avgPricePerM2.toFixed(2)}
-- Price Range: ${formatPrice(prices.length > 0 ? Math.min(...prices) : 0, market)} - ${formatPrice(prices.length > 0 ? Math.max(...prices) : 0, market)}
-
-Property Types:
-${Object.entries(
-  activeProperties.reduce((acc, p) => {
-    acc[p.property_type] = (acc[p.property_type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>)
-)
-  .map(([type, count]) => `- ${type}: ${count}`)
-  .join('\n')}
-
-Provide a JSON response with:
-1. marketHealthScore (0-100)
-2. marketTrend: "hot", "warm", "cool", or "cold"
-3. avgDaysOnMarket (estimate based on market conditions)
-4. insights (array of 2-3 key insights about this zone)
-
-Respond ONLY with valid JSON, no markdown or explanation.`;
+  // Use v2 prompt
+  const prompt = buildAnalyzeZoneV2Prompt({
+    zoneName,
+    activeProperties: properties,
+    recentSales: recentSales.map(s => ({
+      price: s.price,
+      created_at: s.created_at,
+    })),
+  });
 
   try {
     const response = await getClient().chat.completions.create({
@@ -368,8 +381,10 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
       marketHealth: {
         score: aiAnalysis.marketHealthScore || 50,
         trend: aiAnalysis.marketTrend || 'warm',
-        avgDaysOnMarket: aiAnalysis.avgDaysOnMarket || 45,
+        avgDaysOnMarket: aiAnalysis.avgDaysOnMarket ?? null, // v2: can be null
+        liquidityLevel: aiAnalysis.liquidityLevel || 'medium', // v2: new field
       },
+      confidenceLevel: aiAnalysis.confidenceLevel || 'medium', // v2: new field
       demographics: {
         propertyCount: activeProperties.length,
         recentSales: recentSales.length,
@@ -380,7 +395,7 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
       insights: aiAnalysis.insights || [],
     };
   } catch (error) {
-    console.error('DeepSeek zone analysis error:', error);
+    logger.error('DeepSeek zone analysis error', error);
 
     return {
       zoneId,

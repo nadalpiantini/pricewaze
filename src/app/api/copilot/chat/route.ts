@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
+import { buildCopilotChatV2SystemPrompt } from '@/prompts/copilot/CopilotChat.v2';
 
 // Lazy-load client
 let deepseek: OpenAI | null = null;
@@ -84,32 +85,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Construir prompt con contexto
-    let systemPrompt = `Eres el Copilot de PriceWaze, un asistente inmobiliario experto. 
-Ayudas a usuarios a tomar mejores decisiones sobre propiedades, ofertas y negociaciones.
+    // Use v2 prompt
+    const systemPrompt = buildCopilotChatV2SystemPrompt({
+      question,
+      propertyContext: propertyContext ? {
+        title: propertyContext.title,
+        price: propertyContext.price,
+        address: propertyContext.address,
+        zoneName: propertyContext.zoneName,
+        area_m2: propertyContext.area_m2,
+        property_type: propertyContext.property_type,
+        insights: propertyContext.insights,
+      } : undefined,
+    });
 
-Siempre:
-- Explica el "por qué", no solo el "qué"
-- Cita datos reales cuando los tengas
-- Sugiere acciones concretas
-- Sé conversacional pero profesional
-- Responde en español`;
-
-    let userPrompt = question;
-
-    if (propertyContext) {
-      systemPrompt += `\n\nContexto de la propiedad:
-- Título: ${propertyContext.title}
-- Precio: $${propertyContext.price.toLocaleString()}
-- Dirección: ${propertyContext.address}
-- Zona: ${propertyContext.zoneName}
-- Área: ${propertyContext.area_m2 || 'N/A'} m²
-- Tipo: ${propertyContext.property_type}
-
-${propertyContext.insights.fairness_score ? `- Fairness Score: ${propertyContext.insights.fairness_score}/100` : ''}
-${propertyContext.insights.overprice_pct ? `- Sobreprecio: ${propertyContext.insights.overprice_pct}%` : ''}
-${propertyContext.insights.underprice_pct ? `- Subprecio: ${propertyContext.insights.underprice_pct}%` : ''}`;
-    }
+    const userPrompt = question;
 
     // Llamar a DeepSeek
     const response = await getClient().chat.completions.create({
