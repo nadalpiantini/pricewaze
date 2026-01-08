@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { OfferTimeline } from './OfferTimeline';
 import { CopilotPanel } from '@/components/copilot/CopilotPanel';
 import { DecisionPanelV2 } from '@/components/pricing/DecisionPanelV2';
+import { NegotiationCoherencePanel } from '@/components/negotiation/NegotiationCoherencePanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import type { Offer } from '@/types/offer';
@@ -132,6 +133,11 @@ export function OfferNegotiationView({
       {/* Decision Panel */}
       {activeOfferId && (
         <DecisionPanelV2 offerId={activeOfferId} />
+      )}
+
+      {/* Negotiation Coherence Panel */}
+      {activeOfferId && (
+        <NegotiationCoherencePanel offerId={activeOfferId} userId={userId} />
       )}
 
       {/* Copilot */}
