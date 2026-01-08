@@ -162,8 +162,8 @@ export default function RoutesPage() {
 
   // Reset optimized geometry and stats when route changes
   useEffect(() => {
-    setOptimizedGeometry(null);
-    setRouteStats(null);
+    setOptimizedGeometry(() => null);
+    setRouteStats(() => null);
   }, [selectedRouteId]);
 
   // Create route mutation

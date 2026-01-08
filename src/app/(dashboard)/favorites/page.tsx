@@ -59,9 +59,24 @@ export default function FavoritesPage() {
 
   useEffect(() => {
     if (!loading) {
-      loadFavoriteProperties(favorites);
+      const loadFavorites = async () => {
+        if (favorites.length > 0) {
+          try {
+            const response = await fetch(`/api/properties?ids=${favorites.join(',')}`);
+            if (response.ok) {
+              const data = await response.json();
+              setFavoriteProperties(data);
+            }
+          } catch (error) {
+            console.error('Failed to fetch favorite properties:', error);
+          }
+        } else {
+          setFavoriteProperties([]);
+        }
+      };
+      loadFavorites();
     }
-  }, [favorites, loading, loadFavoriteProperties]);
+  }, [favorites, loading]);
 
   const formatPrice = (price: number) => {
     if (price >= 1000000) {

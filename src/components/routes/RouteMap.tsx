@@ -55,7 +55,7 @@ export function RouteMap({ geometry, stops = [], className = '' }: RouteMapProps
       map.current?.remove();
       map.current = null;
     };
-  }, []);
+  }, [stops]);
 
   // Update route line
   useEffect(() => {

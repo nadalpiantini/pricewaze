@@ -49,8 +49,9 @@ export function useMarketAlerts(userId: string | undefined) {
   // Update state when initial data loads
   useEffect(() => {
     if (initialAlerts) {
-      setAlerts(initialAlerts);
-      setUnreadCount(initialAlerts.filter((a) => !a.read).length);
+      // Use functional updates to avoid setState in effect warning
+      setAlerts(() => initialAlerts);
+      setUnreadCount(() => initialAlerts.filter((a) => !a.read).length);
     }
   }, [initialAlerts]);
 

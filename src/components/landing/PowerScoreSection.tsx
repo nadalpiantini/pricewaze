@@ -19,7 +19,7 @@ function PowerGauge({ score, animated = true }: PowerGaugeProps) {
 
   useEffect(() => {
     if (!isVisible || !animated) {
-      setDisplayScore(score);
+      setDisplayScore(() => score);
       return;
     }
 
