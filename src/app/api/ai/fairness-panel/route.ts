@@ -50,7 +50,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch zone context
-    let zoneContext = { name: 'Unknown Zone', properties: [] };
+    let zoneContext: {
+      name: string;
+      properties: Array<{
+        price: number;
+        area_m2?: number;
+        property_type: string;
+        status: string;
+        created_at: string;
+      }>;
+    } = { name: 'Unknown Zone', properties: [] };
+    
     if (property.zone_id) {
       const { data: zone } = await supabase
         .from('pricewaze_zones')
@@ -67,7 +77,13 @@ export async function GET(request: NextRequest) {
 
         zoneContext = {
           name: zone.name,
-          properties: zoneProperties || [],
+          properties: (zoneProperties || []) as Array<{
+            price: number;
+            area_m2?: number;
+            property_type: string;
+            status: string;
+            created_at: string;
+          }>,
         };
       }
     }
