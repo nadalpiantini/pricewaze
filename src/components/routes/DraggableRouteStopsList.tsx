@@ -154,7 +154,9 @@ export function DraggableRouteStopsList({
   showNavigation = true,
   className = '',
 }: DraggableRouteStopsListProps) {
-  const [items, setItems] = useState(stops);
+  // Ensure stops is always an array (defensive programming)
+  const safeStops = Array.isArray(stops) ? stops : [];
+  const [items, setItems] = useState(safeStops);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -165,7 +167,8 @@ export function DraggableRouteStopsList({
 
   // Update items when stops prop changes
   useEffect(() => {
-    setItems(stops);
+    const safeStops = Array.isArray(stops) ? stops : [];
+    setItems(safeStops);
   }, [stops]);
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -173,10 +176,11 @@ export function DraggableRouteStopsList({
 
     if (over && active.id !== over.id) {
       setItems((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
+        const safeItems = Array.isArray(items) ? items : [];
+        const oldIndex = safeItems.findIndex((item) => item.id === active.id);
+        const newIndex = safeItems.findIndex((item) => item.id === over.id);
 
-        const newOrder = arrayMove(items, oldIndex, newIndex);
+        const newOrder = arrayMove(safeItems, oldIndex, newIndex);
         
         // Update order_index for each item
         const updatedOrder = newOrder.map((item, index) => ({
@@ -192,7 +196,9 @@ export function DraggableRouteStopsList({
     }
   };
 
-  if (items.length === 0) {
+  // Ensure items is always an array
+  const safeItems = Array.isArray(items) ? items : [];
+  if (safeItems.length === 0) {
     return (
       <div className={`p-6 text-center text-gray-500 ${className}`}>
         <MapPin className="mx-auto h-12 w-12 text-gray-300 mb-2" />
@@ -202,7 +208,7 @@ export function DraggableRouteStopsList({
     );
   }
 
-  const sortedItems = [...items].sort((a, b) => a.order_index - b.order_index);
+  const sortedItems = [...safeItems].sort((a, b) => a.order_index - b.order_index);
 
   const handleOpenGoogleMaps = () => {
     const stopPoints = sortedItems.map((s) => ({

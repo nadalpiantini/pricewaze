@@ -26,7 +26,8 @@
     "test:mobile:debug": "playwright test --config=playwright.mobile.config.ts --debug",
     "test:e2e": "playwright test --config=playwright.config.ts",
     "test:e2e:ui": "playwright test --config=playwright.config.ts --ui",
-    "test:e2e:debug": "playwright test --config=playwright.config.ts --debug"
+    "test:e2e:debug": "playwright test --config=playwright.config.ts --debug",
+    "clear-cache": "bash scripts/clear-cache.sh"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

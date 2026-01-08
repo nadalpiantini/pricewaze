@@ -29,7 +29,9 @@ interface Notification {
 async function fetchNotifications(): Promise<Notification[]> {
   const res = await fetch('/api/notifications');
   if (!res.ok) throw new Error('Failed to fetch notifications');
-  return res.json();
+  const json = await res.json();
+  // API returns { data: [...], pagination: {...} }, extract data array
+  return json.data || [];
 }
 
 // Fetch unread count
@@ -94,8 +96,13 @@ export function NotificationBell() {
       )
       .subscribe((status) => {
         // Silently handle connection errors - fallback to polling
-        if (status === 'CHANNEL_ERROR') {
-          console.debug('[Realtime] Connection unavailable, using polling fallback');
+        // Don't log errors in console to avoid confusion
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          // Connection failed - will fallback to polling via refetchInterval
+          // Only log in development mode, and use debug level to avoid console noise
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('[Realtime] Connection unavailable, using polling fallback');
+          }
         }
       });
 

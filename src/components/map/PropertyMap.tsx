@@ -87,8 +87,12 @@ export function PropertyMap({
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
+    // Ensure properties is always an array (defensive programming)
+    const safeProperties = Array.isArray(properties) ? properties : [];
+    if (safeProperties.length === 0) return;
+
     // Add new markers
-    properties.forEach((property) => {
+    safeProperties.forEach((property) => {
       // Create custom marker element
       const el = document.createElement('div');
       el.className = 'property-marker';
@@ -125,9 +129,9 @@ export function PropertyMap({
     });
 
     // Fit bounds if we have properties
-    if (properties.length > 0) {
+    if (safeProperties.length > 0) {
       const bounds = new mapboxgl.LngLatBounds();
-      properties.forEach((p) => {
+      safeProperties.forEach((p) => {
         bounds.extend([p.longitude, p.latitude]);
       });
       map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });

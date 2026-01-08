@@ -89,7 +89,7 @@ class Analytics {
 
     // Always log in development for debugging
     if (process.env.NODE_ENV === 'development') {
-      if (properties) {
+      if (properties && Object.keys(properties).length > 0) {
         console.log('[Analytics]', eventName, properties);
       } else {
         console.log('[Analytics]', eventName);

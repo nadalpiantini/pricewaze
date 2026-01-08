@@ -62,9 +62,10 @@ export default function NotificationsPage() {
       });
 
       if (response.ok) {
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-        );
+        setNotifications((prev) => {
+          const safePrev = Array.isArray(prev) ? prev : [];
+          return safePrev.map((n) => (n.id === id ? { ...n, read: true } : n));
+        });
       }
     } catch (error) {
       console.error('Failed to mark as read:', error);
@@ -78,7 +79,10 @@ export default function NotificationsPage() {
       });
 
       if (response.ok) {
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        setNotifications((prev) => {
+          const safePrev = Array.isArray(prev) ? prev : [];
+          return safePrev.map((n) => ({ ...n, read: true }));
+        });
       }
     } catch (error) {
       console.error('Failed to mark all as read:', error);
@@ -92,7 +96,10 @@ export default function NotificationsPage() {
       });
 
       if (response.ok) {
-        setNotifications((prev) => prev.filter((n) => n.id !== id));
+        setNotifications((prev) => {
+          const safePrev = Array.isArray(prev) ? prev : [];
+          return safePrev.filter((n) => n.id !== id);
+        });
       }
     } catch (error) {
       console.error('Failed to delete notification:', error);
@@ -118,12 +125,14 @@ export default function NotificationsPage() {
     });
   };
 
+  // Ensure notifications is always an array (defensive programming)
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const filteredNotifications =
     filter === 'unread'
-      ? notifications.filter((n) => !n.read)
-      : notifications;
+      ? safeNotifications.filter((n) => !n.read)
+      : safeNotifications;
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = safeNotifications.filter((n) => !n.read).length;
 
   if (loading) {
     return (
@@ -195,7 +204,9 @@ export default function NotificationsPage() {
   );
 
   function renderNotificationsList(items: Notification[]) {
-    if (items.length === 0) {
+    // Ensure items is always an array (defensive programming)
+    const safeItems = Array.isArray(items) ? items : [];
+    if (safeItems.length === 0) {
       return (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
@@ -215,7 +226,7 @@ export default function NotificationsPage() {
 
     return (
       <div className="space-y-3">
-        {items.map((notification) => {
+        {safeItems.map((notification) => {
           const Icon = notificationIcons[notification.type] || notificationIcons.default;
 
           return (

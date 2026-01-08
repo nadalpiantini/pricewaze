@@ -116,8 +116,12 @@ export function RouteMap({ geometry, stops = [], className = '' }: RouteMapProps
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
+    // Ensure stops is always an array (defensive programming)
+    const safeStops = Array.isArray(stops) ? stops : [];
+    if (safeStops.length === 0) return;
+
     // Add markers for each stop
-    stops.forEach((stop) => {
+    safeStops.forEach((stop) => {
       const el = document.createElement('div');
       el.className = 'route-stop-marker';
       // Color gradient based on order
@@ -146,9 +150,9 @@ export function RouteMap({ geometry, stops = [], className = '' }: RouteMapProps
     });
 
     // Fit bounds to all stops if no route geometry
-    if (!geometry && stops.length > 0) {
+    if (!geometry && safeStops.length > 0) {
       const bounds = new mapboxgl.LngLatBounds();
-      stops.forEach((stop) => {
+      safeStops.forEach((stop) => {
         bounds.extend([stop.location.lng, stop.location.lat]);
       });
       map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
