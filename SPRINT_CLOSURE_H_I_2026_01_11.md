@@ -187,9 +187,9 @@ Implementación completa de las funcionalidades H (Negociación Avanzada) e I (G
 
 ## 🚀 Próximos Pasos (Post-Deploy)
 
-1. **Aplicar migración SQL en Supabase:**
+1. ✅ **Aplicar migración SQL en Supabase:** COMPLETADO
    ```sql
-   -- Ejecutar: 20260110000012_advanced_negotiation.sql
+   -- Ejecutado: 20260110000012_advanced_negotiation.sql
    ```
 
 2. **Configurar cron en Vercel (opcional pero recomendado):**
@@ -225,13 +225,15 @@ Implementación completa de las funcionalidades H (Negociación Avanzada) e I (G
 
 ## ✅ Estado Final
 
-**Todo verificado y listo para producción.**
+**Todo verificado, migración aplicada y listo para producción.**
 
 El sistema ahora tiene:
 - ✅ Negociación con presión real y tiempo limitado
 - ✅ IA explicable con fairness score visible
 - ✅ Demo irresistible en 5 minutos sin registro
 - ✅ Métricas para medir adopción
+
+**Migración SQL aplicada exitosamente en Supabase** ✅
 
 **Sprint cerrado exitosamente.** 🎉
 
