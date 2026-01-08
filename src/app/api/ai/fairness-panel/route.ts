@@ -193,9 +193,9 @@ export async function GET(request: NextRequest) {
       },
       fairnessPanel,
       insights: {
-        keyFactors: pricingAnalysis.insights.slice(0, 3),
-        risks: pricingAnalysis.risks,
-        opportunities: pricingAnalysis.opportunities,
+        keyFactors: Array.isArray(pricingAnalysis.insights) ? pricingAnalysis.insights.slice(0, 3) : [],
+        risks: Array.isArray(pricingAnalysis.risks) ? pricingAnalysis.risks : [],
+        opportunities: Array.isArray(pricingAnalysis.opportunities) ? pricingAnalysis.opportunities : [],
         timing: timingInsight,
       },
       generatedAt: new Date().toISOString(),

@@ -36,11 +36,35 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip external API calls (Supabase, etc.) - let them go directly to network
+  // This prevents service worker from intercepting auth token refresh and other API calls
+  if (
+    url.origin.includes('supabase.co') ||
+    url.origin.includes('supabase.io') ||
+    url.pathname.startsWith('/api/') ||
+    request.method !== 'GET'
+  ) {
+    // For external APIs and non-GET requests, bypass service worker entirely
+    // Don't call event.respondWith() - let browser handle normally
+    return;
+  }
+
+  // Only cache GET requests to same-origin pages
   event.respondWith(
-    caches.match(event.request)
+    caches.match(request)
       .then((response) => {
         // Return cached version or fetch from network
-        return response || fetch(event.request);
+        if (response) {
+          return response;
+        }
+        return fetch(request).catch((error) => {
+          // If network fails, return error response
+          console.error('Service worker fetch error:', error);
+          throw error;
+        });
       })
   );
 });

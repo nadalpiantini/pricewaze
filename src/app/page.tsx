@@ -242,7 +242,7 @@ export default function Home() {
               {/* Property List Sidebar (Map View Only) */}
               {view === 'map' && (
                 <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                  {properties.slice(0, 10).map((property) => (
+                  {(Array.isArray(properties) ? properties : []).slice(0, 10).map((property) => (
                     <PropertyCard
                       key={property.id}
                       property={property}
