@@ -1,337 +1,252 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import {
-  Building2,
-  MessageSquare,
-  Calendar,
-  Bell,
-  Plus,
-  CalendarPlus,
-  TrendingUp,
-  ArrowRight,
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Sparkles, Zap, TrendingUp, Activity } from 'lucide-react';
+import { DashboardGrid } from '@/components/dashboard';
 import { useAuthStore } from '@/stores/auth-store';
-import { usePropertyStore } from '@/stores/property-store';
-import { useOffers } from '@/hooks/use-offers';
-import { useVisits } from '@/hooks/use-visits';
+import { cn } from '@/lib/utils';
 
-interface DashboardStats {
-  totalProperties: number;
-  activeOffers: number;
-  scheduledVisits: number;
-  unreadNotifications: number;
+// Greeting based on time of day
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
 }
 
-interface ActivityItem {
-  id: string;
-  type: 'offer' | 'visit' | 'property' | 'notification';
-  title: string;
-  description: string;
-  timestamp: string;
+// Market status indicator
+function MarketPulse() {
+  const [pulse, setPulse] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPulse((p) => (p + 1) % 3);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="relative flex items-center gap-1.5">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className={cn(
+              'h-1.5 rounded-full transition-all duration-500',
+              pulse === i ? 'w-3 bg-[var(--signal-lime)]' : 'w-1.5 bg-[var(--signal-lime)]/30'
+            )}
+            style={{
+              boxShadow: pulse === i ? '0 0 8px var(--signal-lime)' : 'none',
+            }}
+          />
+        ))}
+      </div>
+      <span className="text-xs font-medium text-[var(--signal-lime)]">Market Active</span>
+    </div>
+  );
+}
+
+// Animated insight card
+function InsightCard({
+  icon: Icon,
+  label,
+  value,
+  trend,
+  delay,
+}: {
+  icon: typeof TrendingUp;
+  label: string;
+  value: string;
+  trend?: 'up' | 'down' | 'neutral';
+  delay: number;
+}) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  const trendColor = trend === 'up' ? 'text-green-400' : trend === 'down' ? 'text-rose-400' : 'text-muted-foreground';
+
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm"
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
+        transition: 'all 0.5s ease-out',
+      }}
+    >
+      <div
+        className="p-2 rounded-lg"
+        style={{
+          background: 'linear-gradient(135deg, var(--signal-cyan) 0%, var(--signal-teal) 100%)',
+          boxShadow: '0 0 20px rgba(0, 212, 255, 0.2)',
+        }}
+      >
+        <Icon className="h-3.5 w-3.5 text-black" />
+      </div>
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className={cn('text-sm font-semibold', trendColor)}>{value}</p>
+      </div>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
   const { profile } = useAuthStore();
-  const { userProperties, fetchUserProperties } = usePropertyStore();
-  const { offers, fetchOffers } = useOffers({ role: 'all' });
-  const { visits, fetchVisits } = useVisits({ role: 'all' });
-
-  const [stats, setStats] = useState<DashboardStats>({
-    totalProperties: 0,
-    activeOffers: 0,
-    scheduledVisits: 0,
-    unreadNotifications: 0,
-  });
-
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [headerVisible, setHeaderVisible] = useState(false);
+  const [contentVisible, setContentVisible] = useState(false);
 
   useEffect(() => {
-    const loadDashboardData = async () => {
-      setLoading(true);
-      try {
-        await Promise.all([
-          fetchUserProperties(),
-          fetchOffers(),
-          fetchVisits(),
-        ]);
-      } catch (error) {
-        console.error('Failed to load dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Stagger the animations
+    setTimeout(() => setHeaderVisible(true), 100);
+    setTimeout(() => setContentVisible(true), 400);
+  }, []);
 
-    loadDashboardData();
-  }, [fetchUserProperties, fetchOffers, fetchVisits]);
+  const firstName = profile?.full_name?.split(' ')[0] || 'there';
+  const greeting = getGreeting();
 
-  // Calculate stats
-  useEffect(() => {
-    // Ensure offers and visits are arrays
-    const safeOffers = Array.isArray(offers) ? offers : [];
-    const safeVisits = Array.isArray(visits) ? visits : [];
-    const safeProperties = Array.isArray(userProperties) ? userProperties : [];
+  return (
+    <div className="relative min-h-[calc(100vh-8rem)]">
+      {/* Background gradient orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        {/* Primary cyan orb - top left */}
+        <div
+          className="absolute -top-[30%] -left-[10%] w-[60%] h-[60%] rounded-full opacity-[0.08] blur-[120px]"
+          style={{
+            background: 'radial-gradient(circle, var(--signal-cyan) 0%, transparent 70%)',
+          }}
+        />
 
-    const activeOffers = safeOffers.filter(
-      (o) => o.status === 'pending' || o.status === 'countered'
-    ).length;
+        {/* Secondary lime orb - bottom right */}
+        <div
+          className="absolute -bottom-[20%] -right-[10%] w-[50%] h-[50%] rounded-full opacity-[0.06] blur-[100px]"
+          style={{
+            background: 'radial-gradient(circle, var(--signal-lime) 0%, transparent 70%)',
+          }}
+        />
 
-    const scheduledVisits = safeVisits.filter(
-      (v) => v.status === 'scheduled'
-    ).length;
+        {/* Subtle purple orb - center */}
+        <div
+          className="absolute top-[40%] left-[30%] w-[40%] h-[40%] rounded-full opacity-[0.04] blur-[80px]"
+          style={{
+            background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)',
+          }}
+        />
 
-    setStats({
-      totalProperties: safeProperties.length,
-      activeOffers,
-      scheduledVisits,
-      unreadNotifications: 0, // Will be fetched from notifications API
-    });
-
-    // Build recent activity
-    const activity: ActivityItem[] = [];
-
-    // Add recent offers
-    safeOffers.slice(0, 3).forEach((offer) => {
-      activity.push({
-        id: offer.id,
-        type: 'offer',
-        title: `Offer ${offer.status}`,
-        description: `$${offer.amount.toLocaleString()} on ${offer.property?.title || 'Property'}`,
-        timestamp: offer.created_at,
-      });
-    });
-
-    // Add recent visits
-    safeVisits.slice(0, 3).forEach((visit) => {
-      activity.push({
-        id: visit.id,
-        type: 'visit',
-        title: `Visit ${visit.status}`,
-        description: visit.property?.title || 'Property visit',
-        timestamp: visit.scheduled_at,
-      });
-    });
-
-    // Sort by timestamp
-    activity.sort((a, b) =>
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-
-    setRecentActivity(activity.slice(0, 5));
-  }, [offers, visits, userProperties]);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffHours < 1) return 'Just now';
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
-
-  const getActivityIcon = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'offer':
-        return <MessageSquare className="h-4 w-4" />;
-      case 'visit':
-        return <Calendar className="h-4 w-4" />;
-      case 'property':
-        return <Building2 className="h-4 w-4" />;
-      case 'notification':
-        return <Bell className="h-4 w-4" />;
-    }
-  };
-
-  const statsCards = [
-    {
-      title: 'Total Properties',
-      value: stats.totalProperties,
-      icon: Building2,
-      href: '/dashboard/properties',
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10',
-    },
-    {
-      title: 'Active Offers',
-      value: stats.activeOffers,
-      icon: MessageSquare,
-      href: '/dashboard/offers',
-      color: 'text-green-500',
-      bgColor: 'bg-green-500/10',
-    },
-    {
-      title: 'Scheduled Visits',
-      value: stats.scheduledVisits,
-      icon: Calendar,
-      href: '/dashboard/visits',
-      color: 'text-purple-500',
-      bgColor: 'bg-purple-500/10',
-    },
-    {
-      title: 'Unread Notifications',
-      value: stats.unreadNotifications,
-      icon: Bell,
-      href: '/dashboard/notifications',
-      color: 'text-orange-500',
-      bgColor: 'bg-orange-500/10',
-    },
-  ];
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-2">
-          <div className="h-8 w-48 bg-muted animate-pulse rounded" />
-          <div className="h-4 w-64 bg-muted animate-pulse rounded" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <div className="h-20 bg-muted animate-pulse rounded" />
-              </CardContent>
-            </Card>
+        {/* Animated floating particles */}
+        <div className="absolute inset-0">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 rounded-full bg-[var(--signal-cyan)]/20 animate-float"
+              style={{
+                left: `${15 + i * 15}%`,
+                top: `${20 + (i % 3) * 25}%`,
+                animationDelay: `${i * 0.5}s`,
+                animationDuration: `${3 + i * 0.5}s`,
+              }}
+            />
           ))}
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="space-y-6">
-      {/* Welcome section */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Welcome back, {profile?.full_name?.split(' ')[0] || 'User'}
-        </h1>
-        <p className="text-muted-foreground">
-          Here&apos;s what&apos;s happening with your properties today.
-        </p>
-      </div>
-
-      {/* Stats cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statsCards.map((stat) => (
-          <Link key={stat.title} href={stat.href}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {stat.title}
-                    </p>
-                    <p className="text-3xl font-bold mt-1">{stat.value}</p>
-                  </div>
-                  <div className={`p-3 rounded-full ${stat.bgColor}`}>
-                    <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-
-      {/* Quick actions and activity */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common tasks you can do right now</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full justify-start gap-3" variant="outline" asChild>
-              <Link href="/properties/new">
-                <Plus className="h-4 w-4" />
-                List a New Property
-              </Link>
-            </Button>
-            <Button className="w-full justify-start gap-3" variant="outline" asChild>
-              <Link href="/properties">
-                <CalendarPlus className="h-4 w-4" />
-                Schedule a Property Visit
-              </Link>
-            </Button>
-            <Button className="w-full justify-start gap-3" variant="outline" asChild>
-              <Link href="/dashboard/offers">
-                <TrendingUp className="h-4 w-4" />
-                Review Pending Offers
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Your latest updates and actions</CardDescription>
-            </div>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard/notifications">
-                View all
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {recentActivity.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No recent activity</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3">
-                    <div className="p-2 rounded-full bg-muted">
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{activity.title}</p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {activity.description}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {formatDate(activity.timestamp)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Properties chart placeholder */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Property Performance</CardTitle>
-          <CardDescription>
-            Views and engagement over the last 30 days
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 flex items-center justify-center border-2 border-dashed rounded-lg text-muted-foreground">
-            <div className="text-center">
-              <TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Chart coming soon</p>
-              <p className="text-sm">Property analytics will appear here</p>
-            </div>
+      {/* Welcome Header Section */}
+      <div
+        className="mb-8"
+        style={{
+          opacity: headerVisible ? 1 : 0,
+          transform: headerVisible ? 'translateY(0)' : 'translateY(-20px)',
+          transition: 'all 0.6s ease-out',
+        }}
+      >
+        {/* Top bar with market status */}
+        <div className="flex items-center justify-between mb-4">
+          <MarketPulse />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Activity className="h-3 w-3" />
+            <span>Real-time intelligence</span>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Main greeting */}
+        <div className="space-y-2">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+            <span className="text-foreground">{greeting}, </span>
+            <span
+              className="bg-clip-text text-transparent"
+              style={{
+                background: 'linear-gradient(135deg, var(--signal-cyan) 0%, var(--signal-lime) 50%, var(--signal-teal) 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+              }}
+            >
+              {firstName}
+            </span>
+          </h1>
+
+          <p className="text-muted-foreground flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[var(--signal-cyan)]" />
+            Your real estate intelligence command center
+          </p>
+        </div>
+
+        {/* Quick insights bar */}
+        <div className="flex flex-wrap gap-3 mt-6">
+          <InsightCard
+            icon={TrendingUp}
+            label="Market Trend"
+            value="+2.4% this week"
+            trend="up"
+            delay={200}
+          />
+          <InsightCard
+            icon={Zap}
+            label="Price Signals"
+            value="3 opportunities"
+            trend="neutral"
+            delay={350}
+          />
+          <InsightCard
+            icon={Activity}
+            label="Your Activity"
+            value="Above average"
+            trend="up"
+            delay={500}
+          />
+        </div>
+      </div>
+
+      {/* Dashboard Grid */}
+      <div
+        style={{
+          opacity: contentVisible ? 1 : 0,
+          transform: contentVisible ? 'translateY(0)' : 'translateY(20px)',
+          transition: 'all 0.6s ease-out',
+        }}
+      >
+        <DashboardGrid />
+      </div>
+
+      {/* CSS for floating animation */}
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0) translateX(0);
+            opacity: 0.2;
+          }
+          50% {
+            transform: translateY(-20px) translateX(10px);
+            opacity: 0.5;
+          }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }
