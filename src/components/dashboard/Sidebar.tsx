@@ -144,8 +144,9 @@ export function Sidebar() {
               variant="ghost"
               size="icon"
               onClick={() => setSidebarOpen(false)}
+              aria-label="Cerrar menú"
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             </Button>
           ) : (
             <Button
@@ -153,12 +154,15 @@ export function Sidebar() {
               size="icon"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className={cn(sidebarCollapsed && 'mx-auto')}
+              aria-label={sidebarCollapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
+              aria-expanded={!sidebarCollapsed}
             >
               <ChevronLeft
                 className={cn(
                   'h-5 w-5 transition-transform',
                   sidebarCollapsed && 'rotate-180'
                 )}
+                aria-hidden="true"
               />
             </Button>
           )}
@@ -182,8 +186,9 @@ export function Sidebar() {
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                   sidebarCollapsed && !isMobile && 'justify-center px-2'
                 )}
+                aria-current={isActive ? 'page' : undefined}
               >
-                <item.icon className="h-5 w-5 shrink-0" />
+                <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
                 {(!sidebarCollapsed || isMobile) && <span>{item.label}</span>}
               </Link>
             );
@@ -222,8 +227,9 @@ export function Sidebar() {
                 'shrink-0',
                 sidebarCollapsed && !isMobile && 'mt-2'
               )}
+              aria-label="Cerrar sesión"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>

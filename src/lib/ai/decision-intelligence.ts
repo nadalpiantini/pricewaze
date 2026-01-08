@@ -16,6 +16,8 @@ import type {
   UncertaintyMetrics,
 } from '@/types/decision-intelligence';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
+import { fireAndForget } from '@/lib/errors';
 
 // ============================================================================
 // AVM CALCULATION (Automated Valuation Model)
@@ -107,11 +109,11 @@ export async function calculateAVMResult(
     };
 
     // Guardar en DB (opcional, puede ser async)
-    saveAVMResult(supabase, avmResult).catch(console.error);
+    saveAVMResult(supabase, avmResult).catch((err) => logger.warn('Background save failed', err));
 
     return avmResult;
   } catch (error) {
-    console.error('Error calculating AVM result:', error);
+    logger.error('Error calculating AVM result', error);
     return null;
   }
 }
@@ -165,7 +167,7 @@ async function saveAVMResult(supabase: SupabaseClient, avm: AVMResult): Promise<
   });
 
   if (error) {
-    console.error('Error saving AVM result:', error);
+    logger.warn('Error saving AVM result', error);
   }
 }
 
@@ -286,11 +288,11 @@ export async function calculateMarketPressure(
     };
 
     // Guardar en DB
-    saveMarketPressure(supabase, marketPressure).catch(console.error);
+    saveMarketPressure(supabase, marketPressure).catch((err) => logger.warn('Background save failed', err));
 
     return marketPressure;
   } catch (error) {
-    console.error('Error calculating market pressure:', error);
+    logger.error('Error calculating market pressure', error);
     return null;
   }
 }
@@ -320,7 +322,7 @@ async function saveMarketPressure(supabase: SupabaseClient, pressure: MarketPres
   });
 
   if (error) {
-    console.error('Error saving market pressure:', error);
+    logger.warn('Error saving market pressure', error);
   }
 }
 
@@ -407,11 +409,11 @@ export async function calculateMarketDynamics(
     };
 
     // Guardar en DB
-    saveMarketDynamics(supabase, marketDynamics).catch(console.error);
+    saveMarketDynamics(supabase, marketDynamics).catch((err) => logger.warn('Background save failed', err));
 
     return marketDynamics;
   } catch (error) {
-    console.error('Error calculating market dynamics:', error);
+    logger.error('Error calculating market dynamics', error);
     return null;
   }
 }
@@ -537,7 +539,7 @@ async function saveMarketDynamics(supabase: SupabaseClient, dynamics: MarketDyna
   });
 
   if (error) {
-    console.error('Error saving market dynamics:', error);
+    logger.warn('Error saving market dynamics', error);
   }
 }
 
@@ -660,11 +662,11 @@ export async function calculateDecisionRisk(
     };
 
     // Guardar en DB
-    saveDecisionRisk(supabase, decisionRisk).catch(console.error);
+    saveDecisionRisk(supabase, decisionRisk).catch((err) => logger.warn('Background save failed', err));
 
     return decisionRisk;
   } catch (error) {
-    console.error('Error calculating decision risk:', error);
+    logger.error('Error calculating decision risk', error);
     return null;
   }
 }
@@ -779,7 +781,7 @@ async function saveDecisionRisk(supabase: SupabaseClient, risk: DecisionRisk): P
   });
 
   if (error) {
-    console.error('Error saving decision risk:', error);
+    logger.warn('Error saving decision risk', error);
   }
 }
 
@@ -802,7 +804,7 @@ export async function calculateFairnessV3(
     });
 
     if (error || !data || data.length === 0) {
-      console.error('Error calculating fairness v3:', error);
+      logger.error('Error calculating fairness v3', error);
       return null;
     }
 
@@ -852,7 +854,7 @@ export async function calculateFairnessV3(
 
     return fairness;
   } catch (error) {
-    console.error('Error calculating fairness v3:', error);
+    logger.error('Error calculating fairness v3', error);
     return null;
   }
 }
@@ -879,7 +881,7 @@ export async function generateDecisionIntelligence(
       .single();
 
     if (propertyError || !property) {
-      console.error('Property not found:', propertyError);
+      logger.warn('Property not found', propertyError);
       return null;
     }
 
@@ -962,7 +964,7 @@ export async function generateDecisionIntelligence(
 
     return decisionIntelligence;
   } catch (error) {
-    console.error('Error generating decision intelligence:', error);
+    logger.error('Error generating decision intelligence', error);
     return null;
   }
 }

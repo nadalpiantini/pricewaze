@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/logger';
+import { fireAndForget } from '@/lib/errors';
 import { generatePriceDropSignal, generatePriceIncreaseSignal } from '@/lib/alerts/generateSignals';
 import { z } from 'zod';
 
@@ -37,20 +38,28 @@ export async function GET(
       );
     }
 
-    // Increment view count (fire and forget)
-    supabase
-      .from('pricewaze_properties')
-      .update({ views_count: (data.views_count || 0) + 1 })
-      .eq('id', id)
-      .then(() => {});
+    // Increment view count (fire and forget with logging)
+    fireAndForget(
+      async () => {
+        await supabase
+          .from('pricewaze_properties')
+          .update({ views_count: (data.views_count || 0) + 1 })
+          .eq('id', id);
+      },
+      `increment view count for property ${id}`
+    );
 
     // Track view if user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      supabase
-        .from('pricewaze_property_views')
-        .insert({ property_id: id, viewer_id: user.id })
-        .then(() => {});
+      fireAndForget(
+        async () => {
+          await supabase
+            .from('pricewaze_property_views')
+            .insert({ property_id: id, viewer_id: user.id });
+        },
+        `track property view for user ${user.id}`
+      );
 
       // Evaluate Copilot alerts (fire and forget)
       fetch(`${request.nextUrl.origin}/api/copilot/property-viewed`, {
@@ -63,15 +72,19 @@ export async function GET(
     }
 
     // Create automatic signal for high activity (views)
-    supabase
-      .from('pricewaze_property_signals_raw')
-      .insert({
-        property_id: id,
-        signal_type: 'high_activity',
-        source: 'system',
-        // user_id and visit_id are NULL for system signals
-      })
-      .then(() => {});
+    fireAndForget(
+      async () => {
+        await supabase
+          .from('pricewaze_property_signals_raw')
+          .insert({
+            property_id: id,
+            signal_type: 'high_activity',
+            source: 'system',
+            // user_id and visit_id are NULL for system signals
+          });
+      },
+      `create high activity signal for property ${id}`
+    );
 
     return NextResponse.json(data);
   } catch (error) {

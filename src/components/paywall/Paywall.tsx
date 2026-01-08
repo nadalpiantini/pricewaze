@@ -99,8 +99,9 @@ export function Paywall({ feature, onActivate, onDismiss, className = '' }: Payw
         <button
           onClick={onDismiss}
           className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+          aria-label="Cerrar"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4" aria-hidden="true" />
         </button>
       )}
 

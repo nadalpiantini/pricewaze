@@ -2,6 +2,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Property } from '@/types/database';
 
+// Client-side logger (structured console for stores)
+const storeLogger = {
+  warn: (message: string, context?: unknown) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[PropertyStore] ${message}`, context);
+    }
+  },
+};
+
 interface PropertyState {
   // Favorites
   favorites: string[]; // Property IDs
@@ -57,7 +66,7 @@ export const usePropertyStore = create<PropertyState>()(
             }));
           }
         } catch (error) {
-          console.error('Failed to add favorite:', error);
+          storeLogger.warn('Failed to add favorite', error);
         } finally {
           set({ favoritesLoading: false });
         }
@@ -77,7 +86,7 @@ export const usePropertyStore = create<PropertyState>()(
             }));
           }
         } catch (error) {
-          console.error('Failed to remove favorite:', error);
+          storeLogger.warn('Failed to remove favorite', error);
         } finally {
           set({ favoritesLoading: false });
         }
@@ -108,7 +117,7 @@ export const usePropertyStore = create<PropertyState>()(
             set({ favorites: data.map((f: { property_id: string }) => f.property_id) });
           }
         } catch (error) {
-          console.error('Failed to fetch favorites:', error);
+          storeLogger.warn('Failed to fetch favorites', error);
         } finally {
           set({ favoritesLoading: false });
         }
@@ -147,7 +156,7 @@ export const usePropertyStore = create<PropertyState>()(
             set({ userProperties: data });
           }
         } catch (error) {
-          console.error('Failed to fetch user properties:', error);
+          storeLogger.warn('Failed to fetch user properties', error);
         } finally {
           set({ userPropertiesLoading: false });
         }

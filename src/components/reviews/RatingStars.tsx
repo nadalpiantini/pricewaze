@@ -33,7 +33,11 @@ export function RatingStars({
   };
 
   return (
-    <div className={cn('flex items-center gap-0.5', className)}>
+    <div
+      className={cn('flex items-center gap-0.5', className)}
+      role={interactive ? 'radiogroup' : 'img'}
+      aria-label={interactive ? 'Calificación' : `Calificación: ${rating.toFixed(1)} de ${maxRating} estrellas`}
+    >
       {Array.from({ length: maxRating }).map((_, index) => {
         const value = index + 1;
         const filled = value <= Math.round(rating);
@@ -50,6 +54,10 @@ export function RatingStars({
               interactive && 'cursor-pointer hover:scale-110',
               !interactive && 'cursor-default'
             )}
+            aria-label={`${value} ${value === 1 ? 'estrella' : 'estrellas'}`}
+            aria-checked={interactive ? filled : undefined}
+            role={interactive ? 'radio' : undefined}
+            tabIndex={interactive ? 0 : -1}
           >
             <Star
               className={cn(
@@ -60,12 +68,13 @@ export function RatingStars({
                     ? 'fill-yellow-200 text-yellow-400'
                     : 'fill-gray-200 text-gray-300'
               )}
+              aria-hidden="true"
             />
           </button>
         );
       })}
       {rating > 0 && (
-        <span className="ml-2 text-sm text-muted-foreground">
+        <span className="ml-2 text-sm text-muted-foreground" aria-hidden="true">
           {rating.toFixed(1)}
         </span>
       )}

@@ -127,8 +127,11 @@ export function NotificationBell() {
           size="icon"
           className="relative"
           data-testid="notification-bell"
+          aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount} sin leer)` : 'Notificaciones'}
+          aria-haspopup="true"
+          aria-expanded={open}
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-5 w-5" aria-hidden="true" />
           {unreadCount > 0 && (
             <Badge
               variant="destructive"

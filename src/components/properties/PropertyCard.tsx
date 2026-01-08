@@ -137,12 +137,13 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
               toggleProperty(property);
             }}
             disabled={!isInComparison && !canAddMore}
-            title={isInComparison ? "Remover de comparación" : "Agregar a comparación"}
+            aria-label={isInComparison ? "Remover de comparación" : "Agregar a comparación"}
+            aria-pressed={isInComparison}
           >
             <GitCompare className={cn(
               "h-4 w-4 transition-colors",
               isInComparison ? "text-white" : "text-gray-700 group-hover:text-white"
-            )} />
+            )} aria-hidden="true" />
           </Button>
           
           {/* Favorite Button */}
@@ -159,12 +160,13 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
               e.stopPropagation();
               toggleFavorite(property.id);
             }}
-            title={isFavorite(property.id) ? "Remover de favoritos" : "Agregar a favoritos"}
+            aria-label={isFavorite(property.id) ? "Remover de favoritos" : "Agregar a favoritos"}
+            aria-pressed={isFavorite(property.id)}
           >
             <Heart className={cn(
               "h-4 w-4 transition-colors",
               isFavorite(property.id) ? "text-white fill-white" : "text-gray-700 group-hover:text-white"
-            )} />
+            )} aria-hidden="true" />
           </Button>
         </div>
       </div>

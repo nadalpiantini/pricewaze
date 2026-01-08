@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { isPositiveSignal } from '@/lib/signals';
 import { buildSignalsPopup } from '@/lib/buildSignalsPopup';
 import { ConfirmedToggle } from '@/components/ConfirmedToggle';
+import { useHeatmapLayer, HeatmapControls, HeatmapLegend, type HeatmapMetric } from './HeatmapLayer';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
@@ -64,7 +65,22 @@ export function PropertyMapWithSignals({
     }
     return false;
   });
+
+  // Heatmap state
+  const [heatmapVisible, setHeatmapVisible] = useState(false);
+  const [heatmapMetric, setHeatmapMetric] = useState<HeatmapMetric>('price_per_m2');
+  const [heatmapOpacity, setHeatmapOpacity] = useState(0.7);
+
   const supabase = createClient();
+
+  // Initialize heatmap layer
+  useHeatmapLayer({
+    map: map.current,
+    properties,
+    metric: heatmapMetric,
+    visible: heatmapVisible,
+    opacity: heatmapOpacity,
+  });
 
   // Save preference to localStorage when it changes
   useEffect(() => {
@@ -330,24 +346,43 @@ export function PropertyMapWithSignals({
         />
       </div>
       <div ref={mapContainer} data-testid="mapbox-map" className="w-full h-full min-h-[400px] rounded-lg" />
-      {/* Legend */}
+
+      {/* Heatmap Controls - Top Right */}
+      <HeatmapControls
+        visible={heatmapVisible}
+        onVisibleChange={setHeatmapVisible}
+        metric={heatmapMetric}
+        onMetricChange={setHeatmapMetric}
+        opacity={heatmapOpacity}
+        onOpacityChange={setHeatmapOpacity}
+        className="absolute top-4 right-14 z-10"
+      />
+
+      {/* Heatmap Legend - Bottom Right */}
+      <HeatmapLegend
+        metric={heatmapMetric}
+        visible={heatmapVisible}
+        className="absolute bottom-4 right-4 z-10"
+      />
+
+      {/* Signals Legend - Bottom Left */}
       <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 text-xs space-y-1 z-10">
-        <p className="font-semibold mb-2">Legend:</p>
+        <p className="font-semibold mb-2">Signals:</p>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-blue-500"></div>
           <span>No signals</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-          <span>Unconfirmed signals</span>
+          <span>Unconfirmed</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <span>Confirmed signals (negative)</span>
+          <span>Negative</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
-          <span>Confirmed signals (positive)</span>
+          <span>Positive</span>
         </div>
       </div>
     </div>

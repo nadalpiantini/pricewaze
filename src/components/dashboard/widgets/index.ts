@@ -1,0 +1,9 @@
+export { WidgetWrapper } from './WidgetWrapper';
+export { StatsSummaryWidget } from './StatsSummaryWidget';
+export { MarketOverviewWidget } from './MarketOverviewWidget';
+export { PriceAlertsWidget } from './PriceAlertsWidget';
+export { QuickActionsWidget } from './QuickActionsWidget';
+export { NegotiationsWidget } from './NegotiationsWidget';
+export { FavoritesWidget } from './FavoritesWidget';
+export { RecentActivityWidget } from './RecentActivityWidget';
+export { PropertyPerformanceWidget } from './PropertyPerformanceWidget';

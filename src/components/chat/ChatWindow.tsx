@@ -189,8 +189,9 @@ export function ChatWindow({ conversationId, currentUserId }: ChatWindowProps) {
             <Button
               type="submit"
               disabled={!message.trim() || sendMessageMutation.isPending}
+              aria-label="Enviar mensaje"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </form>

@@ -11,12 +11,75 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Plus, Settings, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { getMarketConfig } from '@/config/market';
+
+// i18n translations based on market locale
+const translations = {
+  es: {
+    title: 'Alertas y Busquedas',
+    subtitle: 'Gestiona tus busquedas guardadas y alertas de mercado en tiempo real (tipo Waze)',
+    marketAlertsTab: 'Market Alerts',
+    rulesTab: 'Mis Reglas',
+    searchesTab: 'Busquedas Guardadas',
+    marketAlertsTitle: 'Alertas de Mercado en Tiempo Real',
+    marketAlertsDesc: 'Recibe notificaciones instantaneas cuando cambien las condiciones del mercado',
+    preferences: 'Preferencias',
+    newRule: 'Nueva Regla',
+    noRulesYet: 'No tienes reglas de alerta aun',
+    createFirstRule: 'Crear Tu Primera Regla',
+    rule: 'Regla',
+    channels: 'Canales',
+    inApp: 'En App',
+    active: 'Activa',
+    inactive: 'Inactiva',
+    delete: 'Eliminar',
+    deleteConfirm: 'Eliminar esta regla de alerta?',
+    zoneSpecific: 'Regla especifica de zona',
+    propertySpecific: 'Regla especifica de propiedad',
+    loading: 'Cargando...',
+  },
+  en: {
+    title: 'Alerts & Searches',
+    subtitle: 'Manage your saved searches and real-time market alerts (Waze-style)',
+    marketAlertsTab: 'Market Alerts',
+    rulesTab: 'My Rules',
+    searchesTab: 'Saved Searches',
+    marketAlertsTitle: 'Real-Time Market Alerts',
+    marketAlertsDesc: 'Get notified instantly when market conditions change',
+    preferences: 'Preferences',
+    newRule: 'New Rule',
+    noRulesYet: 'No alert rules yet',
+    createFirstRule: 'Create Your First Rule',
+    rule: 'Rule',
+    channels: 'Channels',
+    inApp: 'In-App',
+    active: 'Active',
+    inactive: 'Inactive',
+    delete: 'Delete',
+    deleteConfirm: 'Delete this alert rule?',
+    zoneSpecific: 'Zone-specific rule',
+    propertySpecific: 'Property-specific rule',
+    loading: 'Loading...',
+  },
+};
+
+// Get locale from market config
+function getLocale(): 'es' | 'en' {
+  const market = getMarketConfig();
+  const locale = market.currency.locale;
+  // Spanish locales: es-DO, es-MX, es-ES, es-CO
+  if (locale.startsWith('es')) return 'es';
+  return 'en';
+}
 
 export default function AlertsPage() {
   const [userId, setUserId] = useState<string | undefined>();
   const [showBuilder, setShowBuilder] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+
+  // Get translations based on market locale
+  const t = translations[getLocale()];
 
   // Get current user
   useEffect(() => {
@@ -46,7 +109,7 @@ export default function AlertsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">{t.loading}</p>
         </div>
       </div>
     );
@@ -56,9 +119,9 @@ export default function AlertsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Alertas y Búsquedas</h1>
+        <h1 className="text-3xl font-bold">{t.title}</h1>
         <p className="text-muted-foreground mt-2">
-          Gestiona tus búsquedas guardadas y alertas de mercado en tiempo real (tipo Waze)
+          {t.subtitle}
         </p>
       </div>
 
@@ -79,7 +142,7 @@ export default function AlertsPage() {
         <TabsList>
           <TabsTrigger value="market-alerts">
             <AlertTriangle className="h-4 w-4 mr-2" />
-            Market Alerts
+            {t.marketAlertsTab}
             {rules.filter((r: any) => r.active).length > 0 && (
               <span className="ml-2 text-xs text-muted-foreground">
                 ({rules.filter((r: any) => r.active).length})
@@ -87,29 +150,29 @@ export default function AlertsPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="rules">
-            Mis Reglas
+            {t.rulesTab}
             {rules.length > 0 && <span className="ml-2 text-xs text-muted-foreground">({rules.length})</span>}
           </TabsTrigger>
-          <TabsTrigger value="searches">Búsquedas Guardadas</TabsTrigger>
+          <TabsTrigger value="searches">{t.searchesTab}</TabsTrigger>
         </TabsList>
 
         {/* Market Alerts Tab - Waze-style feed */}
         <TabsContent value="market-alerts" className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold">Alertas de Mercado en Tiempo Real</h2>
+              <h2 className="text-xl font-semibold">{t.marketAlertsTitle}</h2>
               <p className="text-sm text-muted-foreground">
-                Recibe notificaciones instantáneas cuando cambien las condiciones del mercado
+                {t.marketAlertsDesc}
               </p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => router.push('/settings')}>
                 <Settings className="h-4 w-4 mr-2" />
-                Preferencias
+                {t.preferences}
               </Button>
               <Button onClick={() => setShowBuilder(!showBuilder)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Nueva Regla
+                {t.newRule}
               </Button>
             </div>
           </div>
@@ -122,10 +185,10 @@ export default function AlertsPage() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-4">No tienes reglas de alerta aún</p>
+                <p className="text-muted-foreground mb-4">{t.noRulesYet}</p>
                 <Button onClick={() => setShowBuilder(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Crear Tu Primera Regla
+                  {t.createFirstRule}
                 </Button>
               </CardContent>
             </Card>
@@ -154,13 +217,13 @@ export default function AlertsPage() {
                             if (response.ok) refetchRules();
                           }}
                         >
-                          {rule.active ? 'Activa' : 'Inactiva'}
+                          {rule.active ? t.active : t.inactive}
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={async () => {
-                            if (confirm('¿Eliminar esta regla de alerta?')) {
+                            if (confirm(t.deleteConfirm)) {
                               const response = await fetch(`/api/alert-rules?id=${rule.id}`, {
                                 method: 'DELETE',
                               });
@@ -168,7 +231,7 @@ export default function AlertsPage() {
                             }
                           }}
                         >
-                          Eliminar
+                          {t.delete}
                         </Button>
                       </div>
                     </div>
@@ -176,21 +239,21 @@ export default function AlertsPage() {
                   <CardContent>
                     <div className="space-y-2 text-sm">
                       <div>
-                        <strong>Regla:</strong>{' '}
+                        <strong>{t.rule}:</strong>{' '}
                         <code className="text-xs bg-muted px-2 py-1 rounded">
                           {JSON.stringify(rule.rule, null, 2)}
                         </code>
                       </div>
                       <div>
-                        <strong>Canales:</strong>{' '}
+                        <strong>{t.channels}:</strong>{' '}
                         {rule.notification_channels?.map((ch: string) => (
                           <span key={ch} className="inline-block mr-2 capitalize">
-                            {ch === 'in_app' ? 'En App' : ch}
+                            {ch === 'in_app' ? t.inApp : ch}
                           </span>
                         ))}
                       </div>
-                      {rule.zone_id && <div className="text-muted-foreground">Regla específica de zona</div>}
-                      {rule.property_id && <div className="text-muted-foreground">Regla específica de propiedad</div>}
+                      {rule.zone_id && <div className="text-muted-foreground">{t.zoneSpecific}</div>}
+                      {rule.property_id && <div className="text-muted-foreground">{t.propertySpecific}</div>}
                     </div>
                   </CardContent>
                 </Card>
@@ -207,4 +270,3 @@ export default function AlertsPage() {
     </div>
   );
 }
-

@@ -1,6 +1,7 @@
 import { SIGNAL_ICONS } from "./signalIcons";
+import type { PropertySignalTypeState } from "@/types/database";
 
-export function buildSignalsPopup(signals: any[]) {
+export function buildSignalsPopup(signals: PropertySignalTypeState[]) {
   if (!signals?.length) {
     return `<div class="text-sm text-gray-500">No signals</div>`;
   }
@@ -9,7 +10,7 @@ export function buildSignalsPopup(signals: any[]) {
     <div style="display:flex; gap:8px; flex-wrap:wrap; max-width:220px">
       ${signals
         .map(
-          (s: any) => `
+          (s) => `
         <div
           style="
             padding:4px 8px;

@@ -1,10 +1,19 @@
 /**
  * PriceWaze Copilot Helper Functions
- * 
+ *
  * Utilities for interacting with the Copilot system from the frontend
  */
 
 import type { CopilotAlert } from '@/types/copilot';
+
+// Client-side logger (structured console for copilot utilities)
+const copilotLogger = {
+  warn: (message: string, context?: unknown) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[Copilot] ${message}`, context);
+    }
+  },
+};
 
 /**
  * Track property view and evaluate alerts
@@ -19,14 +28,14 @@ export async function trackPropertyView(propertyId: string): Promise<CopilotAler
     });
 
     if (!response.ok) {
-      console.error('Failed to track property view:', response.statusText);
+      copilotLogger.warn('Failed to track property view', response.statusText);
       return [];
     }
 
     const data = await response.json();
     return data.alerts || [];
   } catch (error) {
-    console.error('Error tracking property view:', error);
+    copilotLogger.warn('Error tracking property view', error);
     return [];
   }
 }
@@ -43,14 +52,14 @@ export async function getActiveAlerts(propertyId?: string): Promise<CopilotAlert
     const response = await fetch(url);
 
     if (!response.ok) {
-      console.error('Failed to fetch alerts:', response.statusText);
+      copilotLogger.warn('Failed to fetch alerts', response.statusText);
       return [];
     }
 
     const data = await response.json();
     return data.alerts || [];
   } catch (error) {
-    console.error('Error fetching alerts:', error);
+    copilotLogger.warn('Error fetching alerts', error);
     return [];
   }
 }
@@ -68,7 +77,7 @@ export async function resolveAlert(alertId: string): Promise<boolean> {
 
     return response.ok;
   } catch (error) {
-    console.error('Error resolving alert:', error);
+    copilotLogger.warn('Error resolving alert', error);
     return false;
   }
 }

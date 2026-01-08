@@ -4,6 +4,18 @@
 
 ---
 
+## Edward Honour Hierarchy
+
+```
+Module (Dominio funcional)
+└── Theme (Objetivo de usuario)
+    └── Task (Accion atomica)
+```
+
+**Referencia detallada**: Ver [bmad/module-themes-tasks.md](./bmad/module-themes-tasks.md) para el mapeo completo.
+
+---
+
 ## Module Overview
 
 ```
@@ -431,3 +443,71 @@ AUTH 鈫 PROP 鈫 MAP
 | VISIT | Medium | Low | P1 |
 | CONTRACT | High | High | P1 |
 | CREW | Medium | High | P2 |
+| ALERTS | High | Low | P1 |
+| COPILOT | High | Medium | P1 |
+
+---
+
+## ALERTS - Alertas y Busquedas
+
+### Themes
+
+#### Theme: Market Alerts
+**Objetivo**: Usuario recibe alertas de mercado en tiempo real
+
+| Task ID | Descripcion | Status |
+|---------|-------------|--------|
+| ALERTS-001-T1 | Alert feed UI | Done |
+| ALERTS-001-T2 | Rule builder | Done |
+| ALERTS-001-T3 | i18n support | Done |
+
+**Archivos**:
+- `src/app/(dashboard)/alerts/page.tsx`
+- `src/components/alerts/MarketAlertsFeed.tsx`
+- `src/components/alerts/AlertRuleBuilder.tsx`
+
+#### Theme: Saved Searches
+**Objetivo**: Usuario puede guardar busquedas para notificacion automatica
+
+| Task ID | Descripcion | Status |
+|---------|-------------|--------|
+| ALERTS-002-T1 | Save search flow | Done |
+| ALERTS-002-T2 | Notification on match | Done |
+| ALERTS-002-T3 | Manage searches | Done |
+
+**Archivos**:
+- `src/components/alerts/SavedSearches.tsx`
+- `src/app/api/alerts/route.ts`
+
+---
+
+## COPILOT - AI Assistant
+
+### Themes
+
+#### Theme: Chat Interface
+**Objetivo**: Usuario puede chatear con AI para asistencia
+
+| Task ID | Descripcion | Status |
+|---------|-------------|--------|
+| COPILOT-001-T1 | Chat UI | Done |
+| COPILOT-001-T2 | Message history | Done |
+| COPILOT-001-T3 | Context awareness | Done |
+
+**Archivos**:
+- `src/components/copilot/CopilotPanel.tsx`
+- `src/components/copilot/CopilotMessages.tsx`
+- `src/app/api/copilot/chat/route.ts`
+
+#### Theme: Negotiation Assistance
+**Objetivo**: AI ayuda en negociaciones
+
+| Task ID | Descripcion | Status |
+|---------|-------------|--------|
+| COPILOT-002-T1 | Offer advice | Done |
+| COPILOT-002-T2 | Counter suggestions | Done |
+| COPILOT-002-T3 | Proactive alerts | Done |
+
+**Archivos**:
+- `src/app/api/copilot/negotiate/route.ts`
+- `src/components/copilot/NegotiationCoherencePanel.tsx`

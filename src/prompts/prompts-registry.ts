@@ -1,9 +1,11 @@
 /**
- * Prompts Registry
+ * Prompts Registry (TypeScript)
  * 
- * Central registry for all prompts with versioning, metrics, and A/B testing support
- * Level: 10/10
+ * Type-safe registry complementing JSON registry
+ * Use registry.json as source of truth, this for TypeScript types
  */
+
+import { getPromptMetadata as loadFromJSON } from '@/lib/prompts/registry-loader';
 
 export type PromptVersion = 'v1' | 'v2' | 'v2.1';
 
@@ -96,10 +98,13 @@ export const PROMPTS_REGISTRY: Record<string, PromptMetadata> = {
 };
 
 /**
- * Get current version of a prompt
+ * Get current version of a prompt (from JSON registry)
  */
 export function getPromptVersion(name: string): PromptVersion {
-  return PROMPTS_REGISTRY[name]?.version || 'v2';
+  const active = loadFromJSON(name, 'v2.1') || 
+                loadFromJSON(name, 'v2') || 
+                loadFromJSON(name, 'v1');
+  return (active?.version as PromptVersion) || 'v2';
 }
 
 /**

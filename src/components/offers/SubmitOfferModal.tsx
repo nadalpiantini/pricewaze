@@ -261,9 +261,9 @@ export function SubmitOfferModal({
           } : null}
           onClose={() => setSelectedAlert(null)}
           onAction={(alert) => {
-            // Si es alerta de oferta subóptima, ajustar el monto sugerido
+            // Si es alerta de oferta suboptima, ajustar el monto sugerido
             if (alert.type === 'suboptimal_offer' && alert.metadata?.suggested_balanced) {
-              setAmount(formatCurrency(alert.metadata.suggested_balanced));
+              setAmount(formatCurrency(alert.metadata.suggested_balanced as number));
               setSelectedAlert(null);
             }
           }}

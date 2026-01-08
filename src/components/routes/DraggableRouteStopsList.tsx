@@ -87,8 +87,10 @@ function SortableStopItem({
             {...attributes}
             {...listeners}
             className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+            aria-label="Arrastrar para reordenar"
+            aria-roledescription="elemento ordenable"
           >
-            <GripVertical className="h-5 w-5" />
+            <GripVertical className="h-5 w-5" aria-hidden="true" />
           </button>
 
           {/* Order number badge */}
@@ -122,10 +124,10 @@ function SortableStopItem({
               variant="ghost"
               size="icon-sm"
               onClick={handleOpenWaze}
-              title="Open in Waze"
+              aria-label="Abrir en Waze"
               className="h-8 w-8"
             >
-              <Navigation className="h-4 w-4" />
+              <Navigation className="h-4 w-4" aria-hidden="true" />
             </Button>
           )}
           {onDelete && (
@@ -133,10 +135,10 @@ function SortableStopItem({
               variant="ghost"
               size="icon-sm"
               onClick={() => onDelete(stop.id)}
-              title="Remove stop"
+              aria-label="Eliminar parada"
               className="h-8 w-8 text-destructive hover:text-destructive"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
             </Button>
           )}
         </div>

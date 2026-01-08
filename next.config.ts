@@ -1,6 +1,21 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Redirects for module consolidation (ADR-005)
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/market-alerts',
+        destination: '/dashboard/alerts',
+        permanent: true,
+      },
+      {
+        source: '/market-alerts',
+        destination: '/alerts',
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
