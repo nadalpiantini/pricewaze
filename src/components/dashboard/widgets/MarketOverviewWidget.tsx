@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { TrendingUp, TrendingDown, Minus, MapPin, ArrowRight } from 'lucide-react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/config/market';
 
 interface ZoneStats {

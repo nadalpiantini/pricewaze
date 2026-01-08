@@ -185,6 +185,7 @@ export function PropertyPerformanceWidget() {
 
   useEffect(() => {
     const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- regenerate on range change
     setChartData(generateChartData(days));
   }, [timeRange]);
 

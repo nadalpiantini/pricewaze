@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { Building2, MessageSquare, Calendar, Bell, TrendingUp, Activity } from 'lucide-react';
+import { Building2, MessageSquare, Calendar, Bell, Activity } from 'lucide-react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { usePropertyStore } from '@/stores/property-store';
 import { useOffers } from '@/hooks/use-offers';

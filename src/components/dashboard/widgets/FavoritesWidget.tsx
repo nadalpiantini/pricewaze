@@ -138,6 +138,7 @@ export function FavoritesWidget() {
       };
       loadFavorites();
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear on empty
       setFavoriteProperties([]);
     }
   }, [favorites]);

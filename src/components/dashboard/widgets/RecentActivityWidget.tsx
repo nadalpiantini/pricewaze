@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  Bell,
   MessageSquare,
   Calendar,
   Building2,
@@ -64,14 +63,8 @@ function ActivityCard({
   activity: ActivityItem;
   index: number;
 }) {
-  const [isVisible, setIsVisible] = useState(false);
   const config = activityConfig[activity.type];
   const Icon = config.icon;
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), index * 80);
-    return () => clearTimeout(timer);
-  }, [index]);
 
   return (
     <Link

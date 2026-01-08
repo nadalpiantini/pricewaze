@@ -55,6 +55,7 @@ export default function AuthLayout({
   }, [isInitialized, initialize]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration pattern
     setMounted(true);
   }, []);
 

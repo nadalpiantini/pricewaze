@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  MessageSquare,
   ArrowRight,
   Clock,
   CheckCircle,
@@ -192,6 +191,7 @@ export function NegotiationsWidget() {
         requiresAction: offer.status === 'countered',
       }));
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- derived from offers
     setNegotiations(activeNegotiations);
   }, [offers]);
 
