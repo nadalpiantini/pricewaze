@@ -14,6 +14,7 @@ import type { DIEAnalysis, DIEInputs, DIEExplanations } from '@/types/die';
 import { calculateUncertainty } from './uncertainty-engine';
 import { analyzeMarketDynamics } from './dynamics-engine';
 import { calculatePressure } from './pressure-engine';
+import { calculateWaitRisk } from './wait-risk-engine';
 import { generateExplanations } from './copilot-explanations';
 import { saveAVMResult } from './save-avm-result';
 
@@ -23,12 +24,20 @@ import { saveAVMResult } from './save-avm-result';
 export async function analyzeDIE(
   inputs: DIEInputs
 ): Promise<DIEAnalysis> {
-  // Run all engines in parallel
+  // Run all engines in parallel (except wait-risk which depends on others)
   const [priceAssessment, marketDynamics, currentPressure] = await Promise.all([
     calculateUncertainty(inputs), // Now async
     Promise.resolve(analyzeMarketDynamics(inputs)),
     Promise.resolve(calculatePressure(inputs)),
   ]);
+
+  // Calculate wait risk (depends on other engines)
+  const waitRisk = await calculateWaitRisk(
+    inputs,
+    marketDynamics,
+    currentPressure,
+    priceAssessment
+  );
 
   // Generate explanations (async, may call LLM)
   const explanations = await generateExplanations({
@@ -51,10 +60,11 @@ export async function analyzeDIE(
   return {
     propertyId: inputs.property.id,
     requestedAt: new Date().toISOString(),
-    version: 'DIE-1',
+    version: 'DIE-2', // Updated to DIE-2 with wait-risk
     priceAssessment,
     marketDynamics,
     currentPressure,
+    waitRisk, // DIE-2 feature
     explanations,
   };
 }

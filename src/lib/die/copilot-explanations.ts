@@ -10,7 +10,7 @@
  */
 
 import OpenAI from 'openai';
-import type { PriceAssessment, MarketDynamics, CurrentPressure, DIEExplanations } from '@/types/die';
+import type { PriceAssessment, MarketDynamics, CurrentPressure, WaitRisk, DIEExplanations } from '@/types/die';
 import { getMarketConfig } from '@/config/market';
 
 let deepseek: OpenAI | null = null;
@@ -31,6 +31,7 @@ interface ExplanationContext {
   priceAssessment: PriceAssessment;
   marketDynamics: MarketDynamics;
   currentPressure: CurrentPressure;
+  waitRisk?: WaitRisk; // DIE-2
   property: {
     id: string;
     price: number;
@@ -74,11 +75,17 @@ CURRENT PRESSURE:
 - Recent Visits: ${context.currentPressure.competition.recentVisits}
 - Signals: ${context.currentPressure.signals.competingOffers ? 'Competing offers detected' : ''} ${context.currentPressure.signals.manyVisits ? 'High visit activity' : ''}
 
+${context.waitRisk ? `WAIT RISK:
+- Recommendation: ${context.waitRisk.recommendation}
+- 7-day risk: ${context.waitRisk.riskByDays.find(r => r.days === 7)?.riskLevel || 'unknown'} (${Math.round((context.waitRisk.riskByDays.find(r => r.days === 7)?.probabilityOfLoss || 0) * 100)}% probability of loss)
+- 30-day risk: ${context.waitRisk.riskByDays.find(r => r.days === 30)?.riskLevel || 'unknown'} (${Math.round((context.waitRisk.riskByDays.find(r => r.days === 30)?.probabilityOfLoss || 0) * 100)}% probability of loss)
+- Trade-offs: ${context.waitRisk.tradeoffs.discipline} ${context.waitRisk.tradeoffs.probability}` : ''}
+
 Provide a JSON response with:
 1. uncertaintyExplanation: Explain why uncertainty is ${context.priceAssessment.uncertainty} (mention range width, sample size, zone variability)
 2. velocityExplanation: Explain what ${context.marketDynamics.velocity} velocity means and what it indicates for timing
-3. timingExplanation: Explain what waiting vs acting now implies given the current pressure and velocity
-4. decisionContext: Overall decision context (2-3 sentences summarizing key factors)
+3. timingExplanation: ${context.waitRisk ? `Explain what waiting vs acting now implies. Reference the wait risk analysis: ${context.waitRisk.recommendation} recommendation, ${context.waitRisk.tradeoffs.discipline} ${context.waitRisk.tradeoffs.probability}` : 'Explain what waiting vs acting now implies given the current pressure and velocity'}
+4. decisionContext: Overall decision context (2-3 sentences summarizing key factors${context.waitRisk ? `, including wait risk recommendation: ${context.waitRisk.recommendation}` : ''})
 
 CRITICAL RULES:
 - DO NOT recommend specific prices or amounts

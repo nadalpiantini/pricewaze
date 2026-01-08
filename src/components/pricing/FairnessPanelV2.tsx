@@ -14,6 +14,8 @@ import {
   Users,
   Loader2,
   Info,
+  Timer,
+  AlertTriangle,
 } from 'lucide-react';
 import { getMarketConfig, formatPrice } from '@/config/market';
 
@@ -265,6 +267,77 @@ export function FairnessPanelV2({ propertyId, onAnalysisComplete }: FairnessPane
             </div>
           </div>
         </div>
+
+        {/* Wait Risk (DIE-2) */}
+        {analysis.waitRisk && (
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex items-center gap-2">
+              <Timer className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Wait Risk</span>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">Recommendation</span>
+                <Badge
+                  variant={
+                    analysis.waitRisk.recommendation === 'act_now'
+                      ? 'destructive'
+                      : analysis.waitRisk.recommendation === 'wait_short'
+                      ? 'secondary'
+                      : 'default'
+                  }
+                  className="text-xs"
+                >
+                  {analysis.waitRisk.recommendation === 'act_now'
+                    ? 'Act Now'
+                    : analysis.waitRisk.recommendation === 'wait_short'
+                    ? 'Wait Short'
+                    : analysis.waitRisk.recommendation === 'wait_medium'
+                    ? 'Wait Medium'
+                    : 'Wait Long'}
+                </Badge>
+              </div>
+              <div className="space-y-2 text-xs">
+                {analysis.waitRisk.riskByDays.map((risk, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <span className="text-muted-foreground">{risk.days} days:</span>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={
+                          risk.riskLevel === 'high'
+                            ? 'destructive'
+                            : risk.riskLevel === 'medium'
+                            ? 'secondary'
+                            : 'default'
+                        }
+                        className="text-xs"
+                      >
+                        {risk.riskLevel.toUpperCase()}
+                      </Badge>
+                      <span className="text-muted-foreground">
+                        {Math.round(risk.probabilityOfLoss * 100)}% loss risk
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 pt-3 border-t space-y-1">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-3 h-3 text-orange-600 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">
+                    {analysis.waitRisk.tradeoffs.probability}
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Info className="w-3 h-3 text-blue-600 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">
+                    {analysis.waitRisk.tradeoffs.discipline}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Explanations */}
         <div className="space-y-2 pt-2 border-t">
