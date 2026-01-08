@@ -18,6 +18,7 @@ import {
   DollarSign,
   MapPin,
 } from 'lucide-react';
+import { FairnessGauge } from './FairnessGauge';
 
 interface PricingInsightsProps {
   propertyId: string;
@@ -37,7 +38,8 @@ export function PricingInsights({ propertyId, onOfferSuggestion }: PricingInsigh
     }
   };
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency: (value: number | null | undefined) => string = (value) => {
+    if (value === null || value === undefined) return 'N/A';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -121,18 +123,17 @@ export function PricingInsights({ propertyId, onOfferSuggestion }: PricingInsigh
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Fairness Score */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
-          <div>
-            <p className="text-sm text-muted-foreground">Price Fairness</p>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">{analysis.fairnessScore}</span>
-              <span className="text-sm text-muted-foreground">/100</span>
-            </div>
-          </div>
-          <Badge className={getFairnessColor(analysis.fairnessLabel)}>
-            {analysis.fairnessLabel.replace('_', ' ')}
-          </Badge>
+        {/* Fairness Score - Waze-style Gauge */}
+        <div className="flex flex-col items-center p-4 rounded-lg bg-muted">
+          <FairnessGauge
+            score={analysis.fairnessScore}
+            size="md"
+            showLabel={true}
+            animated={true}
+          />
+          <p className="text-xs text-muted-foreground mt-2">
+            Lower score = Better deal for buyer
+          </p>
         </div>
 
         {/* Estimated Fair Value */}
@@ -202,30 +203,30 @@ export function PricingInsights({ propertyId, onOfferSuggestion }: PricingInsigh
           <p className="text-sm font-medium">Suggested Offers</p>
           <div className="grid grid-cols-3 gap-2">
             <button
-              onClick={() => onOfferSuggestion?.(analysis.suggestedOffers.aggressive)}
+              onClick={() => onOfferSuggestion?.(analysis.suggestedOffers.aggressive ?? 0)}
               className="p-2 rounded-lg bg-green-50 hover:bg-green-100 transition-colors text-center"
             >
               <p className="text-xs text-green-600">Aggressive</p>
               <p className="font-semibold text-green-700 text-sm">
-                {formatCurrency(analysis.suggestedOffers.aggressive)}
+                {formatCurrency(analysis.suggestedOffers.aggressive ?? 0)}
               </p>
             </button>
             <button
-              onClick={() => onOfferSuggestion?.(analysis.suggestedOffers.balanced)}
+              onClick={() => onOfferSuggestion?.(analysis.suggestedOffers.balanced ?? 0)}
               className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors text-center"
             >
               <p className="text-xs text-blue-600">Balanced</p>
               <p className="font-semibold text-blue-700 text-sm">
-                {formatCurrency(analysis.suggestedOffers.balanced)}
+                {formatCurrency(analysis.suggestedOffers.balanced ?? 0)}
               </p>
             </button>
             <button
-              onClick={() => onOfferSuggestion?.(analysis.suggestedOffers.conservative)}
+              onClick={() => onOfferSuggestion?.(analysis.suggestedOffers.conservative ?? 0)}
               className="p-2 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors text-center"
             >
               <p className="text-xs text-orange-600">Conservative</p>
               <p className="font-semibold text-orange-700 text-sm">
-                {formatCurrency(analysis.suggestedOffers.conservative)}
+                {formatCurrency(analysis.suggestedOffers.conservative ?? 0)}
               </p>
             </button>
           </div>
