@@ -222,6 +222,7 @@ export interface DIEInputs {
   competition?: {
     activeOffers: number;
     recentVisits: number;
+    views?: number; // Last 7 days (if available)
   };
 
   // Optional user profile (DIE-3)
