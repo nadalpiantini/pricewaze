@@ -46,7 +46,7 @@ export function isScraperConfigured(scraper: ScraperName): boolean {
  */
 export function getAvailableScrapers(): ScraperName[] {
   return (Object.entries(ACTOR_IDS) as [ScraperName, string | null][])
-    .filter(([_, actorId]) => actorId !== null)
+    .filter(([, actorId]) => actorId !== null)
     .map(([name]) => name);
 }
 
@@ -145,19 +145,30 @@ export async function getScraperStatus(runId: string): Promise<ScraperRunStatus>
     throw new Error(`Run ${runId} not found`);
   }
 
+  // Get item count from dataset if run succeeded
+  let itemsScraped = 0;
+  if (run.status === 'SUCCEEDED' && run.defaultDatasetId) {
+    try {
+      const dataset = await client.dataset(run.defaultDatasetId).get();
+      itemsScraped = dataset?.itemCount || 0;
+    } catch {
+      // Dataset might not be accessible yet
+    }
+  }
+
   return {
     id: run.id,
     scraper: 'supercasas', // Will be overwritten by caller
     status: mapApifyStatus(run.status),
     startedAt: run.startedAt?.toISOString() || new Date().toISOString(),
     finishedAt: run.finishedAt?.toISOString(),
-    itemsScraped: run.stats?.itemsScraped || 0,
+    itemsScraped,
     itemsIngested: 0, // Will be updated after ingestion
     itemsSkipped: 0,
     itemsFailed: 0,
     errors: [],
     apifyRunId: run.id,
-    cost: run.stats?.computeUnits,
+    cost: run.usage?.ACTOR_COMPUTE_UNITS,
   };
 }
 
@@ -202,11 +213,14 @@ export async function getApifyUsage(): Promise<{
 
   const user = await client.user().get();
 
+  const limitUsd = user?.plan?.maxMonthlyUsageUsd || 5; // Free tier is $5/month
+  const usedUsd = user?.plan?.monthlyUsageCreditsUsd || 0;
+
   return {
     plan: user?.plan?.id || 'free',
-    usedUsd: user?.plan?.usageUsd || 0,
-    limitUsd: user?.plan?.limitUsd || 5, // Free tier is $5/month
-    remainingUsd: (user?.plan?.limitUsd || 5) - (user?.plan?.usageUsd || 0),
+    usedUsd,
+    limitUsd,
+    remainingUsd: limitUsd - usedUsd,
   };
 }
 
