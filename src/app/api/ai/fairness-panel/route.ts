@@ -50,15 +50,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch zone context
+    type ZoneProperty = {
+      price: number;
+      area_m2?: number;
+      property_type: string;
+      status: string;
+      created_at: string;
+    };
+
     let zoneContext: {
       name: string;
-      properties: Array<{
-        price: number;
-        area_m2?: number;
-        property_type: string;
-        status: string;
-        created_at: string;
-      }>;
+      properties: ZoneProperty[];
     } = { name: 'Unknown Zone', properties: [] };
     
     if (property.zone_id) {
@@ -77,13 +79,7 @@ export async function GET(request: NextRequest) {
 
         zoneContext = {
           name: zone.name,
-          properties: (zoneProperties || []) as Array<{
-            price: number;
-            area_m2?: number;
-            property_type: string;
-            status: string;
-            created_at: string;
-          }>,
+          properties: (zoneProperties || []) as ZoneProperty[],
         };
       }
     }

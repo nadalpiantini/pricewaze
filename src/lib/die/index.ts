@@ -15,6 +15,7 @@ import { calculateUncertainty } from './uncertainty-engine';
 import { analyzeMarketDynamics } from './dynamics-engine';
 import { calculatePressure } from './pressure-engine';
 import { generateExplanations } from './copilot-explanations';
+import { saveAVMResult } from './save-avm-result';
 
 /**
  * Run complete DIE analysis
@@ -24,7 +25,7 @@ export async function analyzeDIE(
 ): Promise<DIEAnalysis> {
   // Run all engines in parallel
   const [priceAssessment, marketDynamics, currentPressure] = await Promise.all([
-    Promise.resolve(calculateUncertainty(inputs)),
+    calculateUncertainty(inputs), // Now async
     Promise.resolve(analyzeMarketDynamics(inputs)),
     Promise.resolve(calculatePressure(inputs)),
   ]);
@@ -35,6 +36,16 @@ export async function analyzeDIE(
     marketDynamics,
     currentPressure,
     property: inputs.property,
+  });
+
+  // Save AVM result to DB for future use (fire and forget)
+  // This allows the fairness function to use these ranges
+  saveAVMResult({
+    propertyId: inputs.property.id,
+    priceAssessment,
+    comparableCount: inputs.zone.properties.length,
+  }).catch(err => {
+    console.error('Failed to save AVM result (non-critical):', err);
   });
 
   return {

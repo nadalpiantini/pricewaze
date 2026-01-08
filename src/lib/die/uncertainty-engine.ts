@@ -5,21 +5,79 @@
  * 
  * Key principle: Honesty > point precision
  * 
- * Implementation: Simplified conformal prediction using zone statistics
- * and quantile-based ranges.
+ * Implementation: 
+ * 1. First tries to use AVM results from DB if available
+ * 2. Falls back to simplified conformal prediction using zone statistics
  */
 
 import type { PriceAssessment, DIEInputs } from '@/types/die';
+import { createClient } from '@/lib/supabase/server';
 
 /**
  * Calculate price range using conformal prediction approach
  * 
- * Uses zone comparables to estimate:
- * - Median (point estimate)
- * - 5th and 95th percentiles (90% coverage range)
- * - Uncertainty level based on range width
+ * First tries to use AVM results from DB if available.
+ * Falls back to zone-based calculation if no AVM exists.
  */
-export function calculateUncertainty(
+export async function calculateUncertainty(
+  inputs: DIEInputs
+): Promise<PriceAssessment> {
+  const { property, zone } = inputs;
+
+  // Try to get AVM results from DB first
+  const supabase = await createClient();
+  const { data: avmResult } = await supabase
+    .from('pricewaze_avm_results')
+    .select('estimate, low_estimate, high_estimate, uncertainty_level, confidence')
+    .eq('property_id', property.id)
+    .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
+    .order('generated_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  // If AVM result exists and is valid, use it
+  if (avmResult && avmResult.low_estimate && avmResult.high_estimate && avmResult.estimate) {
+    const rangeWidth = avmResult.high_estimate - avmResult.low_estimate;
+    const rangeWidthPercent = avmResult.estimate > 0
+      ? (rangeWidth / avmResult.estimate) * 100
+      : 50;
+
+    return {
+      priceRange: {
+        min: Number(avmResult.low_estimate),
+        max: Number(avmResult.high_estimate),
+        median: Number(avmResult.estimate),
+      },
+      askingPriceStatus: getAskingPriceStatus(
+        property.price,
+        Number(avmResult.low_estimate),
+        Number(avmResult.high_estimate)
+      ),
+      uncertainty: (avmResult.uncertainty_level as 'low' | 'medium' | 'high') || 'medium',
+      uncertaintyMetrics: {
+        coverage: Number(avmResult.confidence) || 0.90,
+        rangeWidth,
+        rangeWidthPercent,
+      },
+      zoneContext: {
+        zoneName: zone.name,
+        zoneMedianPrice: Number(avmResult.estimate),
+        zonePriceRange: {
+          min: Number(avmResult.low_estimate),
+          max: Number(avmResult.high_estimate),
+        },
+      },
+    };
+  }
+
+  // Fallback to zone-based calculation
+  return calculateUncertaintyFromZone(inputs);
+}
+
+/**
+ * Calculate uncertainty from zone statistics (fallback)
+ */
+function calculateUncertaintyFromZone(
   inputs: DIEInputs
 ): PriceAssessment {
   const { property, zone } = inputs;
@@ -152,6 +210,23 @@ function getHighUncertaintyAssessment(
       },
     },
   };
+}
+
+/**
+ * Determine asking price status relative to range
+ */
+function getAskingPriceStatus(
+  askingPrice: number,
+  rangeMin: number,
+  rangeMax: number
+): 'within_range' | 'below_range' | 'above_range' {
+  if (askingPrice >= rangeMin && askingPrice <= rangeMax) {
+    return 'within_range';
+  }
+  if (askingPrice < rangeMin) {
+    return 'below_range';
+  }
+  return 'above_range';
 }
 
 /**
