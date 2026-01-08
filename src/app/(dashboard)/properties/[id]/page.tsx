@@ -37,7 +37,7 @@ import { useChat } from '@/hooks/useChat';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { Property } from '@/types/database';
-import type { CopilotAlert } from '@/hooks/useCopilotAlerts';
+import type { CopilotAlert } from '@/types/copilot';
 
 const propertyTypeLabels: Record<Property['property_type'], string> = {
   apartment: 'Apartment',
@@ -64,7 +64,7 @@ export default function PropertyPage() {
   const supabase = createClient();
   
   // Copilot alerts
-  const { alerts, dismissAlert } = useCopilotAlerts({
+  const { alerts, markAsResolved } = useCopilotAlerts({
     propertyId,
     autoFetch: true,
   });
@@ -424,7 +424,7 @@ export default function PropertyPage() {
       <AlertModal
         alert={selectedAlert}
         onClose={() => setSelectedAlert(null)}
-        onDismiss={dismissAlert}
+        onDismiss={markAsResolved}
       />
     </div>
   );

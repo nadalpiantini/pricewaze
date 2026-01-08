@@ -51,6 +51,15 @@ export async function GET(
         .from('pricewaze_property_views')
         .insert({ property_id: id, viewer_id: user.id })
         .then(() => {});
+
+      // Evaluate Copilot alerts (fire and forget)
+      fetch(`${request.nextUrl.origin}/api/copilot/property-viewed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ property_id: id }),
+      }).catch((err) => {
+        logger.error('Failed to evaluate Copilot alerts:', err);
+      });
     }
 
     // Create automatic signal for high activity (views)
