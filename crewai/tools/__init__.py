@@ -16,6 +16,11 @@ from .contract_tools import (
     GenerateContractTemplateTool,
     ValidateContractTermsTool,
 )
+from .avm_tool import (
+    AVMValuationTool,
+    ComparablesSearchTool,
+    QuickEstimateTool,
+)
 from .playwright_tools import (
     # Individual tools
     NavigateTool,
@@ -53,6 +58,10 @@ __all__ = [
     # Contract tools
     "GenerateContractTemplateTool",
     "ValidateContractTermsTool",
+    # AVM tools
+    "AVMValuationTool",
+    "ComparablesSearchTool",
+    "QuickEstimateTool",
     # Playwright tools
     "NavigateTool",
     "ClickElementTool",

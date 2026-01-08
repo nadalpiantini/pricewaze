@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, ArrowRight, MapPin, Bed, Bath, Square } from 'lucide-react';
-import { WidgetWrapper } from './WidgetWrapper';
+import { WidgetWrapper } from '@/components/dashboard/widgets/WidgetWrapper';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/config/market';
