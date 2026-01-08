@@ -37,7 +37,12 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
     return `$${(price / 1000).toFixed(0)}K`;
   };
 
-  const primaryImage = property.images?.[0] || '/placeholder-property.jpg';
+  // Only use first image if it exists and is a valid URL (not placeholder)
+  const primaryImage = property.images?.[0];
+  const hasValidImage = primaryImage && 
+    primaryImage.startsWith('http') && 
+    !primaryImage.includes('example.com') &&
+    !primaryImage.includes('placeholder');
   const isInComparison = isSelected(property.id);
 
   if (compact) {
@@ -50,12 +55,13 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
         <CardContent className="p-3">
           <div className="flex gap-3">
             <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
-              {property.images?.[0] ? (
+              {hasValidImage ? (
                 <Image
                   src={primaryImage}
                   alt={property.title}
                   fill
                   className="object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -102,12 +108,13 @@ export function PropertyCard({ property, onClick, compact = false }: PropertyCar
     >
       {/* Image */}
       <div className="relative aspect-[4/3] bg-gray-100">
-        {property.images?.[0] ? (
+        {hasValidImage ? (
           <Image
             src={primaryImage}
             alt={property.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
+            unoptimized
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">

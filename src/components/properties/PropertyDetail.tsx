@@ -49,7 +49,13 @@ export function PropertyDetail({ property, onClose }: PropertyDetailProps) {
   const { user } = useAuthStore();
   const { startConversation, isCreating } = useChat();
   const [showAddToRoute, setShowAddToRoute] = useState(false);
-  const images = property.images?.length ? property.images : ['/placeholder-property.jpg'];
+  // Filter out invalid/placeholder images
+  const images = property.images?.filter(img => 
+    img && 
+    img.startsWith('http') && 
+    !img.includes('example.com') &&
+    !img.includes('placeholder')
+  ) || [];
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {

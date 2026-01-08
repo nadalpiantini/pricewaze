@@ -191,6 +191,7 @@ export function normalizeCoordinates(
 
 /**
  * Filter and validate image URLs
+ * Rejects placeholder URLs, example.com, and invalid URLs
  */
 export function normalizeImages(images: string[] | undefined): string[] {
   if (!images || !Array.isArray(images)) return [];
@@ -198,8 +199,19 @@ export function normalizeImages(images: string[] | undefined): string[] {
   return images
     .filter(url => {
       if (!url || typeof url !== 'string') return false;
+      
+      // Reject placeholder URLs
+      if (url.includes('placeholder') || url.includes('example.com')) {
+        return false;
+      }
+      
+      // Must be a valid URL
       try {
-        new URL(url);
+        const parsed = new URL(url);
+        // Must be http or https
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          return false;
+        }
         return true;
       } catch {
         return false;

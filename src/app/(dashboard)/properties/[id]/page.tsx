@@ -195,7 +195,13 @@ export default function PropertyPage() {
     );
   }
 
-  const images = property.images?.length ? property.images : ['/placeholder-property.jpg'];
+  // Filter out invalid/placeholder images
+  const images = property.images?.filter(img => 
+    img && 
+    img.startsWith('http') && 
+    !img.includes('example.com') &&
+    !img.includes('placeholder')
+  ) || [];
 
   return (
     <div className="min-h-screen bg-background">

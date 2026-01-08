@@ -65,7 +65,13 @@ export function DemoPropertyView({ propertyId }: DemoPropertyViewProps) {
     );
   }
 
-  const images = property.images?.length ? property.images : ['/placeholder-property.jpg'];
+  // Filter out invalid/placeholder images
+  const images = property.images?.filter(img => 
+    img && 
+    img.startsWith('http') && 
+    !img.includes('example.com') &&
+    !img.includes('placeholder')
+  ) || [];
 
   const handleFollow = () => {
     const followed = loadDemoState<string[]>('followed_properties', []) || [];
