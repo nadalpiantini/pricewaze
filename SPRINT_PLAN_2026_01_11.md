@@ -372,3 +372,41 @@ Notificar usuarios cuando señales se confirman para aumentar engagement.
 **Estado**: 📋 Planificado  
 **Próximo paso**: Asignar tareas y comenzar con Testing E2E
 
+---
+
+## 🔄 Backlog Pendiente (Futuro)
+
+### Cron Job para Expiración de Ofertas
+**Prioridad**: Media  
+**Esfuerzo**: 1-2 horas  
+**Dependencia**: H.1 Expiraciones (completado)
+
+#### Tarea
+Configurar cron job en Vercel para expirar ofertas automáticamente cada hora.
+
+#### Detalles
+- **Endpoint**: `/api/cron/expire-offers` (ya implementado)
+- **Configuración Vercel**:
+  ```json
+  // vercel.json
+  {
+    "crons": [{
+      "path": "/api/cron/expire-offers",
+      "schedule": "0 * * * *"  // Cada hora
+    }]
+  }
+  ```
+- **Variable de entorno** (opcional):
+  ```
+  CRON_SECRET=tu_secret_aqui
+  ```
+- **Función DB**: `pricewaze_expire_offers()` (ya implementada)
+
+#### Notas
+- La función DB ya está implementada y funcionando
+- El endpoint API ya está creado y probado
+- Solo falta configurar el cron en Vercel
+- Puede hacerse manualmente ejecutando el endpoint, pero el cron automatiza el proceso
+
+**Estado**: ⏸️ Pendiente para sprint futuro
+
