@@ -93,8 +93,9 @@ export async function GET(request: NextRequest) {
     );
 
     // Determine price fairness status
-    const priceDeviation = pricingAnalysis.estimatedFairValue > 0
-      ? (property.price - pricingAnalysis.estimatedFairValue) / pricingAnalysis.estimatedFairValue
+    const estimatedFairValue = pricingAnalysis.estimatedFairValue ?? 0;
+    const priceDeviation = estimatedFairValue > 0
+      ? (property.price - estimatedFairValue) / estimatedFairValue
       : 0;
 
     const priceStatus: 'green' | 'yellow' | 'red' =
@@ -190,9 +191,9 @@ export async function GET(request: NextRequest) {
       offerAmount,
       summary: {
         priceRange: {
-          low: pricingAnalysis.estimatedFairValue * 0.9,
-          high: pricingAnalysis.estimatedFairValue * 1.1,
-          estimate: pricingAnalysis.estimatedFairValue,
+          low: estimatedFairValue * 0.9,
+          high: estimatedFairValue * 1.1,
+          estimate: estimatedFairValue,
         },
         uncertaintyLevel,
         marketVelocity,
