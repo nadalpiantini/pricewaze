@@ -2,13 +2,17 @@
 
 from crewai import Agent
 
+from config import get_market_config
 from tools import (
-    FetchPropertyTool,
-    FetchOfferHistoryTool,
     CalculateNegotiationPowerTool,
     ComparePropertyPricesTool,
+    FetchOfferHistoryTool,
+    FetchPropertyTool,
+    MarketSignalsTool,
+    OfferStrategyTool,
+    # Waze-style negotiation tools
+    ScenarioAnalysisTool,
 )
-from config import get_market_config
 
 
 class NegotiationAdvisorAgent:
@@ -35,10 +39,16 @@ class NegotiationAdvisorAgent:
         market = get_market_config()
 
         tools = [
+            # Data fetching
             FetchPropertyTool(),
             FetchOfferHistoryTool(),
+            # Analysis
             CalculateNegotiationPowerTool(),
             ComparePropertyPricesTool(),
+            # Waze-style intelligence
+            ScenarioAnalysisTool(),
+            MarketSignalsTool(),
+            OfferStrategyTool(),
         ]
 
         return Agent(
@@ -51,13 +61,16 @@ class NegotiationAdvisorAgent:
             ),
             backstory=(
                 f"You are a master negotiator with 20+ years in {market.name} "
-                "real estate. You've successfully closed deals ranging from modest "
-                "apartments to multi-million dollar premium properties. You understand "
-                "the cultural nuances of negotiating with local sellers and "
-                "international investors. You know when to push, when to "
-                "wait, and when to walk away. You've seen every negotiation tactic and "
-                "know how to counter them. Your clients trust you to get them the best "
-                "possible deal while maintaining professional relationships."
+                "real estate, now enhanced with Waze-style market intelligence. "
+                "You've successfully closed deals ranging from modest apartments to "
+                "multi-million dollar premium properties. You understand cultural "
+                "nuances of negotiating with local sellers and international investors. "
+                "Your unique advantage: real-time market signals that detect opportunities "
+                "like motivated sellers, price drop momentum, and bidding wars before "
+                "others notice. You analyze scenarios like Waze analyzes traffic - "
+                "identifying the fastest route to a successful deal. You know when to "
+                "push, when to wait, and when to walk away. Your clients trust you to "
+                "get them the best possible deal with data-driven confidence."
             ),
             tools=tools,
             verbose=verbose,

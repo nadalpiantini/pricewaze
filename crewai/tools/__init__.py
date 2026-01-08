@@ -21,6 +21,11 @@ from .avm_tool import (
     ComparablesSearchTool,
     QuickEstimateTool,
 )
+from .negotiation_tools import (
+    ScenarioAnalysisTool,
+    MarketSignalsTool,
+    OfferStrategyTool,
+)
 from .playwright_tools import (
     # Individual tools
     NavigateTool,
@@ -62,6 +67,10 @@ __all__ = [
     "AVMValuationTool",
     "ComparablesSearchTool",
     "QuickEstimateTool",
+    # Negotiation tools (Waze-style)
+    "ScenarioAnalysisTool",
+    "MarketSignalsTool",
+    "OfferStrategyTool",
     # Playwright tools
     "NavigateTool",
     "ClickElementTool",

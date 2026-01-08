@@ -7,8 +7,8 @@ from .scenarios import (
 )
 from .signals import (
     MarketSignal,
-    SignalType,
     MarketSignalDetector,
+    SignalType,
 )
 
 __all__ = [

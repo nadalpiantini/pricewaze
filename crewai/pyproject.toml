@@ -38,7 +38,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["agents", "crews", "tools", "config", "api", "avm", "models"]
+packages = ["agents", "crews", "tools", "config", "api", "avm", "models", "negotiation"]
 
 [tool.ruff]
 target-version = "py311"
