@@ -75,7 +75,7 @@ export function NotificationBell() {
     },
   });
 
-  // Subscribe to realtime updates
+  // Subscribe to realtime updates (with error handling)
   useEffect(() => {
     const channel = supabase
       .channel('notifications-realtime')
@@ -92,7 +92,12 @@ export function NotificationBell() {
           queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Silently handle connection errors - fallback to polling
+        if (status === 'CHANNEL_ERROR') {
+          console.debug('[Realtime] Connection unavailable, using polling fallback');
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
