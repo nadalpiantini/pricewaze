@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { X, Bell, TrendingDown, TrendingUp, Home, DollarSign, Calendar, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -86,20 +86,21 @@ export function AlertBanner({
   maxVisible = 3,
   className,
 }: AlertBannerProps) {
-  const [visibleAlerts, setVisibleAlerts] = useState<AlertBannerData[]>([]);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [isExpanded, setIsExpanded] = useState(false);
 
-  useEffect(() => {
-    // Sort by priority and timestamp
-    const sorted = [...alerts].sort((a, b) => {
-      const priorityOrder = { high: 0, medium: 1, low: 2 };
-      const aPriority = priorityOrder[a.priority || 'low'];
-      const bPriority = priorityOrder[b.priority || 'low'];
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-    });
-    setVisibleAlerts(sorted);
-  }, [alerts]);
+  // Sort and filter alerts using useMemo
+  const visibleAlerts = useMemo(() => {
+    return [...alerts]
+      .filter((a) => !dismissedIds.has(a.id))
+      .sort((a, b) => {
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        const aPriority = priorityOrder[a.priority || 'low'];
+        const bPriority = priorityOrder[b.priority || 'low'];
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      });
+  }, [alerts, dismissedIds]);
 
   const displayedAlerts = isExpanded ? visibleAlerts : visibleAlerts.slice(0, maxVisible);
   const hiddenCount = visibleAlerts.length - maxVisible;
@@ -110,14 +111,14 @@ export function AlertBanner({
     if (onDismiss) {
       onDismiss(id);
     }
-    setVisibleAlerts((prev) => prev.filter((a) => a.id !== id));
+    setDismissedIds((prev) => new Set([...prev, id]));
   };
 
   const handleDismissAll = () => {
     if (onDismissAll) {
       onDismissAll();
     }
-    setVisibleAlerts([]);
+    setDismissedIds(new Set(alerts.map((a) => a.id)));
   };
 
   return (

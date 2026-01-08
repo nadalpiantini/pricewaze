@@ -37,7 +37,8 @@ export function showSuccess(message: string, options?: ToastOptions) {
  * Show an error toast
  */
 export function showError(message: string, options?: ToastOptions) {
-  const { actionLabel, actionHref, ...rest } = options || {};
+  // Destructure and ignore action props since errors typically don't have actions
+  const { actionLabel: _actionLabel, actionHref: _actionHref, ...rest } = options || {};
 
   toast.error(message, {
     ...baseOptions,

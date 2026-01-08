@@ -430,3 +430,386 @@
     animation: none;
   }
 }
+
+/* ============================================
+   DASHBOARD - SIGNAL INTELLIGENCE THEME
+   Premium glass morphism + living data aesthetic
+   ============================================ */
+
+/* Dashboard Color Extensions */
+:root {
+  --dashboard-bg-deep: oklch(0.12 0.01 260);
+  --dashboard-bg-card: oklch(0.16 0.015 260);
+  --dashboard-bg-elevated: oklch(0.20 0.02 260);
+  --dashboard-border: oklch(1 0 0 / 8%);
+  --dashboard-border-hover: oklch(1 0 0 / 15%);
+  --dashboard-glow-cyan: rgba(0, 212, 255, 0.15);
+  --dashboard-glow-lime: rgba(170, 220, 0, 0.15);
+  --dashboard-glow-purple: rgba(168, 85, 247, 0.15);
+}
+
+.dark {
+  --dashboard-bg-deep: oklch(0.10 0.01 260);
+  --dashboard-bg-card: oklch(0.14 0.015 260);
+  --dashboard-bg-elevated: oklch(0.18 0.02 260);
+}
+
+/* Dashboard Widget Glass Card */
+.widget-glass {
+  background: linear-gradient(
+    135deg,
+    var(--dashboard-bg-card) 0%,
+    oklch(0.14 0.02 260 / 90%) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--dashboard-border);
+  border-radius: var(--radius-xl);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.widget-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 255, 0.2) 0%,
+    transparent 40%,
+    transparent 60%,
+    rgba(170, 220, 0, 0.1) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.widget-glass:hover::before {
+  opacity: 1;
+}
+
+.widget-glass:hover {
+  border-color: var(--dashboard-border-hover);
+  transform: translateY(-2px);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 0 60px var(--dashboard-glow-cyan);
+}
+
+/* Widget Header Glow Effect */
+.widget-header-glow {
+  position: relative;
+}
+
+.widget-header-glow::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--signal-cyan) 50%,
+    transparent 100%
+  );
+  opacity: 0.3;
+}
+
+/* Stat Card Premium Styling */
+.stat-card-premium {
+  background: linear-gradient(
+    135deg,
+    var(--dashboard-bg-elevated) 0%,
+    var(--dashboard-bg-card) 100%
+  );
+  border: 1px solid var(--dashboard-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--stat-accent-color, var(--signal-cyan));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.stat-card-premium:hover::before {
+  opacity: 1;
+}
+
+.stat-card-premium:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: var(--stat-accent-color, var(--signal-cyan));
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2),
+              0 0 40px color-mix(in srgb, var(--stat-accent-color, var(--signal-cyan)) 20%, transparent);
+}
+
+/* Animated Number Counter */
+.stat-number {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.stat-number-animate {
+  animation: counter-reveal 0.6s ease-out forwards;
+}
+
+@keyframes counter-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Chart Glow Effect */
+.chart-glow {
+  filter: drop-shadow(0 0 8px var(--signal-cyan));
+}
+
+/* Activity Item Animation */
+.activity-item {
+  animation: slide-in-right 0.4s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.activity-item:nth-child(1) { animation-delay: 0ms; }
+.activity-item:nth-child(2) { animation-delay: 50ms; }
+.activity-item:nth-child(3) { animation-delay: 100ms; }
+.activity-item:nth-child(4) { animation-delay: 150ms; }
+.activity-item:nth-child(5) { animation-delay: 200ms; }
+
+/* Pulse Indicator */
+.pulse-indicator {
+  position: relative;
+}
+
+.pulse-indicator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+/* Quick Action Button Premium */
+.quick-action-btn {
+  background: linear-gradient(
+    135deg,
+    var(--dashboard-bg-elevated) 0%,
+    var(--dashboard-bg-card) 100%
+  );
+  border: 1px solid var(--dashboard-border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-action-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    var(--signal-cyan) 0%,
+    var(--signal-lime) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.quick-action-btn:hover::before {
+  opacity: 0.1;
+}
+
+.quick-action-btn:hover {
+  border-color: var(--signal-cyan);
+  transform: translateX(4px);
+  box-shadow: 0 4px 20px var(--dashboard-glow-cyan);
+}
+
+/* Empty State Premium */
+.empty-state-premium {
+  background: radial-gradient(
+    ellipse at center,
+    var(--dashboard-bg-elevated) 0%,
+    transparent 70%
+  );
+  border: 2px dashed var(--dashboard-border);
+  border-radius: var(--radius-xl);
+  padding: 3rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.empty-state-premium:hover {
+  border-color: var(--signal-cyan);
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--signal-cyan) 5%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+/* Skeleton Loading Premium */
+.skeleton-premium {
+  background: linear-gradient(
+    90deg,
+    var(--dashboard-bg-card) 0%,
+    var(--dashboard-bg-elevated) 50%,
+    var(--dashboard-bg-card) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Chart Tooltip Premium */
+.chart-tooltip-premium {
+  background: var(--dashboard-bg-elevated) !important;
+  border: 1px solid var(--dashboard-border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Grid Pattern for Dashboard Background */
+.dashboard-grid-bg {
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--dashboard-border) 1px, transparent 0);
+  background-size: 32px 32px;
+}
+
+/* Gradient Orb Background */
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+  pointer-events: none;
+  animation: orb-float 20s ease-in-out infinite;
+}
+
+.gradient-orb-cyan {
+  background: var(--signal-cyan);
+}
+
+.gradient-orb-lime {
+  background: var(--signal-lime);
+}
+
+.gradient-orb-purple {
+  background: #a855f7;
+}
+
+@keyframes orb-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(10%, 5%) scale(1.1);
+  }
+  50% {
+    transform: translate(-5%, 10%) scale(0.9);
+  }
+  75% {
+    transform: translate(-10%, -5%) scale(1.05);
+  }
+}
+
+/* List Item Stagger Animation */
+.stagger-list > * {
+  animation: stagger-fade-in 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.stagger-list > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-list > *:nth-child(2) { animation-delay: 75ms; }
+.stagger-list > *:nth-child(3) { animation-delay: 150ms; }
+.stagger-list > *:nth-child(4) { animation-delay: 225ms; }
+.stagger-list > *:nth-child(5) { animation-delay: 300ms; }
+.stagger-list > *:nth-child(6) { animation-delay: 375ms; }
+.stagger-list > *:nth-child(7) { animation-delay: 450ms; }
+.stagger-list > *:nth-child(8) { animation-delay: 525ms; }
+
+@keyframes stagger-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Focus Ring Premium */
+.focus-ring-premium:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--signal-cyan),
+    0 0 20px var(--dashboard-glow-cyan);
+}
+
+/* Badge Glow */
+.badge-glow {
+  box-shadow: 0 0 12px currentColor;
+}

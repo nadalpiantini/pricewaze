@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Award, X, Sparkles, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -62,32 +62,43 @@ export function AchievementPopup({
   autoCloseDelay = 8000,
   onViewDetails,
 }: AchievementPopupProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const [particles, setParticles] = useState<{ id: number; x: number; y: number; delay: number }[]>([]);
+  const [isClosing, setIsClosing] = useState(false);
+  const achievementIdRef = useRef<string | null>(null);
+
+  // Generate particles deterministically based on achievement id
+  const particles = useMemo(() => {
+    if (!achievement) return [];
+    // Use achievement id as seed for consistent particles
+    return Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      x: ((i * 17 + 31) % 100),
+      y: ((i * 23 + 47) % 100),
+      delay: (i % 5) * 0.1,
+    }));
+  }, [achievement]);
 
   const handleClose = useCallback(() => {
-    setIsVisible(false);
+    setIsClosing(true);
     setTimeout(onClose, 300); // Wait for animation
   }, [onClose]);
 
+  // Reset closing state when achievement changes
   useEffect(() => {
-    if (achievement) {
-      setIsVisible(true);
+    if (achievement && achievement.id !== achievementIdRef.current) {
+      achievementIdRef.current = achievement.id;
+      setIsClosing(false);
+    }
+  }, [achievement]);
 
-      // Generate particles for celebration effect
-      const newParticles = Array.from({ length: 20 }, (_, i) => ({
-        id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        delay: Math.random() * 0.5,
-      }));
-      setParticles(newParticles);
-
-      // Auto-close timer
+  // Auto-close timer
+  useEffect(() => {
+    if (achievement && !isClosing) {
       const timer = setTimeout(handleClose, autoCloseDelay);
       return () => clearTimeout(timer);
     }
-  }, [achievement, autoCloseDelay, handleClose]);
+  }, [achievement, autoCloseDelay, handleClose, isClosing]);
+
+  const isVisible = achievement !== null && !isClosing;
 
   if (!achievement) return null;
 

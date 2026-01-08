@@ -10,12 +10,15 @@ import {
   Heart,
   TrendingUp,
   ArrowRight,
+  Activity,
+  Sparkles,
 } from 'lucide-react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { Button } from '@/components/ui/button';
 import { useOffers } from '@/hooks/use-offers';
 import { useVisits } from '@/hooks/use-visits';
 import { formatDistanceToNow } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ActivityItem {
   id: string;
@@ -29,30 +32,87 @@ interface ActivityItem {
 const activityConfig = {
   offer: {
     icon: MessageSquare,
-    color: 'text-green-500',
-    bgColor: 'bg-green-500/10',
+    color: '#22c55e',
+    gradient: 'from-green-500/20 to-green-600/5',
   },
   visit: {
     icon: Calendar,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-500/10',
+    color: '#a855f7',
+    gradient: 'from-purple-500/20 to-purple-600/5',
   },
   property: {
     icon: Building2,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
+    color: '#3b82f6',
+    gradient: 'from-blue-500/20 to-blue-600/5',
   },
   favorite: {
     icon: Heart,
-    color: 'text-pink-500',
-    bgColor: 'bg-pink-500/10',
+    color: '#f43f5e',
+    gradient: 'from-rose-500/20 to-rose-600/5',
   },
   alert: {
     icon: TrendingUp,
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-500/10',
+    color: '#f59e0b',
+    gradient: 'from-amber-500/20 to-amber-600/5',
   },
 };
+
+function ActivityCard({
+  activity,
+  index,
+}: {
+  activity: ActivityItem;
+  index: number;
+}) {
+  const [isVisible, setIsVisible] = useState(false);
+  const config = activityConfig[activity.type];
+  const Icon = config.icon;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), index * 80);
+    return () => clearTimeout(timer);
+  }, [index]);
+
+  return (
+    <Link
+      href={activity.href}
+      className={cn(
+        'activity-item group flex items-start gap-3 p-3 rounded-xl',
+        'transition-all duration-300 border border-transparent',
+        'hover:bg-white/5 hover:border-[var(--dashboard-border-hover)]'
+      )}
+      style={{
+        animationDelay: `${index * 80}ms`,
+      }}
+    >
+      {/* Icon with glow */}
+      <div
+        className="p-2 rounded-lg shrink-0 transition-all duration-300 group-hover:scale-110"
+        style={{
+          background: `linear-gradient(135deg, ${config.color}25 0%, ${config.color}10 100%)`,
+          boxShadow: `0 0 15px ${config.color}20`,
+        }}
+      >
+        <Icon className="h-3.5 w-3.5" style={{ color: config.color }} />
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium group-hover:text-[var(--signal-cyan)] transition-colors">
+          {activity.title}
+        </p>
+        <p className="text-xs text-muted-foreground truncate mt-0.5">
+          {activity.description}
+        </p>
+      </div>
+
+      {/* Timestamp */}
+      <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 mt-0.5">
+        {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+      </span>
+    </Link>
+  );
+}
 
 export function RecentActivityWidget() {
   const { offers, fetchOffers } = useOffers({ role: 'all' });
@@ -118,46 +178,37 @@ export function RecentActivityWidget() {
       id="recent-activity"
       title="Recent Activity"
       isLoading={loading}
+      icon={<Activity className="h-4 w-4 text-purple-400" />}
+      accentColor="purple"
       headerAction={
-        <Button variant="ghost" size="sm" asChild className="h-7 text-xs">
+        <Button variant="ghost" size="sm" asChild className="h-7 text-xs hover:bg-white/5 gap-1.5">
           <Link href="/notifications">
             View All
-            <ArrowRight className="h-3 w-3 ml-1" />
+            <ArrowRight className="h-3 w-3" />
           </Link>
         </Button>
       }
     >
-      <div className="space-y-2">
-        {activities.map((activity) => {
-          const config = activityConfig[activity.type];
-          const Icon = config.icon;
-
-          return (
-            <Link
-              key={activity.id}
-              href={activity.href}
-              className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-            >
-              <div className={`p-2 rounded-full ${config.bgColor} shrink-0`}>
-                <Icon className={`h-3.5 w-3.5 ${config.color}`} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{activity.title}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {activity.description}
-                </p>
-              </div>
-              <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
-              </span>
-            </Link>
-          );
-        })}
+      <div className="space-y-1">
+        {activities.map((activity, index) => (
+          <ActivityCard key={activity.id} activity={activity} index={index} />
+        ))}
 
         {activities.length === 0 && !loading && (
-          <div className="text-center py-6 text-muted-foreground">
-            <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No recent activity</p>
+          <div className="empty-state-premium py-8">
+            <div
+              className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(168, 85, 247, 0.05) 100%)',
+                boxShadow: '0 0 40px rgba(168, 85, 247, 0.2)',
+              }}
+            >
+              <Sparkles className="h-7 w-7 text-purple-400" />
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1">No recent activity</p>
+            <p className="text-xs text-muted-foreground">
+              Your activity will appear here
+            </p>
           </div>
         )}
       </div>
