@@ -67,7 +67,7 @@ export function validatePricingAnalysis(output: unknown): ValidationResult {
     warnings.push('Low confidence but estimatedFairValue is not null');
   }
 
-  if (obj.fairnessScore > 80 && obj.fairnessLabel !== 'significantly_overpriced') {
+  if ((obj.fairnessScore as number) > 80 && obj.fairnessLabel !== 'significantly_overpriced') {
     warnings.push('High fairnessScore but label does not match');
   }
 
