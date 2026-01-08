@@ -87,8 +87,18 @@ export const supabaseAdmin = (() => {
  */
 export async function createClient(request?: { headers: Headers }) {
   if (!supabaseUrl || !supabaseAnonKey) {
+    const missing = [];
+    if (!supabaseUrl) missing.push('NEXT_PUBLIC_SUPABASE_URL');
+    if (!supabaseAnonKey) missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
     throw new Error(
-      'Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
+      `Missing Supabase environment variables: ${missing.join(', ')}. Please check your environment configuration.`
+    );
+  }
+  
+  // Validate URL format before creating client
+  if (!isValidUrl(supabaseUrl)) {
+    throw new Error(
+      `Invalid NEXT_PUBLIC_SUPABASE_URL format. Expected http:// or https:// URL, got: ${supabaseUrl.substring(0, 50)}...`
     );
   }
 
