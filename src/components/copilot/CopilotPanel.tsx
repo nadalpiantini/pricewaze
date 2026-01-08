@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { CopilotAnalysis } from '@/types/copilot';
 import { Loader2, Bot, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,12 +17,21 @@ interface CopilotPanelProps {
   className?: string;
 }
 
+// Cache duration: 5 minutes
+const CACHE_DURATION_MS = 5 * 60 * 1000;
+
+interface CachedAnalysis {
+  analysis: CopilotAnalysis;
+  timestamp: number;
+}
+
 export function CopilotPanel({ offerId, className = '' }: CopilotPanelProps) {
   const [analysis, setAnalysis] = useState<CopilotAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasProAccess, setHasProAccess] = useState<boolean | null>(null);
   const { user } = useAuthStore();
+  const cacheRef = useRef<Map<string, CachedAnalysis>>(new Map());
 
   // Check Pro access on mount
   useEffect(() => {
@@ -51,6 +60,15 @@ export function CopilotPanel({ offerId, className = '' }: CopilotPanelProps) {
       return;
     }
 
+    // Check cache first
+    const cached = cacheRef.current.get(offerId);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp) < CACHE_DURATION_MS) {
+      // Use cached analysis
+      setAnalysis(cached.analysis);
+      return;
+    }
+
     // Track copilot opened event (L1.2)
     analytics.track('copilot_opened', { offer_id: offerId });
 
@@ -71,6 +89,12 @@ export function CopilotPanel({ offerId, className = '' }: CopilotPanelProps) {
 
       const data = await response.json();
       setAnalysis(data);
+      
+      // Cache the result
+      cacheRef.current.set(offerId, {
+        analysis: data,
+        timestamp: now,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {

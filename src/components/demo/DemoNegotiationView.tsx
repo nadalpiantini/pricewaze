@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Clock, Check, X, ArrowRightLeft, Ban, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,27 @@ export function DemoNegotiationView({ propertyId }: DemoNegotiationViewProps) {
   const router = useRouter();
   const property = getDemoProperty(propertyId);
   const offers = getDemoOffers(propertyId);
+  const [hoursUntilExpiry, setHoursUntilExpiry] = useState<number | null>(null);
+
+  const activeOffer = offers.find(o => o.status === 'pending' || o.status === 'countered');
+  const expiresAt = activeOffer?.expires_at 
+    ? new Date(activeOffer.expires_at)
+    : null;
+  
+  useEffect(() => {
+    if (expiresAt) {
+      const calculateHours = () => {
+        return Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60)));
+      };
+      setHoursUntilExpiry(calculateHours());
+      const interval = setInterval(() => {
+        setHoursUntilExpiry(calculateHours());
+      }, 60000); // Update every minute
+      return () => clearInterval(interval);
+    } else {
+      setHoursUntilExpiry(null);
+    }
+  }, [expiresAt]);
 
   if (!property) {
     return (
@@ -39,14 +61,6 @@ export function DemoNegotiationView({ propertyId }: DemoNegotiationViewProps) {
       </div>
     );
   }
-
-  const activeOffer = offers.find(o => o.status === 'pending' || o.status === 'countered');
-  const expiresAt = activeOffer?.expires_at 
-    ? new Date(activeOffer.expires_at)
-    : null;
-  const hoursUntilExpiry = expiresAt
-    ? Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60)))
-    : null;
 
   return (
     <div className="min-h-screen bg-background">

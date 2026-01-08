@@ -100,7 +100,7 @@ export function useLiveCounter(
 
   // Only start counter after mount to avoid hydration mismatch
   useEffect(() => {
-    setMounted(() => true);
+    setMounted(true);
   }, []);
 
   useEffect(() => {

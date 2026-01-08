@@ -76,6 +76,11 @@ export function RewardStep() {
     useOnboardingStore();
   const [revealed, setRevealed] = useState(false);
   const [animationPhase, setAnimationPhase] = useState(0);
+  const [similarPropertiesCount, setSimilarPropertiesCount] = useState(75);
+
+  useEffect(() => {
+    setSimilarPropertiesCount(Math.floor(Math.random() * 100) + 50);
+  }, []);
 
   const { data: insight, isLoading } = useQuery({
     queryKey: ['pricing-insight', preferences.selectedPropertyId],
@@ -137,7 +142,7 @@ export function RewardStep() {
         <div className="text-center space-y-2">
           <h2 className="text-xl font-semibold">Analyzing property...</h2>
           <p className="text-muted-foreground">
-            Our AI is comparing against {Math.floor(Math.random() * 100) + 50} similar properties
+            Our AI is comparing against {similarPropertiesCount} similar properties
           </p>
         </div>
         <div className="flex gap-2">

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface SignalArcsProps {
@@ -23,7 +24,9 @@ export function SignalArcs({
 
   const { width, height, strokeWidth } = sizes[size];
 
-  const gradientId = `signal-gradient-${Math.random().toString(36).substr(2, 9)}`;
+  const gradientId = useMemo(() => {
+    return `signal-gradient-${Math.random().toString(36).substr(2, 9)}`;
+  }, []);
 
   const getStroke = () => {
     switch (color) {

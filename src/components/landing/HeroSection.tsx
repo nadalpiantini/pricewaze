@@ -25,7 +25,7 @@ export function HeroSection({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(() => true);
+    setMounted(true);
   }, []);
 
   return (

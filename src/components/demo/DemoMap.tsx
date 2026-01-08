@@ -53,7 +53,7 @@ export function DemoMap() {
       };
     });
 
-    setPropertiesWithSignals(() => enhanced);
+    setPropertiesWithSignals(enhanced);
   }, []);
 
   // Track demo start
