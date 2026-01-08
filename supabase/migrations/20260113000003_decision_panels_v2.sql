@@ -46,12 +46,35 @@ CREATE POLICY "Participants can view decision panels"
     )
   );
 
--- System can insert/update decision panels (via API with service role)
-CREATE POLICY "System can manage decision panels"
+-- Participants can insert/update decision panels for their offers
+CREATE POLICY "Participants can manage decision panels"
   ON pricewaze_decision_panels
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM pricewaze_offers o
+      WHERE o.id = pricewaze_decision_panels.offer_id
+      AND (o.buyer_id = auth.uid() OR o.seller_id = auth.uid())
+    )
+  );
+
+CREATE POLICY "Participants can update decision panels"
+  ON pricewaze_decision_panels
+  FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM pricewaze_offers o
+      WHERE o.id = pricewaze_decision_panels.offer_id
+      AND (o.buyer_id = auth.uid() OR o.seller_id = auth.uid())
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM pricewaze_offers o
+      WHERE o.id = pricewaze_decision_panels.offer_id
+      AND (o.buyer_id = auth.uid() OR o.seller_id = auth.uid())
+    )
+  );
 
 -- Comentarios
 COMMENT ON TABLE pricewaze_decision_panels IS 'Snapshots de paneles de decisión por oferta. Cada panel captura el contexto de decisión en un momento específico.';

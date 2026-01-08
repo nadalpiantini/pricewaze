@@ -30,7 +30,11 @@ export function calculatePressure(
   const competitionData = {
     activeOffers: competition?.activeOffers ?? 0,
     recentVisits: competition?.recentVisits ?? 0,
-    views: competition?.views ?? 0,
+    views: competition?.views ?? 0, // Always a number, defaults to 0 if undefined
+  } as {
+    activeOffers: number;
+    recentVisits: number;
+    views: number;
   };
 
   // Calculate pressure score (0-100)
