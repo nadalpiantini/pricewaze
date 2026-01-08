@@ -17,6 +17,8 @@ function cleanUrl(url: string | undefined): string {
  * Clean API key by removing all newlines, carriage returns, and whitespace
  * This is critical because Next.js injects NEXT_PUBLIC_* vars at build time,
  * and if .env.local had a newline, it gets baked into the bundle
+ * 
+ * JWT tokens contain: A-Z, a-z, 0-9, +, /, =, -, _, . (dot)
  */
 function cleanApiKey(key: string | undefined): string {
   if (!key) return '';
@@ -24,9 +26,9 @@ function cleanApiKey(key: string | undefined): string {
   // Remove all newlines (\n), carriage returns (\r), and trim whitespace
   const cleaned = key.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
   
-  // Additional safety: remove any remaining non-printable characters except base64 chars
-  // Base64 chars: A-Z, a-z, 0-9, +, /, = (and - and _ for URL-safe)
-  return cleaned.replace(/[^A-Za-z0-9+\/=\-_]/g, '');
+  // Remove only non-printable characters, but keep all valid JWT/base64 chars
+  // JWT/base64 chars: A-Z, a-z, 0-9, +, /, =, -, _, . (dot for JWT separators)
+  return cleaned.replace(/[\x00-\x1F\x7F-\x9F]/g, ''); // Only remove control characters
 }
 
 // Clean URLs and API keys aggressively to remove any hidden newlines/whitespace that break WebSockets
