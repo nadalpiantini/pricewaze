@@ -814,7 +814,7 @@ export async function calculateFairnessV3(
       supabase.rpc('pricewaze_get_latest_market_pressure', { p_property_id: propertyId }),
       supabase
         .from('pricewaze_market_dynamics')
-        .select('id')
+        .select('id, analysis_data')
         .eq('property_id', propertyId)
         .order('calculated_at', { ascending: false })
         .limit(1)
