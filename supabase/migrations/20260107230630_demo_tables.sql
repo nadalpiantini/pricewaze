@@ -148,11 +148,13 @@ ALTER TABLE pricewaze_properties_demo ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pricewaze_property_signal_state_demo ENABLE ROW LEVEL SECURITY;
 
 -- Allow public read access for demo tables
+DROP POLICY IF EXISTS "Allow public read on demo properties" ON pricewaze_properties_demo;
 CREATE POLICY "Allow public read on demo properties"
   ON pricewaze_properties_demo
   FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Allow public read on demo signal states" ON pricewaze_property_signal_state_demo;
 CREATE POLICY "Allow public read on demo signal states"
   ON pricewaze_property_signal_state_demo
   FOR SELECT

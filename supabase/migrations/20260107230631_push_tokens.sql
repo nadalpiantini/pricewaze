@@ -25,18 +25,21 @@ CREATE INDEX IF NOT EXISTS idx_push_tokens_platform ON pricewaze_push_tokens(pla
 ALTER TABLE pricewaze_push_tokens ENABLE ROW LEVEL SECURITY;
 
 -- Users can view their own tokens
+DROP POLICY IF EXISTS "Users can view their own push tokens" ON pricewaze_push_tokens;
 CREATE POLICY "Users can view their own push tokens"
   ON pricewaze_push_tokens
   FOR SELECT
   USING (auth.uid() = user_id);
 
 -- Users can insert their own tokens
+DROP POLICY IF EXISTS "Users can insert their own push tokens" ON pricewaze_push_tokens;
 CREATE POLICY "Users can insert their own push tokens"
   ON pricewaze_push_tokens
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Users can update their own tokens
+DROP POLICY IF EXISTS "Users can update their own push tokens" ON pricewaze_push_tokens;
 CREATE POLICY "Users can update their own push tokens"
   ON pricewaze_push_tokens
   FOR UPDATE
@@ -44,6 +47,7 @@ CREATE POLICY "Users can update their own push tokens"
   WITH CHECK (auth.uid() = user_id);
 
 -- Users can delete their own tokens
+DROP POLICY IF EXISTS "Users can delete their own push tokens" ON pricewaze_push_tokens;
 CREATE POLICY "Users can delete their own push tokens"
   ON pricewaze_push_tokens
   FOR DELETE
