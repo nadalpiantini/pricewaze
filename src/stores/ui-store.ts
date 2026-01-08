@@ -42,7 +42,7 @@ interface UIState {
 
 export const useUIStore = create<UIState>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       sidebarOpen: true,
       sidebarCollapsed: false,
       theme: 'system',

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import { AuthHelper } from './helpers/auth';
 import { MobileChecks } from './helpers/mobile-checks';
 

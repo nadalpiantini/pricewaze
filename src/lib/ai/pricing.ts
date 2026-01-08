@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import type { PricingAnalysis, NegotiationFactor, OfferAdvice, ZoneAnalysis } from '@/types/pricing';
-import { getMarketConfig, formatPrice } from '@/config/market';
+// Market config used in prompts
+import '@/config/market';
 import { buildAnalyzePricingV2Prompt } from '@/prompts/pricing/analyzePricing.v2';
 import { buildGetOfferAdviceV2Prompt } from '@/prompts/pricing/getOfferAdvice.v2';
 import { buildAnalyzeZoneV2Prompt } from '@/prompts/pricing/analyzeZone.v2';

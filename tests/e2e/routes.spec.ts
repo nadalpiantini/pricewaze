@@ -241,8 +241,7 @@ test.describe('Smart Visit Planner', () => {
           
           // Verify order changed (check if text swapped)
           const newFirstStopText = await stops.nth(0).textContent();
-          const newSecondStopText = await stops.nth(1).textContent();
-          
+
           // Order should have changed
           expect(newFirstStopText).not.toBe(firstStopText);
         }

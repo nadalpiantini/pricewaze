@@ -10,12 +10,12 @@
  * DIE-1: No personalization, no wait-risk
  */
 
-import type { DIEAnalysis, DIEInputs, DIEExplanations } from '@/types/die';
+import type { DIEAnalysis, DIEInputs } from '@/types/die';
 import { calculateUncertainty } from './uncertainty-engine';
 import { analyzeMarketDynamics } from './dynamics-engine';
 import { calculatePressure } from './pressure-engine';
 import { calculateWaitRisk } from './wait-risk-engine';
-import { getUserDecisionProfile, personalizeDIE } from './personalization-layer';
+import { personalizeDIE } from './personalization-layer';
 import { generateExplanations } from './copilot-explanations';
 import { saveAVMResult } from './save-avm-result';
 
@@ -49,7 +49,7 @@ export async function analyzeDIE(
   });
 
   // Get user profile for personalization (DIE-3)
-  let userProfile = inputs.userProfile;
+  const userProfile = inputs.userProfile;
   if (!userProfile && inputs.property.id) {
     // Try to get from DB if userId available (would need to be passed in inputs)
     // For now, use provided profile or null

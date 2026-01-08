@@ -14,7 +14,8 @@ interface AchievementCardProps {
 }
 
 export function AchievementCard({ achievement, userAchievement, className }: AchievementCardProps) {
-  const IconComponent = (LucideIcons as any)[achievement.icon] || LucideIcons.Target;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const IconComponent = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[achievement.icon] || LucideIcons.Target;
   const progress = userAchievement?.progress || 0;
   const isCompleted = !!userAchievement?.completed_at;
   const progressPercent = Math.min(100, (progress / achievement.requirement_value) * 100);

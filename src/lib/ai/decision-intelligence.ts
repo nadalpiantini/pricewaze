@@ -13,11 +13,9 @@ import type {
   FairnessScoreV3,
   DecisionIntelligence,
   DecisionScenario,
-  UncertaintyMetrics,
 } from '@/types/decision-intelligence';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
-import { fireAndForget } from '@/lib/errors';
 
 // ============================================================================
 // DATABASE ROW TYPES (for type-safe mapping from Supabase)
@@ -833,7 +831,7 @@ function generateScenarios(
   return scenarios;
 }
 
-function mapDecisionRiskFromDB(row: DecisionRiskRow): DecisionRisk {
+function _mapDecisionRiskFromDB(row: DecisionRiskRow): DecisionRisk {
   return {
     id: row.id,
     propertyId: row.property_id,

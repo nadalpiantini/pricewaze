@@ -31,7 +31,8 @@ export function BadgeDisplay({ badge, size = 'md', showTooltip = true, earned = 
   const actualBadge: Badge = 'badge' in badge && badge.badge 
     ? badge.badge 
     : badge as Badge;
-  const IconComponent = (LucideIcons as any)[actualBadge.icon] || LucideIcons.Award;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const IconComponent = (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[actualBadge.icon] || LucideIcons.Award;
 
   const badgeElement = (
     <div

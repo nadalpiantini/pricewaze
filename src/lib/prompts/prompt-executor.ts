@@ -11,8 +11,8 @@
 import { selectVariantWithSplit, type ABTestConfig } from './ab-testing';
 import { getPromptMetadata, getActiveVersion } from './registry-loader';
 import { shouldInjectFewShot, getFewShotExamples, injectFewShot } from './few-shot';
-import { logPromptMetrics, type PromptMetrics, calculateDAS } from './metrics';
-import { buildPrompt, validatePromptStructure } from './skeleton';
+import { logPromptMetrics } from './metrics';
+import { validatePromptStructure } from './skeleton';
 
 export interface PromptExecutionOptions {
   promptName: string;

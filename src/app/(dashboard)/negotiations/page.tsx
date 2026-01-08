@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useChat } from '@/hooks/useChat';
 import { useAuthStore } from '@/stores/auth-store';
 import { useQuery } from '@tanstack/react-query';
+import type { Conversation } from '@/types/database';
 
 async function fetchConversations() {
   const response = await fetch('/api/conversations');
@@ -81,7 +82,7 @@ export default function NegotiationsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {activeConversations.map((conversation: any) => (
+          {activeConversations.map((conversation: Conversation) => (
             <Card key={conversation.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">

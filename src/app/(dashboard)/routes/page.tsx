@@ -89,7 +89,12 @@ async function deleteRoute(id: string): Promise<void> {
 }
 
 // Optimize route
-async function optimizeRoute(id: string): Promise<{ geometry: any; order: number[]; distance?: number; duration?: number }> {
+interface LineStringGeometry {
+  type: 'LineString';
+  coordinates: [number, number][];
+}
+
+async function optimizeRoute(id: string): Promise<{ geometry: LineStringGeometry | null; order: number[]; distance?: number; duration?: number }> {
   const res = await fetch(`/api/routes/${id}/optimize`, { method: 'POST' });
   if (!res.ok) throw new Error('Failed to optimize route');
   return res.json();

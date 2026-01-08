@@ -1,5 +1,15 @@
 export type OfferStatus = 'pending' | 'accepted' | 'rejected' | 'countered' | 'withdrawn' | 'expired';
 
+export interface OfferEvent {
+  id: string;
+  event_type: string;
+  data: Record<string, unknown> | null;
+  created_at: string;
+  offer_id: string;
+  amount?: number;
+  signal_snapshot?: Record<string, { strength: number; confirmed: boolean }>;
+}
+
 export interface Offer {
   id: string;
   property_id: string;

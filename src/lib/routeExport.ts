@@ -100,7 +100,7 @@ export async function shareRoute(
       url: link,
     });
     return true;
-  } catch (error) {
+  } catch {
     // User cancelled or error
     return false;
   }

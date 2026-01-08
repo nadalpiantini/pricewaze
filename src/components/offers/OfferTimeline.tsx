@@ -2,14 +2,7 @@
 
 import { getSignalIcon } from '@/lib/signals';
 import { formatPrice } from '@/config/market';
-
-interface OfferEvent {
-  id: string;
-  event_type: string;
-  amount?: number;
-  created_at: string;
-  signal_snapshot?: Record<string, { strength: number; confirmed: boolean }>;
-}
+import type { OfferEvent } from '@/types/offer';
 
 interface OfferTimelineProps {
   events: OfferEvent[];

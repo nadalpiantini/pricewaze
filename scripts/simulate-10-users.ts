@@ -137,7 +137,7 @@ async function createOrGetUser(user: User): Promise<UserSession> {
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
   
   // Try to sign in first
-  let { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
     email: user.email,
     password: user.password,
   });

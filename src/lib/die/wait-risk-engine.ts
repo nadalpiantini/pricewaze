@@ -31,7 +31,7 @@ export async function calculateWaitRisk(
   priceAssessment: PriceAssessment
 ): Promise<WaitRisk> {
   const { property } = inputs;
-  const supabase = await createClient();
+  const _supabase = await createClient(); // Reserved for future DB lookups
 
   // Get historical scenarios from similar properties
   const historicalScenarios = await getHistoricalScenarios(property.id, property.zone_id || '');

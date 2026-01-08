@@ -336,7 +336,7 @@ export interface PropertySignalRaw {
 }
 
 // Legacy alias for backward compatibility
-export interface PropertySignal extends PropertySignalRaw {}
+export type PropertySignal = PropertySignalRaw;
 
 export interface SignalReport {
   id: string;

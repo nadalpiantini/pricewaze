@@ -140,7 +140,7 @@ function personalizeWaitRisk(
 function personalizeTradeoffs(
   tradeoffs: WaitRisk['tradeoffs'],
   profile: UserDecisionProfile,
-  recommendation: WaitRisk['recommendation']
+  _recommendation: WaitRisk['recommendation']
 ): WaitRisk['tradeoffs'] {
   let discipline = tradeoffs.discipline;
   let probability = tradeoffs.probability;

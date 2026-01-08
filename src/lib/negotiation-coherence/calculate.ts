@@ -314,8 +314,8 @@ function calculateRhythmState(
 function generateInsight(
   alignment: AlignmentState,
   rhythm: RhythmState,
-  friction: ReturnType<typeof calculateFriction>,
-  marketPressure: MarketPressure
+  _friction: ReturnType<typeof calculateFriction>,
+  _marketPressure: MarketPressure
 ): {
   summary: string;
   options: NegotiationOption[];

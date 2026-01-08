@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useTranslations } from '@/lib/i18n';
 import { OfferTimeline } from './OfferTimeline';
 import { CopilotPanel } from '@/components/copilot/CopilotPanel';
 import { DecisionPanelV2 } from '@/components/pricing/DecisionPanelV2';
 import { NegotiationCoherencePanel } from '@/components/negotiation/NegotiationCoherencePanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
-import type { Offer } from '@/types/offer';
+import type { Offer, OfferEvent } from '@/types/offer';
 
 interface OfferNegotiationViewProps {
   propertyId: string;
@@ -22,10 +23,11 @@ export function OfferNegotiationView({
   className = '',
 }: OfferNegotiationViewProps) {
   const [offers, setOffers] = useState<Offer[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<OfferEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeOfferId, setActiveOfferId] = useState<string | null>(null);
   const supabase = createClient();
+  const t = useTranslations('offers');
 
   useEffect(() => {
     async function fetchOffersAndEvents() {
@@ -104,9 +106,9 @@ export function OfferNegotiationView({
     return (
       <Card className={className}>
         <CardHeader>
-          <CardTitle>Negociación</CardTitle>
+          <CardTitle>{t.title}</CardTitle>
           <CardDescription>
-            Aún no hay ofertas para esta propiedad. Crea una oferta para comenzar la negociación.
+            {t.noOffers}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -119,9 +121,9 @@ export function OfferNegotiationView({
       {events.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Timeline de negociación</CardTitle>
+            <CardTitle>{t.negotiationTimeline}</CardTitle>
             <CardDescription>
-              Historial de eventos con contexto de señales del mercado
+              {t.historyWithSignals}
             </CardDescription>
           </CardHeader>
           <CardContent>

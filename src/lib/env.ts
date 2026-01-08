@@ -9,7 +9,7 @@
 // VALIDATION HELPERS
 // ============================================================================
 
-function required(name: string, value: string | undefined): string {
+function _required(name: string, value: string | undefined): string {
   if (!value) {
     throw new Error(`Missing required environment variable: ${name}`);
   }

@@ -164,9 +164,9 @@ export default function PropertyPage() {
         const { analytics } = await import('@/lib/analytics');
         analytics.track('property_followed', { property_id: propertyId });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error toggling follow:', error);
-      toast.error(error.message || 'Error al actualizar seguimiento');
+      toast.error(error instanceof Error ? error.message : 'Error al actualizar seguimiento');
     } finally {
       setIsTogglingFollow(false);
     }

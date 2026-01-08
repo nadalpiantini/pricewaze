@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { analyzePricing } from '@/lib/ai/pricing';
+import { getZonePricingWithFallback } from '@/lib/ingest/zone-fallback';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient(request);
@@ -43,8 +45,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Property not found' }, { status: 404 });
   }
 
-  // Fetch zone info and comparable properties
-  let zoneName = 'Unknown Zone';
+  // Fetch zone info
+  let zone: { id: string; name: string; city: string; avg_price_m2: number | null } | null = null;
+  if (property.zone_id) {
+    const { data: zoneData } = await supabase
+      .from('pricewaze_zones')
+      .select('id, name, city, avg_price_m2')
+      .eq('id', property.zone_id)
+      .single();
+    zone = zoneData;
+  }
+
+  // Use zone fallback system for pricing reference
+  const fallbackResult = await getZonePricingWithFallback(
+    supabase,
+    zone as any, // Zone type is partial for this use case
+    { lat: property.latitude, lng: property.longitude },
+    'DO' // TODO: Get from property or user preference
+  );
+
+  // Fetch zone properties for AI analysis
+  let zoneName = zone?.name || fallbackResult.zone_name;
   let zoneProperties: Array<{
     price: number;
     area_m2?: number;
@@ -54,17 +75,6 @@ export async function GET(request: NextRequest) {
   }> = [];
 
   if (property.zone_id) {
-    const { data: zone } = await supabase
-      .from('pricewaze_zones')
-      .select('name')
-      .eq('id', property.zone_id)
-      .single();
-
-    if (zone) {
-      zoneName = zone.name;
-    }
-
-    // Get comparable properties in the same zone
     const { data: comparables } = await supabase
       .from('pricewaze_properties')
       .select('price, area_m2, property_type, status, created_at')
@@ -75,34 +85,24 @@ export async function GET(request: NextRequest) {
       zoneProperties = comparables;
     }
   } else {
-    // If no zone, try to find properties with similar coordinates (within ~5km)
-    // This provides some context even without zones
+    // Expanded zone fallback
+    const latRange = 0.02; // ~2km
+    const lngRange = 0.02;
+
     const { data: nearby } = await supabase
       .from('pricewaze_properties')
-      .select('price, area_m2, property_type, status, created_at, latitude, longitude')
+      .select('price, area_m2, property_type, status, created_at')
       .eq('status', 'active')
       .neq('id', propertyId)
-      .limit(10);
+      .gte('latitude', property.latitude - latRange)
+      .lte('latitude', property.latitude + latRange)
+      .gte('longitude', property.longitude - lngRange)
+      .lte('longitude', property.longitude + lngRange)
+      .limit(20);
 
-    if (nearby && nearby.length > 0) {
-      // Filter by distance (rough calculation - within ~0.05 degrees ≈ 5km)
-      const nearbyFiltered = nearby.filter((p: any) => {
-        if (!p.latitude || !p.longitude) return false;
-        const latDiff = Math.abs((p.latitude as number) - property.latitude);
-        const lngDiff = Math.abs((p.longitude as number) - property.longitude);
-        return latDiff < 0.05 && lngDiff < 0.05;
-      });
-
-      if (nearbyFiltered.length > 0) {
-        zoneName = 'Nearby Area';
-        zoneProperties = nearbyFiltered.map((p: any) => ({
-          price: p.price,
-          area_m2: p.area_m2,
-          property_type: p.property_type,
-          status: p.status,
-          created_at: p.created_at,
-        }));
-      }
+    if (nearby) {
+      zoneProperties = nearby;
+      zoneName = 'Nearby Area (2km)';
     }
   }
 
@@ -124,9 +124,40 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    return NextResponse.json(analysis);
+    // Enhance response with confidence factors
+    const enhancedAnalysis = {
+      ...analysis,
+      // Signal-based framing
+      analysisType: 'signal_based',
+      disclaimer: 'Pricing based on market signals from active listings, not verified sales data.',
+
+      // Confidence factors from zone fallback
+      confidenceFactors: {
+        comparable_count: fallbackResult.sample_size,
+        data_recency_days: 0, // TODO: Calculate from property dates
+        zone_coverage: fallbackResult.confidence_level,
+        source_quality: 0.7, // Default for crowdsourced
+        reference_scope: fallbackResult.reference_scope,
+      },
+
+      // Numerical confidence score (0-100)
+      confidenceScore: fallbackResult.confidence_score,
+
+      // Warning if using fallback data
+      dataWarning: fallbackResult.warning || null,
+
+      // Reference zone info
+      referenceZone: {
+        name: fallbackResult.zone_name,
+        scope: fallbackResult.reference_scope,
+        avg_price_m2: fallbackResult.avg_price_m2,
+        sample_size: fallbackResult.sample_size,
+      },
+    };
+
+    return NextResponse.json(enhancedAnalysis);
   } catch (error) {
-    console.error('Pricing analysis error:', error);
+    logger.error('Pricing analysis error', error);
     return NextResponse.json(
       { error: 'Failed to analyze pricing' },
       { status: 500 }

@@ -11,7 +11,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import type { UseQueryOptions } from '@tanstack/react-query';
 import { PriceWazeError, type ErrorCode } from '@/lib/errors';
 import { toast } from 'sonner';
 
@@ -43,7 +43,7 @@ interface UseFetchOptions<T> extends Omit<UseQueryOptions<T, PriceWazeError>, 'q
   showErrorToast?: boolean;
 }
 
-interface UseMutationFetchOptions<TData, TVariables> {
+interface UseMutationFetchOptions<TData, _TVariables = unknown> {
   /** Show toast on success */
   showSuccessToast?: boolean;
   /** Success toast message */
@@ -141,7 +141,7 @@ export function usePriceWazeFetch<T>(
 ) {
   const {
     params,
-    showErrorToast = true,
+    showErrorToast: _showErrorToast = true,
     enabled = true,
     staleTime = 30000, // 30 seconds default
     retry = 2,

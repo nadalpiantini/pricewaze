@@ -38,22 +38,34 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get unread counts for each conversation
-    const conversationsWithUnread = await Promise.all(
-      (data || []).map(async (conv) => {
-        const { count } = await supabase
-          .from('pricewaze_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('conversation_id', conv.id)
-          .eq('read_at', null)
-          .neq('sender_id', user.id);
+    // Get unread counts in a single batch query (avoids N+1)
+    const conversationIds = (data || []).map((conv) => conv.id);
 
-        return {
-          ...conv,
-          unread_count: count || 0,
-        };
-      })
-    );
+    let unreadCountsMap: Record<string, number> = {};
+
+    if (conversationIds.length > 0) {
+      // Single query to get all unread messages grouped by conversation
+      const { data: unreadMessages } = await supabase
+        .from('pricewaze_messages')
+        .select('conversation_id')
+        .in('conversation_id', conversationIds)
+        .is('read_at', null)
+        .neq('sender_id', user.id);
+
+      // Count unread messages per conversation
+      if (unreadMessages) {
+        unreadCountsMap = unreadMessages.reduce((acc, msg) => {
+          acc[msg.conversation_id] = (acc[msg.conversation_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+      }
+    }
+
+    // Map unread counts to conversations
+    const conversationsWithUnread = (data || []).map((conv) => ({
+      ...conv,
+      unread_count: unreadCountsMap[conv.id] || 0,
+    }));
 
     return NextResponse.json(conversationsWithUnread);
   } catch (error) {

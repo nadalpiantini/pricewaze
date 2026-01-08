@@ -46,14 +46,13 @@ export function useMarketAlerts(userId: string | undefined) {
     enabled: !!userId,
   });
 
-  // Update state when initial data loads
-  useEffect(() => {
-    if (initialAlerts) {
-      const safeAlerts = Array.isArray(initialAlerts) ? initialAlerts : [];
-      setAlerts(safeAlerts);
-      setUnreadCount(safeAlerts.filter((a) => !a.read).length);
-    }
-  }, [initialAlerts]);
+  // Sync initial data to state (used for real-time updates)
+  const safeInitialAlerts = Array.isArray(initialAlerts) ? initialAlerts : [];
+  if (alerts.length === 0 && safeInitialAlerts.length > 0) {
+    // Only sync on first load, real-time updates handle the rest
+    setAlerts(safeInitialAlerts);
+    setUnreadCount(safeInitialAlerts.filter((a) => !a.read).length);
+  }
 
   // Subscribe to real-time updates
   useEffect(() => {

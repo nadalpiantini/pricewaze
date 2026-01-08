@@ -112,7 +112,7 @@ function calculateMarketVelocity(
 function calculateWaitRiskLevel(
   pressure: MarketPressureData | null,
   velocity: MarketVelocity,
-  uncertainty: UncertaintyLevel
+  _uncertainty: UncertaintyLevel
 ): WaitRiskLevel {
   if (!pressure) {
     return 'medium'; // Default to medium if no pressure data
@@ -302,7 +302,7 @@ export function calculateDecisionPanel(
     avm,
     market_pressure,
     market_dynamics,
-    profile_applied,
+    profile_applied: _profile_applied,
   } = context;
 
   // Calculate all states

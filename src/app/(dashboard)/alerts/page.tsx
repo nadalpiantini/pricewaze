@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Settings, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getMarketConfig } from '@/config/market';
+import type { AlertRule } from '@/types/database';
 
 // i18n translations based on market locale
 const translations = {
@@ -143,9 +144,9 @@ export default function AlertsPage() {
           <TabsTrigger value="market-alerts">
             <AlertTriangle className="h-4 w-4 mr-2" />
             {t.marketAlertsTab}
-            {rules.filter((r: any) => r.active).length > 0 && (
+            {rules.filter((r: AlertRule) => r.active).length > 0 && (
               <span className="ml-2 text-xs text-muted-foreground">
-                ({rules.filter((r: any) => r.active).length})
+                ({rules.filter((r: AlertRule) => r.active).length})
               </span>
             )}
           </TabsTrigger>
@@ -194,7 +195,7 @@ export default function AlertsPage() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {rules.map((rule: any) => (
+              {rules.map((rule: AlertRule) => (
                 <Card key={rule.id}>
                   <CardHeader>
                     <div className="flex items-start justify-between">

@@ -253,7 +253,7 @@ function determinePriceTrend(
 function determineInventoryTrend(
   inventory30: number,
   inventory60: number,
-  inventory90: number
+  _inventory90: number
 ): 'rising' | 'stable' | 'falling' {
   // Rising: inventory increasing
   if (inventory30 > inventory60 * 1.2) {

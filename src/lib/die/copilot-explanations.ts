@@ -11,7 +11,8 @@
 
 import OpenAI from 'openai';
 import type { PriceAssessment, MarketDynamics, CurrentPressure, WaitRisk, DIEExplanations } from '@/types/die';
-import { getMarketConfig } from '@/config/market';
+// Market config for future locale support
+import '@/config/market';
 import { buildDIEExplanationsV2Prompt } from '@/prompts/die/DIE_Explanations.v2';
 
 let deepseek: OpenAI | null = null;

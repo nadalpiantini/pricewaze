@@ -89,8 +89,8 @@ test.describe('Property Signals', () => {
     
     // 5. Verify signal badge appears (if badges are shown)
     const signalBadge = page.locator('[data-testid="signal-badge"]');
-    const badgeCount = await signalBadge.count();
-    
+    const _badgeCount = await signalBadge.count(); // Reserved for future badge verification
+
     // At minimum, verify the button was clicked (signal might be reported)
     // In a real scenario, we'd verify the badge appears
     expect(buttonCount).toBeGreaterThan(0);
@@ -259,19 +259,19 @@ test.describe('Property Signals', () => {
   });
 });
 
-async function reportSignal(page: any, propertyId: string, signalType: string) {
-  await page.goto(`/properties/${propertyId}`);
-  await page.waitForTimeout(1000);
-  
+async function _reportSignal(_page: import('@playwright/test').Page, _propertyId: string, _signalType: string) {
+  await _page.goto(`/properties/${_propertyId}`);
+  await _page.waitForTimeout(1000);
+
   // Look for signal button
-  const signalButton = page.locator(`[data-testid="signal-button-${signalType}"]`);
-  
+  const signalButton = _page.locator(`[data-testid="signal-button-${_signalType}"]`);
+
   if (await signalButton.count() > 0) {
     await signalButton.click();
-    await page.waitForTimeout(2000);
+    await _page.waitForTimeout(2000);
   } else {
     // Signal reporting requires verified visit first
-    throw new Error(`Signal button for ${signalType} not found. Visit may need to be verified first.`);
+    throw new Error(`Signal button for ${_signalType} not found. Visit may need to be verified first.`);
   }
 }
 

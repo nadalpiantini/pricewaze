@@ -34,7 +34,7 @@ export function selectVariant(
   userId: string,
   config: ABTestConfig
 ): PromptVariant {
-  const { variants, trafficSplit, stickyAssignment = true } = config;
+  const { variants, trafficSplit: _trafficSplit, stickyAssignment = true } = config;
 
   if (variants.length === 0) {
     throw new Error('At least one variant is required');

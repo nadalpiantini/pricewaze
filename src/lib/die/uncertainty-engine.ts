@@ -96,8 +96,8 @@ function calculateUncertaintyFromZone(
     return getHighUncertaintyAssessment(property, zone);
   }
 
-  // Calculate price per m² for property
-  const propertyPricePerM2 = property.area_m2
+  // Calculate price per m² for property (for future use in comparison)
+  const _propertyPricePerM2 = property.area_m2
     ? property.price / property.area_m2
     : 0;
 
