@@ -96,7 +96,14 @@ export function useMarketAlerts(userId: string | undefined) {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Silently handle connection errors
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('[Realtime] Connection unavailable for market-alerts');
+          }
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

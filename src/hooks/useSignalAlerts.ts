@@ -61,7 +61,14 @@ export function useSignalAlerts() {
           followedProperties.current = new Set((data ?? []).map((x: { property_id: string }) => x.property_id));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Silently handle connection errors
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('[Realtime] Connection unavailable for follows-live');
+          }
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -133,7 +140,14 @@ export function useSignalAlerts() {
           showSignalToast(propertyId, newState.signal_type);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Silently handle connection errors
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('[Realtime] Connection unavailable for signal-confirmed-alerts');
+          }
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

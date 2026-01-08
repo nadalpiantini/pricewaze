@@ -62,7 +62,14 @@ export function ChatWindow({ conversationId, currentUserId }: ChatWindowProps) {
           queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Silently handle connection errors
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('[Realtime] Connection unavailable for chat-messages');
+          }
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

@@ -89,7 +89,11 @@ class Analytics {
 
     // Always log in development for debugging
     if (process.env.NODE_ENV === 'development') {
-      console.log('[Analytics]', eventName, properties);
+      if (properties) {
+        console.log('[Analytics]', eventName, properties);
+      } else {
+        console.log('[Analytics]', eventName);
+      }
     }
 
     switch (this.provider) {

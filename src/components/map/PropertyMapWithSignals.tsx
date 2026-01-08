@@ -162,7 +162,15 @@ export function PropertyMapWithSignals({
           fetchSignalStates();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Silently handle connection errors
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          // Connection failed - will fallback to polling via refetch
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('[Realtime] Connection unavailable for property-signals-map');
+          }
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

@@ -67,7 +67,14 @@ export function PropertySignals({ propertyId, className }: PropertySignalsProps)
           fetchSignals();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Silently handle connection errors
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('[Realtime] Connection unavailable for property-signals');
+          }
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
