@@ -32,6 +32,15 @@ export async function middleware(request: NextRequest) {
   });
 
   /**
+   * Clean URL by removing newlines, carriage returns, and whitespace
+   * URLs contain :, /, ., etc. which are valid - only remove newlines
+   */
+  function cleanUrl(url: string | undefined): string {
+    if (!url) return '';
+    return url.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
+  }
+
+  /**
    * Clean API key by removing all newlines, carriage returns, and whitespace
    * Critical because Next.js injects NEXT_PUBLIC_* vars at build time
    */
@@ -46,8 +55,8 @@ export async function middleware(request: NextRequest) {
     return cleaned.replace(/[^A-Za-z0-9+\/=\-_]/g, '');
   }
 
-  // Clean API keys aggressively to remove any hidden newlines/whitespace that break WebSockets
-  const supabaseUrl = cleanApiKey(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  // Clean URLs and API keys aggressively to remove any hidden newlines/whitespace that break WebSockets
+  const supabaseUrl = cleanUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const supabaseAnonKey = cleanApiKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   
   if (!supabaseUrl || !supabaseAnonKey) {
