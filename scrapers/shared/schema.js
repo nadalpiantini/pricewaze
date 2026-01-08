@@ -136,6 +136,12 @@ export const ListingSchema = z.object({
 
     scrapedAt: z.string()
         .datetime('Must be ISO datetime'),
+
+    // === DEDUPLICATION ===
+    fingerprint: z.string()
+        .length(16, 'Fingerprint must be 16-char MD5 hash prefix')
+        .regex(/^[a-f0-9]+$/, 'Fingerprint must be hexadecimal')
+        .optional(),
 });
 
 // Type export for TypeScript users

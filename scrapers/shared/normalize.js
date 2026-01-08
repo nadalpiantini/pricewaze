@@ -7,6 +7,8 @@
 import crypto from 'crypto';
 import { Dataset } from 'crawlee';
 import { validateListing } from './schema.js';
+import { normalizeZone, normalizeCity } from './zones.js';
+import { generateFingerprint } from './dedup.js';
 
 /**
  * Normalize and save a listing with consistent schema
@@ -48,8 +50,10 @@ export async function normalizeAndSave({
         return false;
     }
 
-    // Parse location
+    // Parse location with zone normalization
     const { city, zone } = parseLocation(raw.location, inputCity);
+    const normalizedCityName = normalizeCity(city);
+    const normalizedZoneName = normalizeZone(zone);
 
     // Generate stable unique ID
     const id = generateId(source, url);
@@ -66,10 +70,10 @@ export async function normalizeAndSave({
         priceNumeric,
         currency,
 
-        // Location
+        // Location (with normalized names)
         country: 'DO',
-        city,
-        zone,
+        city: normalizedCityName,
+        zone: normalizedZoneName,
         address: raw.location,
 
         // Property details
@@ -90,6 +94,9 @@ export async function normalizeAndSave({
         sellerName: raw.sellerName ?? null,
         scrapedAt: new Date().toISOString()
     };
+
+    // Add fingerprint for deduplication (computed after all fields are set)
+    normalizedListing.fingerprint = generateFingerprint(normalizedListing);
 
     // Validate with Zod schema
     if (!skipValidation) {
