@@ -111,8 +111,9 @@ export function NotificationBell() {
     setOpen(false);
   };
 
-  const unreadNotifications = notifications.filter((n) => !n.read_at);
-  const readNotifications = notifications.filter((n) => n.read_at);
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
+  const unreadNotifications = safeNotifications.filter((n) => !n.read_at);
+  const readNotifications = safeNotifications.filter((n) => n.read_at);
 
   const getNotificationLink = (notification: Notification): string => {
     if (notification.data?.property_id) {

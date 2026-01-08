@@ -4,6 +4,7 @@ import { validateInvitationTokenServer, INVITATIONS_ENABLED } from '@/lib/invita
 
 // Routes that require authentication
 const protectedRoutes = [
+  '/dashboard',
   '/properties',
   '/offers',
   '/visits',

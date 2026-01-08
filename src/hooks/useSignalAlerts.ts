@@ -33,7 +33,9 @@ export function useSignalAlerts() {
         .select('property_id')
         .eq('user_id', user.id);
 
-      followedProperties.current = new Set((data ?? []).map((x: { property_id: string }) => x.property_id));
+      // Ensure data is an array before using .map()
+      const safeData = Array.isArray(data) ? data : [];
+      followedProperties.current = new Set(safeData.map((x: { property_id: string }) => x.property_id));
     })();
   }, [user?.id, supabase]);
 
@@ -58,7 +60,9 @@ export function useSignalAlerts() {
             .select('property_id')
             .eq('user_id', user.id);
 
-          followedProperties.current = new Set((data ?? []).map((x: { property_id: string }) => x.property_id));
+          // Ensure data is an array before using .map()
+          const safeData = Array.isArray(data) ? data : [];
+          followedProperties.current = new Set(safeData.map((x: { property_id: string }) => x.property_id));
         }
       )
       .subscribe((status) => {

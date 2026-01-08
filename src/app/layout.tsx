@@ -17,7 +17,15 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 const market = getMarketConfig();
 
+// Determine metadata base URL based on environment
+const metadataBase = process.env.NEXT_PUBLIC_SITE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
+  : process.env.NODE_ENV === 'production'
+  ? new URL('https://www.pricewaze.com')
+  : new URL('http://localhost:3000');
+
 export const metadata: Metadata = {
+  metadataBase,
   title: market.seo.titleSuffix
     ? `PriceMap - Real Estate Intelligence for ${market.seo.titleSuffix}`
     : 'PriceMap - AI-Powered Real Estate Intelligence',
@@ -36,7 +44,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'PriceMap - Real Estate Intelligence',
     description: 'Discover fair prices, make smarter offers, and close deals with confidence.',
-    url: 'https://pricewaze.com',
+    url: 'https://www.pricewaze.com',
     siteName: 'PriceMap',
     locale: market.currency.locale.replace('-', '_'),
     type: 'website',

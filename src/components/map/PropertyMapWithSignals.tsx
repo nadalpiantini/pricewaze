@@ -73,10 +73,13 @@ export function PropertyMapWithSignals({
 
   const supabase = createClient();
 
+  // Ensure properties is always an array (defensive programming)
+  const safeProperties = Array.isArray(properties) ? properties : [];
+
   // Initialize heatmap layer
   useHeatmapLayer({
     map: map.current,
-    properties,
+    properties: safeProperties,
     metric: heatmapMetric,
     visible: heatmapVisible,
     opacity: heatmapOpacity,
@@ -101,10 +104,13 @@ export function PropertyMapWithSignals({
 
   // Fetch signal states for all properties
   useEffect(() => {
-    if (properties.length === 0) return;
+    if (!Array.isArray(safeProperties) || safeProperties.length === 0) {
+      setPropertiesWithSignals([]);
+      return;
+    }
 
     async function fetchSignalStates() {
-      const propertyIds = properties.map(p => p.id);
+      const propertyIds = safeProperties.map(p => p.id);
       
       const { data: signalStates, error } = await supabase
         .from('pricewaze_property_signal_state')
@@ -114,22 +120,25 @@ export function PropertyMapWithSignals({
 
       if (error) {
         console.error('Error fetching signal states:', error);
-        setPropertiesWithSignals(properties);
+        setPropertiesWithSignals(safeProperties);
         return;
       }
 
+      // Ensure signalStates is an array
+      const safeSignalStates = Array.isArray(signalStates) ? signalStates : [];
+
       // Group signals by property
       const signalsByProperty = new Map<string, PropertySignalTypeState[]>();
-      signalStates?.forEach((state) => {
+      safeSignalStates.forEach((state) => {
         const existing = signalsByProperty.get(state.property_id) || [];
         existing.push(state);
         signalsByProperty.set(state.property_id, existing);
       });
 
       // Enhance properties with signal data
-      const enhanced = properties.map((property) => {
+      const enhanced = safeProperties.map((property) => {
         const signals = signalsByProperty.get(property.id) || [];
-        const maxStrength = Math.max(...signals.map(s => s.strength), 0);
+        const maxStrength = signals.length > 0 ? Math.max(...signals.map(s => s.strength), 0) : 0;
         const hasConfirmed = signals.some(s => s.confirmed);
         const hasPositive = signals.some(s => s.confirmed && isPositiveSignal(s.signal_type));
 
@@ -175,7 +184,7 @@ export function PropertyMapWithSignals({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [properties, supabase]);
+  }, [safeProperties, supabase]);
 
   // Initialize map
   useEffect(() => {

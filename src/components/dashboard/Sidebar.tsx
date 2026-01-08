@@ -27,7 +27,7 @@ import { useUIStore } from '@/stores/ui-store';
 const navItems = [
   {
     label: 'Dashboard',
-    href: '/',
+    href: '/dashboard',
     icon: LayoutDashboard,
   },
   {
@@ -172,7 +172,7 @@ export function Sidebar() {
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href ||
-              (item.href !== '/dashboard' && pathname.startsWith(item.href));
+              (item.href !== '/' && pathname.startsWith(item.href));
 
             return (
               <Link

@@ -114,7 +114,9 @@ export const usePropertyStore = create<PropertyState>()(
 
           if (response.ok) {
             const data = await response.json();
-            set({ favorites: data.map((f: { property_id: string }) => f.property_id) });
+            // Ensure data is an array before using .map()
+            const safeData = Array.isArray(data) ? data : [];
+            set({ favorites: safeData.map((f: { property_id: string }) => f.property_id) });
           }
         } catch (error) {
           storeLogger.warn('Failed to fetch favorites', error);

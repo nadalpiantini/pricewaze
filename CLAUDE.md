@@ -65,8 +65,9 @@ All tables use `pricewaze_` prefix in the shared Supabase project. Key tables:
 - `pricewaze_offers` - Offer chain with counter-offers (self-referencing)
 - `pricewaze_visits` - GPS-verified property visits
 - `pricewaze_agreements` - AI-generated contracts
+- `pricewaze_scraper_history` - Web scraper run tracking and monitoring
 
-Database features automatic zone assignment via PostGIS `ST_Contains`, price history tracking via triggers, and comprehensive RLS policies.
+Database features automatic zone assignment via PostGIS `ST_Contains`, price history tracking via triggers, trust score calculation for data quality, and comprehensive RLS policies.
 
 ### Route Groups
 - `(auth)/*` - Login/register pages (redirect to dashboard if authenticated)
@@ -91,6 +92,9 @@ Database features automatic zone assignment via PostGIS `ST_Contains`, price his
 /api/notifications/        # Push notifications
 /api/alerts/               # Market alerts and saved searches
 /api/signals/              # Market signals processing
+/api/scraper/              # Web scraper orchestration (Apify)
+/api/scraper/[runId]/      # Scraper run status and control
+/api/ingest/               # Property data ingestion pipeline
 ```
 
 ### State Stores (Zustand)
@@ -115,6 +119,25 @@ Located in `/crewai/`, provides advanced analysis via specialized agents:
 - **Coordinator** - Orchestrates agent workflows
 
 Crews: `PricingCrew`, `NegotiationCrew`, `ContractCrew`, `FullAnalysisCrew`
+
+### Web Scraping System
+Located in `/src/lib/scraper/`, provides automated property data collection:
+- **ApifyClient** - Wrapper for Apify cloud scraping platform
+- **ScraperService** - Orchestrates scraping, transformation, and ingestion
+- **Configs** - Per-portal configuration with transformers (SuperCasas, Corotos)
+
+**Supported Portals** (Dominican Republic):
+- `supercasas` - supercasas.com (residential focus)
+- `corotos` - corotos.com.do (marketplace with real estate)
+
+**Data Flow**: Apify Actor → Raw Items → Transformer → Normalized Properties → Ingest API → Database
+
+**Trust Score System**: Properties are assigned a trust score (0-1) based on source type and data completeness:
+- `opendata`: 1.00 (government sources)
+- `api`: 0.95 (verified API partners)
+- `scraper`: 0.85 (web scraping)
+- `user`: 0.70 (user submissions)
+- Bonuses for images, coordinates, area, description
 
 ## Key Patterns
 
@@ -161,6 +184,12 @@ Required in `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`
 - `DEEPSEEK_API_KEY` / `DEEPSEEK_BASE_URL` / `DEEPSEEK_MODEL`
 - `NEXT_PUBLIC_MAPBOX_TOKEN`
+
+For Web Scraping (Apify integration):
+- `APIFY_API_TOKEN` - Apify platform API token
+- `APIFY_ACTOR_SUPERCASAS` - Actor ID for SuperCasas.com scraper
+- `APIFY_ACTOR_COROTOS` - Actor ID for Corotos.com.do scraper
+- `SCRAPER_SERVICE_KEY` - Internal API key for scraper→ingest calls
 
 For E2E testing (optional but recommended):
 

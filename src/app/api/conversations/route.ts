@@ -38,8 +38,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Ensure data is an array before using .map()
+    const safeData = Array.isArray(data) ? data : [];
+
     // Get unread counts in a single batch query (avoids N+1)
-    const conversationIds = (data || []).map((conv) => conv.id);
+    const conversationIds = safeData.map((conv) => conv.id);
 
     let unreadCountsMap: Record<string, number> = {};
 
@@ -53,7 +56,7 @@ export async function GET(request: NextRequest) {
         .neq('sender_id', user.id);
 
       // Count unread messages per conversation
-      if (unreadMessages) {
+      if (Array.isArray(unreadMessages)) {
         unreadCountsMap = unreadMessages.reduce((acc, msg) => {
           acc[msg.conversation_id] = (acc[msg.conversation_id] || 0) + 1;
           return acc;
@@ -62,7 +65,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Map unread counts to conversations
-    const conversationsWithUnread = (data || []).map((conv) => ({
+    const conversationsWithUnread = safeData.map((conv) => ({
       ...conv,
       unread_count: unreadCountsMap[conv.id] || 0,
     }));
