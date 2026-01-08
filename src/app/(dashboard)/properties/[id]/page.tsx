@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Bell,
   BellOff,
+  Bot,
 } from 'lucide-react';
 import { PropertyGallery } from '@/components/properties/PropertyGallery';
 import { PropertyReviews } from '@/components/reviews/PropertyReviews';
@@ -27,11 +28,16 @@ import { PricingInsights } from '@/components/pricing/PricingInsights';
 import { FairnessPanelV2 } from '@/components/pricing/FairnessPanelV2';
 import { PropertySignals } from '@/components/signals';
 import { OfferNegotiationView } from '@/components/offers/OfferNegotiationView';
+import { AlertBadge } from '@/components/copilot/AlertBadge';
+import { AlertModal } from '@/components/copilot/AlertModal';
+import { CopilotChat } from '@/components/copilot/CopilotChat';
+import { useCopilotAlerts } from '@/hooks/useCopilotAlerts';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChat } from '@/hooks/useChat';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { Property } from '@/types/database';
+import type { CopilotAlert } from '@/hooks/useCopilotAlerts';
 
 const propertyTypeLabels: Record<Property['property_type'], string> = {
   apartment: 'Apartment',
@@ -53,7 +59,15 @@ export default function PropertyPage() {
   const [error, setError] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isTogglingFollow, setIsTogglingFollow] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState<CopilotAlert | null>(null);
+  const [showChat, setShowChat] = useState(false);
   const supabase = createClient();
+  
+  // Copilot alerts
+  const { alerts, dismissAlert } = useCopilotAlerts({
+    propertyId,
+    autoFetch: true,
+  });
 
   // Check if user is following this property
   useEffect(() => {
@@ -230,6 +244,21 @@ export default function PropertyPage() {
             <PropertySignals propertyId={property.id} />
           </div>
 
+          {/* Copilot Alerts */}
+          {alerts.length > 0 && (
+            <div className="mb-4 space-y-2">
+              {alerts.map((alert) => (
+                <AlertBadge
+                  key={alert.id}
+                  alertType={alert.type}
+                  severity={alert.severity}
+                  message={alert.message}
+                  onClick={() => setSelectedAlert(alert)}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Quick Stats */}
           <div className="grid grid-cols-4 gap-4 mb-6">
             {property.bedrooms !== null && (
@@ -372,10 +401,33 @@ export default function PropertyPage() {
             <Button variant="outline" size="icon">
               <Share2 className="h-4 w-4" />
             </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowChat(!showChat)}
+              title="Abrir Copilot"
+            >
+              <Bot className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* Copilot Chat Floating */}
+      {showChat && (
+        <div className="fixed bottom-4 right-4 w-96 h-[600px] z-50 shadow-2xl rounded-lg overflow-hidden">
+          <CopilotChat propertyId={property.id} />
+        </div>
+      )}
+
+      {/* Alert Modal */}
+      <AlertModal
+        alert={selectedAlert}
+        onClose={() => setSelectedAlert(null)}
+        onDismiss={dismissAlert}
+      />
     </div>
   );
 }
+
 

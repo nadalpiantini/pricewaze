@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,8 +13,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useOffers } from '@/hooks/use-offers';
+import { useCopilotAlerts } from '@/hooks/useCopilotAlerts';
+import { AlertBadge } from '@/components/copilot/AlertBadge';
+import { AlertModal } from '@/components/copilot/AlertModal';
 import { toast } from 'sonner';
 import { DollarSign, Loader2, MapPin, TrendingDown, TrendingUp } from 'lucide-react';
+import type { CopilotAlert } from '@/hooks/useCopilotAlerts';
 
 interface SubmitOfferModalProps {
   open: boolean;
@@ -38,7 +42,21 @@ export function SubmitOfferModal({
 }: SubmitOfferModalProps) {
   const [amount, setAmount] = useState('');
   const [message, setMessage] = useState('');
+  const [selectedAlert, setSelectedAlert] = useState<CopilotAlert | null>(null);
+  const [tempOfferId, setTempOfferId] = useState<string | null>(null);
   const { createOffer, loading } = useOffers();
+  
+  // Evaluar alertas cuando hay un monto ingresado
+  const offerAmountMemo = useMemo(() => parseCurrency(amount), [amount]);
+  
+  // Solo evaluar alertas si hay un monto válido
+  const shouldEvaluateAlerts = offerAmountMemo > 0 && offerAmountMemo !== property.price;
+  
+  const { alerts } = useCopilotAlerts({
+    propertyId: property.id,
+    offerId: null, // No hay offer_id aún, es solo evaluación
+    autoFetch: shouldEvaluateAlerts,
+  });
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -159,6 +177,23 @@ export function SubmitOfferModal({
             )}
           </div>
 
+          {/* Copilot Alerts */}
+          {alerts.length > 0 && (
+            <div className="space-y-2">
+              {alerts
+                .filter((a) => a.type === 'suboptimal_offer' || a.type === 'silent_opportunity')
+                .map((alert) => (
+                  <AlertBadge
+                    key={alert.id}
+                    alertType={alert.type}
+                    severity={alert.severity}
+                    message={alert.message}
+                    onClick={() => setSelectedAlert(alert)}
+                  />
+                ))}
+            </div>
+          )}
+
           {/* Quick Select */}
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Quick Select</Label>
@@ -212,6 +247,19 @@ export function SubmitOfferModal({
             </Button>
           </DialogFooter>
         </form>
+
+        {/* Alert Modal */}
+        <AlertModal
+          alert={selectedAlert}
+          onClose={() => setSelectedAlert(null)}
+          onAction={(alert) => {
+            // Si es alerta de oferta subóptima, ajustar el monto sugerido
+            if (alert.type === 'suboptimal_offer' && alert.metadata?.suggested_balanced) {
+              setAmount(formatCurrency(alert.metadata.suggested_balanced));
+              setSelectedAlert(null);
+            }
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

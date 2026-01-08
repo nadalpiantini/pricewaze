@@ -3,7 +3,7 @@
  * Ensures LLM responses match expected structure
  */
 
-import type { CopilotAnalysis, ConfidenceLevel } from '@/types/copilot';
+import type { CopilotAnalysis } from '@/types/copilot';
 
 /**
  * Validates that an object matches CopilotAnalysis structure
@@ -33,8 +33,8 @@ export function isValidAnalysis(a: unknown): a is CopilotAnalysis {
   }
 
   // Validate confidence_level
-  const validConfidence: ConfidenceLevel[] = ['low', 'medium', 'high'];
-  if (!validConfidence.includes(analysis.confidence_level as ConfidenceLevel)) {
+  const validConfidence: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
+  if (!validConfidence.includes(analysis.confidence_level as 'low' | 'medium' | 'high')) {
     return false;
   }
 
