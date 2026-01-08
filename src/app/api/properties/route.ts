@@ -23,10 +23,72 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
 
+    // Handle special case: fetch by IDs (for favorites, etc.)
+    const ids = searchParams.get('ids');
+    if (ids) {
+      const idList = ids.split(',').filter(id => id.trim());
+      if (idList.length === 0) {
+        return NextResponse.json([]);
+      }
+
+      const { data, error } = await supabase
+        .from('pricewaze_properties')
+        .select(`
+          *,
+          zone:pricewaze_zones(id, name, city, avg_price_m2),
+          owner:pricewaze_profiles(id, full_name, avatar_url)
+        `)
+        .in('id', idList);
+
+      if (error) {
+        logger.error('Failed to fetch properties by IDs', error);
+        return NextResponse.json([]);
+      }
+
+      return NextResponse.json(data || []);
+    }
+
+    // Handle special case: fetch owner's properties
+    const owner = searchParams.get('owner');
+    if (owner === 'me') {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false } });
+      }
+
+      const { data, error, count } = await supabase
+        .from('pricewaze_properties')
+        .select(`
+          *,
+          zone:pricewaze_zones(id, name, city, avg_price_m2),
+          owner:pricewaze_profiles(id, full_name, avatar_url)
+        `, { count: 'exact' })
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        logger.error('Failed to fetch owner properties', error);
+        return NextResponse.json({ data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false } });
+      }
+
+      return NextResponse.json({
+        data: data || [],
+        pagination: {
+          page: 1,
+          limit: data?.length || 0,
+          total: count || 0,
+          totalPages: 1,
+          hasMore: false,
+        },
+      });
+    }
+
     // Parse and validate filters
     const rawFilters: Record<string, string> = {};
     searchParams.forEach((value, key) => {
-      rawFilters[key] = value;
+      if (key !== 'ids' && key !== 'owner') {
+        rawFilters[key] = value;
+      }
     });
 
     const result = propertyFiltersSchema.safeParse(rawFilters);

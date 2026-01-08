@@ -36,12 +36,22 @@ export async function GET(request: NextRequest) {
         }
       );
 
+      // Handle gracefully if RPC doesn't exist or other errors
       if (error) {
+        // 42883 = function doesn't exist, PGRST202 = function not found
+        if (error.code === '42883' || error.code === 'PGRST202' || error.message?.includes('does not exist')) {
+          // Return empty alerts - function not yet created
+          return NextResponse.json({
+            success: true,
+            alerts: [],
+          });
+        }
         console.error('Error evaluating alerts:', error);
-        return NextResponse.json(
-          { error: 'Failed to evaluate alerts' },
-          { status: 500 }
-        );
+        // Still return empty alerts instead of 500 to not break the UI
+        return NextResponse.json({
+          success: true,
+          alerts: [],
+        });
       }
 
       // Convertir resultados a formato de alertas
@@ -70,12 +80,21 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(20);
 
+    // Handle gracefully if table doesn't exist or other errors
     if (alertsError) {
+      // PGRST116 = not found, 42P01 = undefined_table
+      if (alertsError.code === 'PGRST116' || alertsError.code === '42P01' || alertsError.message?.includes('does not exist')) {
+        return NextResponse.json({
+          success: true,
+          alerts: [],
+        });
+      }
       console.error('Error fetching alerts:', alertsError);
-      return NextResponse.json(
-        { error: 'Failed to fetch alerts' },
-        { status: 500 }
-      );
+      // Return empty alerts instead of 500 to not break the UI
+      return NextResponse.json({
+        success: true,
+        alerts: [],
+      });
     }
 
     const formattedAlerts = (savedAlerts || []).map((alert) => ({
@@ -137,7 +156,11 @@ export async function POST(request: NextRequest) {
       .eq('id', alert_id)
       .eq('user_id', user.id);
 
+    // Handle gracefully if table doesn't exist
     if (error) {
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return NextResponse.json({ success: true });
+      }
       console.error('Error resolving alert:', error);
       return NextResponse.json(
         { error: 'Failed to resolve alert' },

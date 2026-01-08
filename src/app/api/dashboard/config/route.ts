@@ -51,20 +51,33 @@ export async function GET() {
       .eq('user_id', user.id)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
-      // PGRST116 = not found, which is ok
-      console.error('Failed to fetch dashboard config:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch dashboard config' },
-        { status: 500 }
-      );
+    // Handle errors gracefully - table might not exist yet
+    // PGRST116 = not found, 42P01 = undefined_table
+    if (error) {
+      if (error.code === 'PGRST116' || error.code === '42P01' || error.message?.includes('does not exist')) {
+        // Return empty config - frontend will use defaults
+        return NextResponse.json({
+          layout: null,
+          widgets: null,
+          updated_at: null,
+        });
+      }
+      // Log other errors but still return empty config to not break the dashboard
+      console.error('Dashboard config fetch error (using defaults):', error);
+      return NextResponse.json({
+        layout: null,
+        widgets: null,
+        updated_at: null,
+      });
     }
 
     if (!data) {
-      return NextResponse.json(
-        { error: 'No config found' },
-        { status: 404 }
-      );
+      // Return empty config - frontend will use defaults
+      return NextResponse.json({
+        layout: null,
+        widgets: null,
+        updated_at: null,
+      });
     }
 
     return NextResponse.json({

@@ -69,7 +69,7 @@ export class ScraperService {
       });
 
       // Get status
-      let finalStatus = await getScraperStatus(runId);
+      const finalStatus = await getScraperStatus(runId);
       finalStatus.scraper = scraperName;
 
       if (finalStatus.status !== 'succeeded') {

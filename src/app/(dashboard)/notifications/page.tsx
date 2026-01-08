@@ -42,8 +42,9 @@ export default function NotificationsPage() {
     try {
       const response = await fetch('/api/notifications');
       if (response.ok) {
-        const data = await response.json();
-        setNotifications(data);
+        const result = await response.json();
+        // API returns { data: [...], pagination: {...} }
+        setNotifications(Array.isArray(result) ? result : (result.data || []));
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);

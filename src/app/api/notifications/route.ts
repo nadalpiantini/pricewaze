@@ -28,8 +28,20 @@ export async function GET(request: Request) {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
+  // Handle gracefully if table doesn't exist or other errors
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // PGRST116 = not found, 42P01 = undefined_table
+    if (error.code === 'PGRST116' || error.code === '42P01' || error.message?.includes('does not exist')) {
+      return NextResponse.json({
+        data: [],
+        pagination: { page: 1, limit, total: 0, totalPages: 0, hasMore: false },
+      });
+    }
+    console.error('Notifications fetch error:', error);
+    return NextResponse.json({
+      data: [],
+      pagination: { page: 1, limit, total: 0, totalPages: 0, hasMore: false },
+    });
   }
 
   return NextResponse.json({

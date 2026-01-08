@@ -180,12 +180,14 @@ function PerformanceStat({
 
 export function PropertyPerformanceWidget() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
-  const [chartData, setChartData] = useState(() => generateChartData(30));
+  const [chartData, setChartData] = useState<ReturnType<typeof generateChartData>>([]);
   const [isChartVisible, setIsChartVisible] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
+  // Generate data only on client to avoid hydration mismatch
   useEffect(() => {
+    setIsClient(true);
     const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- regenerate on range change
     setChartData(generateChartData(days));
   }, [timeRange]);
 
@@ -210,6 +212,22 @@ export function PropertyPerformanceWidget() {
     favorites: 8,
     inquiries: 15,
   };
+
+  // Show loading state before client hydration to avoid mismatch
+  if (!isClient) {
+    return (
+      <WidgetWrapper
+        id="property-performance"
+        title="Property Performance"
+        icon={<TrendingUp className="h-4 w-4 text-[var(--signal-lime)]" />}
+        accentColor="lime"
+      >
+        <div className="flex items-center justify-center h-48">
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        </div>
+      </WidgetWrapper>
+    );
+  }
 
   return (
     <WidgetWrapper
