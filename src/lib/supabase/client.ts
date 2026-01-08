@@ -1,10 +1,30 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { logger } from '@/lib/logger';
 
+/**
+ * Clean API key by removing all newlines, carriage returns, and whitespace
+ * This is critical because Next.js injects NEXT_PUBLIC_* vars at build time,
+ * and if .env.local had a newline, it gets baked into the bundle
+ */
+function cleanApiKey(key: string | undefined): string {
+  if (!key) return '';
+  // Remove all newlines (\n), carriage returns (\r), and trim whitespace
+  return key.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
+}
+
 export function createClient() {
+  // Clean API keys aggressively to remove any hidden newlines/whitespace that break WebSockets
+  // This is critical because Next.js injects NEXT_PUBLIC_* vars at build time
+  const supabaseUrl = cleanApiKey(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseAnonKey = cleanApiKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
+
   return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {

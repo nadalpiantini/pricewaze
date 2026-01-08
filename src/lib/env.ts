@@ -97,11 +97,18 @@ export const serverEnv = {
  */
 export const clientEnv = {
   // Supabase
+  /**
+   * Clean API key by removing all newlines, carriage returns, and whitespace
+   */
+  _cleanApiKey(key: string | undefined): string {
+    if (!key) return '';
+    return key.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
+  },
   get SUPABASE_URL() {
-    return process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    return this._cleanApiKey(process.env.NEXT_PUBLIC_SUPABASE_URL);
   },
   get SUPABASE_ANON_KEY() {
-    return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    return this._cleanApiKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   },
   get hasSupabase() {
     return !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);

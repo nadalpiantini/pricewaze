@@ -24,10 +24,43 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
-      // Add other image domains as needed
+      // Supabase Storage
       {
         protocol: 'https',
         hostname: '**.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
+      // Common external image sources (add as needed)
+      {
+        protocol: 'https',
+        hostname: 'example.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.example.com',
+        port: '',
+        pathname: '/**',
+      },
+      // Cloudinary
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
+      },
+      // AWS S3
+      {
+        protocol: 'https',
+        hostname: '**.s3.amazonaws.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.s3.**.amazonaws.com',
         port: '',
         pathname: '/**',
       },

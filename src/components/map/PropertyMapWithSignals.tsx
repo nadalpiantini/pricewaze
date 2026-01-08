@@ -211,7 +211,9 @@ export function PropertyMapWithSignals({
       // Track map viewed event (L1.2)
       if (typeof window !== 'undefined') {
         import('@/lib/analytics').then(({ analytics }) => {
-          analytics.track('map_viewed');
+          analytics.track('map_viewed', {
+            timestamp: new Date().toISOString(),
+          });
         });
       }
     });

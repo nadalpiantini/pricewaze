@@ -3,9 +3,18 @@ import { cookies } from 'next/headers';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { logger } from '@/lib/logger';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+/**
+ * Clean API key by removing all newlines, carriage returns, and whitespace
+ */
+function cleanApiKey(key: string | undefined): string {
+  if (!key) return '';
+  return key.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
+}
+
+// Clean API keys aggressively to remove any hidden newlines/whitespace that break WebSockets
+const supabaseUrl = cleanApiKey(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const supabaseAnonKey = cleanApiKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const supabaseServiceRoleKey = cleanApiKey(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 if (!supabaseUrl) {
   logger.warn('[Supabase Server] Missing NEXT_PUBLIC_SUPABASE_URL');

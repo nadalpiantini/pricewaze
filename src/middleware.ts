@@ -31,9 +31,27 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  /**
+   * Clean API key by removing all newlines, carriage returns, and whitespace
+   * Critical because Next.js injects NEXT_PUBLIC_* vars at build time
+   */
+  function cleanApiKey(key: string | undefined): string {
+    if (!key) return '';
+    return key.replace(/\r\n/g, '').replace(/\n/g, '').replace(/\r/g, '').trim();
+  }
+
+  // Clean API keys aggressively to remove any hidden newlines/whitespace that break WebSockets
+  const supabaseUrl = cleanApiKey(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseAnonKey = cleanApiKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // In middleware, we can't throw - just pass through
+    return response;
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
