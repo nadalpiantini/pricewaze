@@ -9,9 +9,6 @@ export async function loginTestUser(page: Page, email?: string, password?: strin
   const testEmail = process.env.TEST_USER_EMAIL || email || 'test@example.com';
   const testPassword = process.env.TEST_USER_PASSWORD || password || 'testpassword123';
 
-  console.log(`[Auth Debug] Email: ${testEmail}`);
-  console.log(`[Auth Debug] Password length: ${testPassword.length}, chars: ${testPassword.split('').map((c, i) => `${i}:${c}`).join(' ')}`);
-
   const targetUrl = redirectTo || '/dashboard';
 
   // Navigate to login with redirect parameter
@@ -29,28 +26,41 @@ export async function loginTestUser(page: Page, email?: string, password?: strin
   await passwordInput.fill(''); // Clear any existing content
   await page.keyboard.type(testPassword, { delay: 30 });
 
-  // Click login button
-  await page.click('[data-testid="login-button"]');
-
-  // Wait for success toast OR error toast
-  const successToast = page.locator('text=/Welcome back|logged in successfully/i');
-  const errorToast = page.locator('text=/Login failed|Invalid|incorrect|wrong/i');
-
-  // Wait for either toast to appear
-  await Promise.race([
-    successToast.first().waitFor({ timeout: 10000 }).catch(() => null),
-    errorToast.first().waitFor({ timeout: 10000 }).catch(() => null),
+  // Click login button and wait for response
+  await Promise.all([
+    page.waitForResponse(resp => resp.url().includes('supabase') && resp.status() !== 0, { timeout: 10000 }).catch(() => null),
+    page.click('[data-testid="login-button"]')
   ]);
 
-  // Check if error appeared
-  const hasError = await errorToast.first().isVisible().catch(() => false);
-  if (hasError) {
+  // Wait a moment for toast notifications to appear
+  await page.waitForTimeout(3000);
+
+  // Check for error toast
+  const errorToast = page.locator('[data-sonner-toast][data-type="error"]');
+  const errorVisible = await errorToast.first().isVisible().catch(() => false);
+  if (errorVisible) {
     const errorText = await errorToast.first().textContent();
     throw new Error(`Login failed: ${errorText}`);
   }
 
-  // Wait for navigation away from login page
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 });
+  // Also check for generic error text
+  const errorText = page.locator('text=/Login failed|Invalid login|Email not confirmed/i');
+  const hasErrorText = await errorText.first().isVisible().catch(() => false);
+  if (hasErrorText) {
+    const text = await errorText.first().textContent();
+    throw new Error(`Login failed: ${text}`);
+  }
+
+  // Wait for navigation away from login page (if still on login, something went wrong)
+  try {
+    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 10000 });
+  } catch {
+    // Take screenshot of current state for debugging
+    const screenshotPath = `/tmp/login-debug-${Date.now()}.png`;
+    await page.screenshot({ path: screenshotPath });
+    console.log(`[Auth Debug] Login did not navigate. Screenshot: ${screenshotPath}`);
+    throw new Error('Login did not navigate away from /login page - check screenshot');
+  }
 
   // Give time for session cookies to be fully set and Next.js to hydrate
   await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
