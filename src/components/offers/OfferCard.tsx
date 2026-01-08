@@ -259,6 +259,8 @@ export function OfferCard({ offer, currentUserId, onUpdated }: OfferCardProps) {
                     ? 'default'
                     : fairnessData.badge === 'agresiva'
                     ? 'secondary'
+                    : fairnessData.badge === 'generosa'
+                    ? 'default'
                     : 'destructive'
                 }
                 className={`gap-1 ${
@@ -266,14 +268,24 @@ export function OfferCard({ offer, currentUserId, onUpdated }: OfferCardProps) {
                     ? 'bg-green-500'
                     : fairnessData.badge === 'agresiva'
                     ? 'bg-yellow-500'
+                    : fairnessData.badge === 'generosa'
+                    ? 'bg-blue-500'
                     : 'bg-red-500'
                 }`}
               >
-                {fairnessData.badge === 'justa' ? '🟢' : fairnessData.badge === 'agresiva' ? '🟡' : '🔴'}
+                {fairnessData.badge === 'justa' 
+                  ? '🟢' 
+                  : fairnessData.badge === 'agresiva' 
+                  ? '🟡' 
+                  : fairnessData.badge === 'generosa'
+                  ? '🔵'
+                  : '🔴'}
                 {fairnessData.fairness_label === 'justa'
                   ? 'Fair offer'
                   : fairnessData.fairness_label === 'agresiva'
                   ? 'Aggressive'
+                  : fairnessData.fairness_label === 'generosa'
+                  ? 'Generous'
                   : 'Risky'}
               </Badge>
             </div>

@@ -78,38 +78,54 @@ BEGIN
   v_active_offers := pricewaze_get_active_offers_count(p_property_id);
   v_recent_visits := pricewaze_get_recent_visits_spike(p_property_id);
 
-  -- Si hay 2+ ofertas activas, crear/actualizar señal de competencia
+  -- Si hay 2+ ofertas activas, crear señal de competencia (solo si no existe una reciente)
   IF v_active_offers >= 2 THEN
-    INSERT INTO pricewaze_property_signals_raw (
-      property_id,
-      signal_type,
-      source,
-      created_at
-    )
-    VALUES (
-      p_property_id,
-      'competing_offers',
-      'system',
-      now()
-    )
-    ON CONFLICT DO NOTHING; -- Evitar duplicados en el mismo segundo
+    -- Verificar si ya existe una señal de este tipo en los últimos 5 minutos
+    IF NOT EXISTS (
+      SELECT 1 FROM pricewaze_property_signals_raw
+      WHERE property_id = p_property_id
+        AND signal_type = 'competing_offers'
+        AND source = 'system'
+        AND created_at >= now() - interval '5 minutes'
+    ) THEN
+      INSERT INTO pricewaze_property_signals_raw (
+        property_id,
+        signal_type,
+        source,
+        created_at
+      )
+      VALUES (
+        p_property_id,
+        'competing_offers',
+        'system',
+        now()
+      );
+    END IF;
   END IF;
 
-  -- Si hay spike de visitas (3+ en 48h), crear señal
+  -- Si hay spike de visitas (3+ en 48h), crear señal (solo si no existe una reciente)
   IF v_recent_visits >= 3 THEN
-    INSERT INTO pricewaze_property_signals_raw (
-      property_id,
-      signal_type,
-      source,
-      created_at
-    )
-    VALUES (
-      p_property_id,
-      'many_visits',
-      'system',
-      now()
-    )
-    ON CONFLICT DO NOTHING;
+    -- Verificar si ya existe una señal de este tipo en los últimos 5 minutos
+    IF NOT EXISTS (
+      SELECT 1 FROM pricewaze_property_signals_raw
+      WHERE property_id = p_property_id
+        AND signal_type = 'many_visits'
+        AND source = 'system'
+        AND created_at >= now() - interval '5 minutes'
+    ) THEN
+      INSERT INTO pricewaze_property_signals_raw (
+        property_id,
+        signal_type,
+        source,
+        created_at
+      )
+      VALUES (
+        p_property_id,
+        'many_visits',
+        'system',
+        now()
+      );
+    END IF;
   END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

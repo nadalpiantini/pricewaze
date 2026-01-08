@@ -267,6 +267,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           .update({ status: 'countered' })
           .eq('id', id);
 
+        // H.1: Set expires_at to 72 hours from now for counter offer
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 72);
+
         // Create new counter offer
         const { data: counterOffer, error: createError } = await supabase
           .from('pricewaze_offers')
@@ -278,6 +282,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             message,
             status: 'pending',
             parent_offer_id: id,
+            expires_at: expiresAt.toISOString(),
           })
           .select(`
             *,
