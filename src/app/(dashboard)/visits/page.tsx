@@ -295,7 +295,7 @@ export default function VisitsPage() {
                       <span>{date.getDate()}</span>
                       {hasVisits && (
                         <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-                          {dayVisits.slice(0, 3).map((_, i) => (
+                          {(Array.isArray(dayVisits) ? dayVisits : []).slice(0, 3).map((_, i) => (
                             <div
                               key={i}
                               className={`w-1 h-1 rounded-full ${

@@ -22,7 +22,7 @@ export function openWaze(lat: number, lng: number): void {
  * Supports origin, destination, and waypoints
  */
 export function openGoogleMaps(stops: Stop[]): void {
-  if (stops.length === 0) return;
+  if (!Array.isArray(stops) || stops.length === 0) return;
 
   if (stops.length === 1) {
     // Single destination

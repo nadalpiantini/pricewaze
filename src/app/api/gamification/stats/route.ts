@@ -77,8 +77,8 @@ export async function GET(request: NextRequest) {
       badges_count: badgesCount || 0,
       achievements_count: achievementsCount || 0,
       completed_achievements_count: completedAchievementsCount || 0,
-      recent_badges: recentBadges || [],
-      recent_achievements: recentAchievements || [],
+      recent_badges: Array.isArray(recentBadges) ? recentBadges : [],
+      recent_achievements: Array.isArray(recentAchievements) ? recentAchievements : [],
     });
   } catch (error) {
     console.error('Gamification stats error:', error);

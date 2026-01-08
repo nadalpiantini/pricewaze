@@ -141,7 +141,9 @@ export const usePropertyStore = create<PropertyState>()(
           const response = await fetch('/api/properties?owner=me');
 
           if (response.ok) {
-            const data = await response.json();
+            const result = await response.json();
+            // API returns { data: [...], pagination: {...} }, extract data array
+            const data = Array.isArray(result.data) ? result.data : Array.isArray(result) ? result : [];
             set({ userProperties: data });
           }
         } catch (error) {

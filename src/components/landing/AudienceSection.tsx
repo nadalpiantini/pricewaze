@@ -218,7 +218,7 @@ export function AudienceSection() {
                 </div>
 
                 <ul className="space-y-2 mb-4">
-                  {audience.benefits.slice(0, 3).map((benefit, j) => (
+                  {(Array.isArray(audience.benefits) ? audience.benefits : []).slice(0, 3).map((benefit, j) => (
                     <li
                       key={j}
                       className="flex items-start gap-2 text-xs text-[var(--landing-text-secondary)]"

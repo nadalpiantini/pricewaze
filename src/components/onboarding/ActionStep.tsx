@@ -38,7 +38,9 @@ const propertyTypes: { value: PropertyType; label: string }[] = [
 async function fetchSampleProperties(): Promise<Property[]> {
   const res = await fetch('/api/properties?limit=6&status=active');
   if (!res.ok) throw new Error('Failed to fetch');
-  return res.json();
+  const response = await res.json();
+  // API returns { data: [...], pagination: {...} }, extract data array
+  return Array.isArray(response.data) ? response.data : Array.isArray(response) ? response : [];
 }
 
 export function ActionStep() {
@@ -139,7 +141,7 @@ export function ActionStep() {
           <div className="col-span-2 flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : filteredProperties.length === 0 ? (
+        ) : !Array.isArray(filteredProperties) || filteredProperties.length === 0 ? (
           <div className="col-span-2 text-center py-12 text-muted-foreground">
             No properties found. Try adjusting your filters.
           </div>

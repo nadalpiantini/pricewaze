@@ -189,11 +189,12 @@ function CollapsibleBreadcrumb({
   const shouldCollapse = items.length > maxItems && !isExpanded
 
   const visibleItems = React.useMemo(() => {
-    if (!shouldCollapse) return items
+    const safeItems = Array.isArray(items) ? items : [];
+    if (!shouldCollapse) return safeItems
 
     // Show first item, ellipsis, and last (maxItems - 1) items
-    const start = items.slice(0, 1)
-    const end = items.slice(-(maxItems - 1))
+    const start = safeItems.slice(0, 1)
+    const end = safeItems.slice(-(maxItems - 1))
     return [...start, { label: "...", isEllipsis: true } as BreadcrumbItemData & { isEllipsis?: boolean }, ...end]
   }, [items, maxItems, shouldCollapse])
 

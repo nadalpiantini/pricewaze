@@ -49,7 +49,8 @@ export function MarketAlertsFeed({ userId, maxItems = 20, showMarkAllRead = true
     );
   }
 
-  const displayAlerts = alerts.slice(0, maxItems);
+  const safeAlerts = Array.isArray(alerts) ? alerts : [];
+  const displayAlerts = safeAlerts.slice(0, maxItems);
   const unreadAlerts = displayAlerts.filter((a) => !a.read);
 
   return (

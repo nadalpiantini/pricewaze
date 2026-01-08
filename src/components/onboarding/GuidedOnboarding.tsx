@@ -245,7 +245,7 @@ function Step2Follow({
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {demoProperties.slice(0, 3).map((property) => {
+        {(Array.isArray(demoProperties) ? demoProperties : []).slice(0, 3).map((property) => {
           const isFollowed = followedProperty?.id === property.id;
 
           return (

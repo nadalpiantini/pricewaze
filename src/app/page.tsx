@@ -35,7 +35,10 @@ async function fetchProperties(filters: Filters): Promise<Property[]> {
 
   const res = await fetch(`/api/properties?${params.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch properties');
-  return res.json();
+  const response = await res.json();
+  // API returns { data: [...], pagination: {...} }, extract data array
+  const properties = Array.isArray(response.data) ? response.data : Array.isArray(response) ? response : [];
+  return properties;
 }
 
 export default function Home() {
@@ -173,13 +176,13 @@ export default function Home() {
         <div className="container mx-auto px-4 py-6">
           {/* Results Header with Brand Accent */}
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="h-1 w-12 bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-full"></div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {properties.length} {properties.length === 1 ? 'property' : 'properties'} found
-                </h2>
-              </div>
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="h-1 w-12 bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-full"></div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {Array.isArray(properties) ? properties.length : 0} {Array.isArray(properties) && properties.length === 1 ? 'property' : 'properties'} found
+                  </h2>
+                </div>
               {searchQuery && (
                 <p className="text-sm text-gray-600 mt-2 ml-16">
                   Results for <span className="font-semibold text-cyan-600">"{searchQuery}"</span>
@@ -216,20 +219,20 @@ export default function Home() {
               <div className={view === 'map' ? 'lg:col-span-2' : 'lg:col-span-3'}>
                 {view === 'map' ? (
                   <PropertyMapWithSignals
-                    properties={properties}
+                    properties={Array.isArray(properties) ? properties : []}
                     onPropertyClick={handlePropertyClick}
                     className="h-[600px] rounded-lg shadow-md border border-gray-200"
                   />
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {properties.map((property) => (
+                    {Array.isArray(properties) && properties.map((property) => (
                       <PropertyCard
                         key={property.id}
                         property={property}
                         onClick={() => handlePropertyClick(property)}
                       />
                     ))}
-                    {properties.length === 0 && (
+                    {(!Array.isArray(properties) || properties.length === 0) && (
                       <div className="col-span-full text-center py-16 bg-white rounded-lg shadow-sm border border-gray-200">
                         <p className="text-lg text-gray-600 mb-2">No properties found</p>
                         <p className="text-sm text-gray-500">Try adjusting your search criteria</p>
@@ -250,12 +253,12 @@ export default function Home() {
                       compact
                     />
                   ))}
-                  {properties.length === 0 && (
+                  {(!Array.isArray(properties) || properties.length === 0) && (
                     <div className="text-center py-8 bg-white rounded-lg shadow-sm border border-gray-200">
                       <p className="text-gray-600">No properties found.</p>
                     </div>
                   )}
-                  {properties.length > 10 && (
+                  {Array.isArray(properties) && properties.length > 10 && (
                     <Button
                       variant="outline"
                       className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"

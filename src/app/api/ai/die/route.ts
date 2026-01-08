@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { analyzeDIE } from '@/lib/die';
-import type { DIEInputs } from '@/types/die';
+import type { DIEInputs, UserDecisionProfile } from '@/types/die';
 
 /**
  * GET /api/ai/die
@@ -28,15 +28,16 @@ export async function GET(request: NextRequest) {
     .eq('id', user.id)
     .single();
 
-  let userProfile = null;
+  let userProfile: UserDecisionProfile | undefined = undefined;
   if (profile && (profile.decision_urgency || profile.decision_risk_tolerance || profile.decision_objective)) {
-    userProfile = {
-      userId: profile.id,
+    const profileData: UserDecisionProfile = {
+      userId: String(profile.id),
       urgency: (profile.decision_urgency as 'high' | 'medium' | 'low') || 'medium',
       riskTolerance: (profile.decision_risk_tolerance as 'conservative' | 'moderate' | 'aggressive') || 'moderate',
       objective: (profile.decision_objective as 'primary_residence' | 'investment' | 'vacation' | 'flip') || 'primary_residence',
       budgetFlexibility: (profile.decision_budget_flexibility as 'strict' | 'moderate' | 'flexible') || 'moderate',
     };
+    userProfile = profileData ?? undefined;
   }
 
   const propertyId = request.nextUrl.searchParams.get('property_id');
@@ -158,7 +159,7 @@ export async function GET(request: NextRequest) {
         recentVisits: recentVisitsCount || 0,
         views: 0, // TODO: Add views_count from property if needed
       },
-      userProfile, // DIE-3 personalization
+      ...(userProfile ? { userProfile } : {}), // DIE-3 personalization
     };
 
     // Run DIE analysis

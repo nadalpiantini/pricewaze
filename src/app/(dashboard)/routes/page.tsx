@@ -132,7 +132,9 @@ async function reorderStops(routeId: string, stops: Array<{ id: string; order_in
 async function fetchProperties(): Promise<Property[]> {
   const res = await fetch('/api/properties?status=active&limit=50');
   if (!res.ok) throw new Error('Failed to fetch properties');
-  return res.json();
+  const response = await res.json();
+  // API returns { data: [...], pagination: {...} }, extract data array
+  return Array.isArray(response.data) ? response.data : Array.isArray(response) ? response : [];
 }
 
 export default function RoutesPage() {

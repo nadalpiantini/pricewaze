@@ -34,6 +34,11 @@ CREATE INDEX IF NOT EXISTS idx_decision_panels_created_at ON pricewaze_decision_
 -- RLS Policies
 ALTER TABLE pricewaze_decision_panels ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (for idempotency)
+DROP POLICY IF EXISTS "Participants can view decision panels" ON pricewaze_decision_panels;
+DROP POLICY IF EXISTS "Participants can manage decision panels" ON pricewaze_decision_panels;
+DROP POLICY IF EXISTS "Participants can update decision panels" ON pricewaze_decision_panels;
+
 -- Participants can view decision panels for their offers
 CREATE POLICY "Participants can view decision panels"
   ON pricewaze_decision_panels

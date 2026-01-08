@@ -216,9 +216,13 @@ function calculateRhythm(
   let concession_pattern: ConcessionPattern | null = null;
 
   if (priceEvents.length >= 2) {
-    const deltas = [];
+    const deltas: number[] = [];
     for (let i = 1; i < priceEvents.length; i++) {
-      deltas.push(Math.abs(priceEvents[i].price! - priceEvents[i - 1].price!));
+      const prevPrice = priceEvents[i - 1].price;
+      const currPrice = priceEvents[i].price;
+      if (prevPrice !== null && currPrice !== null) {
+        deltas.push(Math.abs(currPrice - prevPrice));
+      }
     }
 
     if (deltas.length >= 2) {

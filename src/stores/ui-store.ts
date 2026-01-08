@@ -85,10 +85,13 @@ export const useUIStore = create<UIState>()(
           read: false,
         };
 
-        set((state) => ({
-          notifications: [newNotification, ...state.notifications].slice(0, 50), // Keep max 50
-          unreadCount: state.unreadCount + 1,
-        }));
+        set((state) => {
+          const safeNotifications = Array.isArray(state.notifications) ? state.notifications : [];
+          return {
+            notifications: [newNotification, ...safeNotifications].slice(0, 50), // Keep max 50
+            unreadCount: state.unreadCount + 1,
+          };
+        });
       },
 
       markNotificationRead: (id) => {

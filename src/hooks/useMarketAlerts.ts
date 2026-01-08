@@ -49,8 +49,9 @@ export function useMarketAlerts(userId: string | undefined) {
   // Update state when initial data loads
   useEffect(() => {
     if (initialAlerts) {
-      setAlerts(initialAlerts);
-      setUnreadCount(initialAlerts.filter((a) => !a.read).length);
+      const safeAlerts = Array.isArray(initialAlerts) ? initialAlerts : [];
+      setAlerts(safeAlerts);
+      setUnreadCount(safeAlerts.filter((a) => !a.read).length);
     }
   }, [initialAlerts]);
 
