@@ -18,7 +18,7 @@ import { AlertBadge } from '@/components/copilot/AlertBadge';
 import { AlertModal } from '@/components/copilot/AlertModal';
 import { toast } from 'sonner';
 import { DollarSign, Loader2, MapPin, TrendingDown, TrendingUp } from 'lucide-react';
-import type { CopilotAlert } from '@/hooks/useCopilotAlerts';
+import type { CopilotAlert, AlertType, AlertSeverity } from '@/types/copilot';
 
 interface SubmitOfferModalProps {
   open: boolean;
@@ -54,7 +54,7 @@ export function SubmitOfferModal({
   
   const { alerts } = useCopilotAlerts({
     propertyId: property.id,
-    offerId: null, // No hay offer_id aún, es solo evaluación
+    offerId: undefined, // No hay offer_id aún, es solo evaluación
     autoFetch: shouldEvaluateAlerts,
   });
 
@@ -181,12 +181,12 @@ export function SubmitOfferModal({
           {alerts.length > 0 && (
             <div className="space-y-2">
               {alerts
-                .filter((a) => a.type === 'suboptimal_offer' || a.type === 'silent_opportunity')
+                .filter((a) => a.alert_type === 'suboptimal_offer' || a.alert_type === 'silent_opportunity')
                 .map((alert) => (
                   <AlertBadge
                     key={alert.id}
-                    alertType={alert.type}
-                    severity={alert.severity}
+                    alertType={alert.alert_type as AlertType}
+                    severity={alert.severity as AlertSeverity}
                     message={alert.message}
                     onClick={() => setSelectedAlert(alert)}
                   />
@@ -250,7 +250,15 @@ export function SubmitOfferModal({
 
         {/* Alert Modal */}
         <AlertModal
-          alert={selectedAlert}
+          alert={selectedAlert ? {
+            id: selectedAlert.id,
+            type: selectedAlert.alert_type as AlertType,
+            severity: selectedAlert.severity as AlertSeverity,
+            message: selectedAlert.message,
+            metadata: selectedAlert.metadata || {},
+            propertyId: selectedAlert.property_id || null,
+            offerId: null,
+          } : null}
           onClose={() => setSelectedAlert(null)}
           onAction={(alert) => {
             // Si es alerta de oferta subóptima, ajustar el monto sugerido

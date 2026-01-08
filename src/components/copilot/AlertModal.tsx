@@ -65,9 +65,9 @@ function getActionButtonText(alertType: AlertType): string {
 export function AlertModal({ alert, onClose, onAction, onDismiss }: AlertModalProps) {
   if (!alert) return null;
 
-  const Icon = alertIcons[alert.type];
-  const title = alertTitles[alert.type];
-  const actionText = getActionButtonText(alert.type);
+  const Icon = alertIcons[alert.type as AlertType];
+  const title = alertTitles[alert.type as AlertType];
+  const actionText = getActionButtonText(alert.type as AlertType);
 
   const handleDismiss = async () => {
     if (onDismiss) {

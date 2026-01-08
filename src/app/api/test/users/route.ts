@@ -178,12 +178,20 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  if (!supabaseAdmin) {
+  if (!supabaseUrl || !supabaseServiceKey) {
     return NextResponse.json(
-      { error: 'Admin client not configured' },
+      { error: 'Missing Supabase configuration' },
       { status: 500 }
     );
   }
+
+  // Create admin client for this request
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 
   try {
     const { searchParams } = new URL(request.url);

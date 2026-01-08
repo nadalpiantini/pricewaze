@@ -21,11 +21,31 @@ PriceWaze (marketed as "PriceMap") is a real estate intelligence platform that p
 
 ```bash
 pnpm dev          # Start development server
-pnpm build        # Production build
+pnpm build        # Production build (also runs TypeScript typecheck)
 pnpm lint         # Run ESLint
 pnpm seed         # Seed database with test data
 pnpm seed:clear   # Clear seeded data
 ```
+
+### Testing
+```bash
+# E2E tests (requires dev server or uses webServer config)
+pnpm test:e2e              # Run all E2E tests
+pnpm test:e2e:ui           # Interactive UI mode
+pnpm test:e2e:debug        # Debug mode
+
+# Mobile responsive tests (5 devices, 130 validations)
+pnpm test:mobile           # Run mobile design tests
+pnpm test:mobile:ui        # Interactive UI mode
+
+# Run single test file
+npx playwright test tests/e2e/auth.spec.ts
+
+# Run tests matching pattern
+npx playwright test --grep "login"
+```
+
+**E2E Test Setup**: Tests require confirmed test users. Set `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` in `.env.local` for pre-seeded users, or tests will attempt to create users via `/api/test/users`.
 
 ### CrewAI (Python backend)
 ```bash
@@ -56,12 +76,21 @@ Database features automatic zone assignment via PostGIS `ST_Contains`, price his
 
 ### API Structure
 ```
-/api/properties/        # CRUD for properties
-/api/offers/           # Offer management
-/api/visits/           # Visit scheduling and verification
-/api/ai/pricing/       # AI pricing analysis (DeepSeek)
-/api/ai/advice/        # Negotiation advice
-/api/ai/contracts/     # Contract generation
+/api/properties/            # CRUD for properties
+/api/offers/               # Offer management with fairness scoring
+/api/visits/               # Visit scheduling and GPS verification
+/api/routes/               # Visit route optimization
+/api/zones/                # Geographic zone data
+/api/ai/pricing/           # AI pricing analysis (DeepSeek)
+/api/ai/advice/            # Negotiation advice
+/api/ai/contracts/         # Contract generation
+/api/ai/decision-intelligence/  # Property decision panels
+/api/copilot/              # AI Copilot (alerts, chat, negotiation)
+/api/crewai/               # Multi-agent analysis endpoints
+/api/gamification/         # Points, badges, achievements
+/api/notifications/        # Push notifications
+/api/alerts/               # Market alerts and saved searches
+/api/signals/              # Market signals processing
 ```
 
 ### State Stores (Zustand)
@@ -109,12 +138,34 @@ All API inputs are validated with Zod schemas before processing.
 ### Type Imports
 Use `@/*` path alias for all imports (maps to `./src/*`).
 
+### Test Data Attributes
+Use `data-testid` for E2E test selectors:
+```typescript
+// Form inputs
+data-testid="email-input"
+data-testid="password-input"
+data-testid="login-button"
+
+// Navigation
+data-testid="user-menu"
+data-testid="sidebar-nav"
+
+// Property cards/lists
+data-testid="property-card"
+data-testid="property-list"
+```
+
 ## Environment Variables
 
 Required in `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`
 - `DEEPSEEK_API_KEY` / `DEEPSEEK_BASE_URL` / `DEEPSEEK_MODEL`
 - `NEXT_PUBLIC_MAPBOX_TOKEN`
+
+For E2E testing (optional but recommended):
+
+- `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` - Pre-confirmed test user credentials
+- `PLAYWRIGHT_TEST_BASE_URL` - Base URL for tests (default: `http://localhost:3000`)
 
 ## Multi-Market Configuration
 
@@ -123,6 +174,7 @@ The platform supports multiple markets via the `NEXT_PUBLIC_MARKET_CODE` environ
 **Supported Markets**: `DO` (Dominican Republic), `US`, `MX` (Mexico), `ES` (Spain), `CO` (Colombia), `global` (default)
 
 **Configuration Files**:
+
 - `src/config/market.ts` - TypeScript market configuration (currency, map, legal, AI context, SEO)
 - `crewai/config/market.py` - Python market configuration for CrewAI agents
 

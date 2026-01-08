@@ -8,62 +8,85 @@ export async function loginTestUser(page: Page, email?: string, password?: strin
   // Prefer environment variables for test credentials (pre-seeded confirmed users)
   const testEmail = process.env.TEST_USER_EMAIL || email || 'test@example.com';
   const testPassword = process.env.TEST_USER_PASSWORD || password || 'testpassword123';
-  
+
+  console.log(`[Auth Debug] Email: ${testEmail}`);
+  console.log(`[Auth Debug] Password length: ${testPassword.length}, chars: ${testPassword.split('').map((c, i) => `${i}:${c}`).join(' ')}`);
+
   const targetUrl = redirectTo || '/dashboard';
-  
-  // Navigate to login with redirect parameter if needed
-  if (redirectTo) {
-    await page.goto(`/login?redirect=${encodeURIComponent(redirectTo)}`);
-  } else {
-    await page.goto('/login');
-  }
-  
-  await page.waitForSelector('[data-testid="email-input"]', { timeout: 5000 });
+
+  // Navigate to login with redirect parameter
+  await page.goto(`/login?redirect=${encodeURIComponent(targetUrl)}`);
+
+  // Wait for form to be ready
+  await page.waitForSelector('[data-testid="email-input"]', { timeout: 10000 });
+
+  // Fill credentials - clear and type character by character for special chars like #
   await page.fill('[data-testid="email-input"]', testEmail);
-  await page.fill('[data-testid="password-input"]', testPassword);
-  
+
+  // Clear password field and type character by character
+  const passwordInput = page.locator('[data-testid="password-input"]');
+  await passwordInput.click();
+  await passwordInput.fill(''); // Clear any existing content
+  await page.keyboard.type(testPassword, { delay: 30 });
+
   // Click login button
   await page.click('[data-testid="login-button"]');
-  
-  // Wait for toast notification (success or error)
-  await page.waitForTimeout(2000);
-  
-  // Wait for navigation (might go to /, /dashboard, or stay on /login if error)
-  try {
-    await page.waitForURL((url) => {
-      return url.pathname !== '/login';
-    }, { timeout: 10000 });
-  } catch {
-    // If still on login page, check for error
-    const errorText = await page.locator('text=/Invalid|Error|incorrect|wrong/i').count();
-    if (errorText > 0) {
-      throw new Error('Login failed - invalid credentials');
-    }
+
+  // Wait for success toast OR error toast
+  const successToast = page.locator('text=/Welcome back|logged in successfully/i');
+  const errorToast = page.locator('text=/Login failed|Invalid|incorrect|wrong/i');
+
+  // Wait for either toast to appear
+  await Promise.race([
+    successToast.first().waitFor({ timeout: 10000 }).catch(() => null),
+    errorToast.first().waitFor({ timeout: 10000 }).catch(() => null),
+  ]);
+
+  // Check if error appeared
+  const hasError = await errorToast.first().isVisible().catch(() => false);
+  if (hasError) {
+    const errorText = await errorToast.first().textContent();
+    throw new Error(`Login failed: ${errorText}`);
   }
-  
-  // Navigate to target URL if we're not already there
+
+  // Wait for navigation away from login page
+  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 });
+
+  // Give time for session cookies to be fully set and Next.js to hydrate
+  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(1000);
+
+  // Navigate to target URL if not already there
   const currentUrl = page.url();
-  const currentPath = new URL(currentUrl).pathname;
-  
-  if (currentPath !== targetUrl && !currentPath.startsWith(targetUrl)) {
+  if (!currentUrl.includes(targetUrl)) {
     await page.goto(targetUrl);
     await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-    await page.waitForTimeout(1000); // Give time for any redirects
   }
-  
-  // Verify we're logged in by checking for user menu or dashboard content
+
+  // Verify auth state - check for authenticated user indicators
+  // The homepage has avatar button, dashboard has user-menu with data-testid
   const userMenu = page.locator('[data-testid="user-menu"]');
-  const dashboardContent = page.locator('text=/Dashboard|Properties|Routes/i');
-  
-  // Wait for either user menu or dashboard content to appear
-  try {
-    await Promise.race([
-      userMenu.waitFor({ timeout: 5000 }).catch(() => null),
-      dashboardContent.first().waitFor({ timeout: 5000 }).catch(() => null)
-    ]);
-  } catch {
-    // If neither appears, login might have failed
-    throw new Error('Login failed - user menu or dashboard content not found');
+  const avatarButton = page.locator('button:has-text(/^[A-Z]{1,2}$/)'); // Avatar with initials
+  const signInLink = page.locator('a:has-text("Sign In")');
+  const listPropertyLink = page.locator('a:has-text("List Property")'); // Only visible when logged in
+
+  // Wait a bit for UI to stabilize
+  await page.waitForTimeout(2000);
+
+  // Check for authentication indicators
+  const hasUserMenu = await userMenu.isVisible().catch(() => false);
+  const hasAvatar = await avatarButton.first().isVisible().catch(() => false);
+  const hasListProperty = await listPropertyLink.first().isVisible().catch(() => false);
+  const hasSignInLink = await signInLink.first().isVisible().catch(() => false);
+
+  const isAuthenticated = hasUserMenu || hasAvatar || hasListProperty;
+
+  if (hasSignInLink && !isAuthenticated) {
+    throw new Error('Login appeared successful but user is not authenticated (Sign In link still visible, no user indicators)');
+  }
+
+  if (!isAuthenticated) {
+    throw new Error('Login completed but no authentication indicators found');
   }
 }
 

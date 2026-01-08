@@ -37,7 +37,7 @@ import { useChat } from '@/hooks/useChat';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { Property } from '@/types/database';
-import type { CopilotAlert } from '@/types/copilot';
+import type { CopilotAlert, AlertType, AlertSeverity } from '@/types/copilot';
 
 const propertyTypeLabels: Record<Property['property_type'], string> = {
   apartment: 'Apartment',
@@ -250,8 +250,8 @@ export default function PropertyPage() {
               {alerts.map((alert) => (
                 <AlertBadge
                   key={alert.id}
-                  alertType={alert.type}
-                  severity={alert.severity}
+                  alertType={alert.alert_type as AlertType}
+                  severity={alert.severity as AlertSeverity}
                   message={alert.message}
                   onClick={() => setSelectedAlert(alert)}
                 />
@@ -422,7 +422,15 @@ export default function PropertyPage() {
 
       {/* Alert Modal */}
       <AlertModal
-        alert={selectedAlert}
+        alert={selectedAlert ? {
+          id: selectedAlert.id,
+          type: selectedAlert.alert_type as AlertType,
+          severity: selectedAlert.severity as AlertSeverity,
+          message: selectedAlert.message,
+          metadata: selectedAlert.metadata || {},
+          propertyId: selectedAlert.property_id || null,
+          offerId: null,
+        } : null}
         onClose={() => setSelectedAlert(null)}
         onDismiss={markAsResolved}
       />
