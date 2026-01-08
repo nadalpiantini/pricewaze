@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import GridLayout from 'react-grid-layout';
+import GridLayout, { verticalCompactor } from 'react-grid-layout';
 import { Settings, RotateCcw, Save, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useDashboardStore, WidgetType, WIDGET_TITLES, WIDGET_DESCRIPTIONS, GridLayoutItem } from '@/stores/dashboard-store';
+import type { Layout } from 'react-grid-layout';
 import {
   StatsSummaryWidget,
   MarketOverviewWidget,
@@ -91,9 +92,39 @@ export function DashboardGrid() {
 
   // Handle layout change
   const handleLayoutChange = useCallback(
-    (newLayout: GridLayoutItem[]) => {
+    (newLayout: Layout) => {
       if (isEditing) {
-        setLayout(newLayout);
+        // Layout from react-grid-layout is an array-like type
+        // Cast to array and convert to GridLayoutItem[]
+        const layoutArray = newLayout as unknown as Array<{
+          i: string;
+          x: number;
+          y: number;
+          w: number;
+          h: number;
+          minW?: number;
+          minH?: number;
+          maxW?: number;
+          maxH?: number;
+          static?: boolean;
+          isDraggable?: boolean;
+          isResizable?: boolean;
+        }>;
+        const mutableLayout: GridLayoutItem[] = layoutArray.map((item) => ({
+          i: item.i,
+          x: item.x,
+          y: item.y,
+          w: item.w,
+          h: item.h,
+          minW: item.minW,
+          minH: item.minH,
+          maxW: item.maxW,
+          maxH: item.maxH,
+          static: item.static,
+          isDraggable: item.isDraggable,
+          isResizable: item.isResizable,
+        }));
+        setLayout(mutableLayout);
       }
     },
     [isEditing, setLayout]
@@ -224,30 +255,37 @@ export function DashboardGrid() {
       {/* Grid Layout */}
       <div className="w-full">
         <GridLayout
-          className="layout"
-          layout={visibleLayout}
-          cols={12}
-          rowHeight={60}
           width={width}
+          layout={visibleLayout}
+          gridConfig={{
+            cols: 12,
+            rowHeight: 60,
+            margin: [16, 16] as [number, number],
+            containerPadding: null,
+            maxRows: Infinity,
+          }}
+          dragConfig={{
+            enabled: isEditing,
+            handle: '.widget-drag-handle',
+          }}
+          resizeConfig={{
+            enabled: isEditing,
+          }}
+          compactor={verticalCompactor}
           onLayoutChange={handleLayoutChange}
-          isDraggable={isEditing}
-          isResizable={isEditing}
-          draggableHandle=".widget-drag-handle"
-          compactType="vertical"
-          preventCollision={false}
-          margin={[16, 16]}
+          autoSize={true}
         >
-        {visibleWidgets.map((widget) => {
-          const WidgetComponent = WIDGET_COMPONENTS[widget.type];
-          return (
-            <div
-              key={widget.id}
-              className={isEditing ? 'ring-2 ring-primary/20 rounded-lg' : ''}
-            >
-              <WidgetComponent />
-            </div>
-          );
-        })}
+          {visibleWidgets.map((widget) => {
+            const WidgetComponent = WIDGET_COMPONENTS[widget.type];
+            return (
+              <div
+                key={widget.id}
+                className={isEditing ? 'ring-2 ring-primary/20 rounded-lg' : ''}
+              >
+                <WidgetComponent />
+              </div>
+            );
+          })}
         </GridLayout>
       </div>
     </div>
